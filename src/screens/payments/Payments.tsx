@@ -6,8 +6,14 @@ import paymentRepository from '../../repository/payment-repository';
 import { Payment, PaymentStatus } from '../../models/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useState } from 'react';
+import Button from '../../components/Button';
+import { Download } from 'lucide-react';
+import BatchReceiptDownloadModal from './BatchReceiptDownloadModal';
 
 export default function Payments() {
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+
   // Função para exportar todos os pagamentos
   const exportPayments = async () => {
     try {
@@ -89,15 +95,24 @@ export default function Payments() {
     <div className="space-y-4">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <h1 className="text-2xl font-bold text-foreground">Pagamentos</h1>
-        <ExcelExport
-          onExport={exportPayments}
-          filename="relatorio_pagamentos"
-          sheetName="Pagamentos"
-          buttonText="Exportar para Excel"
-          transformData={transformPaymentData}
-          columnWidths={columnWidths}
-          headerStyle={headerStyle}
-        />
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            leftIcon={<Download className="h-4 w-4" />}
+            onClick={() => setIsBatchModalOpen(true)}
+          >
+            Download Comprovantes
+          </Button>
+          <ExcelExport
+            onExport={exportPayments}
+            filename="relatorio_pagamentos"
+            sheetName="Pagamentos"
+            buttonText="Exportar para Excel"
+            transformData={transformPaymentData}
+            columnWidths={columnWidths}
+            headerStyle={headerStyle}
+          />
+        </div>
       </div>
 
       <ViewToggle
@@ -105,6 +120,13 @@ export default function Payments() {
         tableView={<PaymentsTable />}
         cardView={<PaymentsCard />}
       />
+
+      {isBatchModalOpen && (
+        <BatchReceiptDownloadModal
+          isOpen={isBatchModalOpen}
+          onClose={() => setIsBatchModalOpen(false)}
+        />
+      )}
     </div>
   );
 }

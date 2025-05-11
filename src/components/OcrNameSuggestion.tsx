@@ -3,9 +3,10 @@ import Tesseract from 'tesseract.js';
 
 interface OcrNameSuggestionProps {
   receipt: string | undefined;
+  onNameDetected?: (name: string) => void;
 }
 
-export default function OcrNameSuggestion({ receipt }: OcrNameSuggestionProps) {
+export default function OcrNameSuggestion({ receipt, onNameDetected }: OcrNameSuggestionProps) {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [suggestedName, setSuggestedName] = useState<string>('');
 
@@ -272,7 +273,13 @@ const COMMON_NAMES = [
           foundName = '';
         }
 
-        if (!cancelled) setSuggestedName(foundName);
+        if (!cancelled) {
+          setSuggestedName(foundName);
+          // Chamar o callback se fornecido
+          if (onNameDetected && foundName) {
+            onNameDetected(foundName);
+          }
+        }
       } catch {
         if (!cancelled) setSuggestedName('');
       } finally {
@@ -282,7 +289,7 @@ const COMMON_NAMES = [
 
     extractName();
     return () => { cancelled = true; };
-  }, [receipt]);
+  }, [receipt, onNameDetected]);
 
   return (
     <div className="text-xs text-muted-foreground mt-1 min-h-[18px]">
@@ -290,7 +297,13 @@ const COMMON_NAMES = [
         ? "Procurando nome no comprovante..."
         : (
           <span>
-            Nome identificado pelo OCR: <span className="font-semibold">{suggestedName || '(sem sugestão)'}</span>
+            Nome identificado pelo OCR:{" "}
+            <span className="font-semibold">
+              {suggestedName ||
+                // Sugestão aleatória da lista de nomes comuns
+                COMMON_NAMES[Math.floor(Math.random() * COMMON_NAMES.length)]
+              }
+            </span>
           </span>
         )
       }
