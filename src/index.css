@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary: 25 100% 55%;        /* Laranja vibrante */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 20 100% 60%;      /* Laranja mais avermelhado */
+  --secondary-foreground: 0 0% 100%;
+  
+  --accent: 15 100% 50%;         /* Laranja intenso */
+  --accent-foreground: 0 0% 100%;
+  
+  --background: 0 0% 100%;       /* Branco puro */
+  --foreground: 0 0% 10%;        /* Quase preto puro */
+  
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 10%;
+  
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+  
+  --muted: 25 10% 96%;           /* Muito claro com sutil tom laranja */
+  --muted-foreground: 25 30% 30%;
+  
+  --border: 25 30% 90%;
+  --input: 25 30% 90%;
+  
+  --pending: 40 100% 50%;        /* Amarelo mais vibrante */
+  --receipt-sent: 25 100% 60%;   /* Laranja vibrante */
+  --under-review: 25 90% 65%;    /* Laranja amarelado */
+  --completed: 142 76% 36%;      /* Verde - mantido para status */
+  --rejected: 0 90% 60%;         /* Vermelho - mantido para status */
+  --paid: 142 76% 36%;           /* Verde - mantido para status */
+  --processing: 25 100% 60%;     /* Laranja vibrante */
+  --failed: 0 90% 60%;           /* Vermelho - mantido para status */
+  
+  --radius: 0.5rem;
+}
+
+.dark {
+  --primary: 25 100% 55%;        /* Laranja vibrante igual no modo claro */
+  --primary-foreground: 0 0% 100%;
+  
+  --secondary: 20 100% 60%;      /* Laranja mais avermelhado */
+  --secondary-foreground: 0 0% 100%;
+  
+  --accent: 15 100% 50%;         /* Laranja intenso */
+  --accent-foreground: 0 0% 100%;
+  
+  --background: 0 0% 5%;         /* Preto puro */
+  --foreground: 0 0% 95%;        /* Branco com alto contraste */
+  
+  --card: 0 0% 8%;               /* Preto levemente mais claro que o fundo */
+  --card-foreground: 0 0% 95%;
+  
+  --popover: 0 0% 8%; 
+  --popover-foreground: 0 0% 95%;
+  
+  --muted: 25 15% 15%;           /* Preto acinzentado com tom laranja */
+  --muted-foreground: 25 10% 80%;
+  
+  --border: 25 15% 20%; 
+  --input: 25 15% 20%;
+  
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
