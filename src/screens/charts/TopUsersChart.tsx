@@ -1,4 +1,3 @@
-import React from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 
 interface UserData {
@@ -66,7 +65,11 @@ export default function TopUsersChart({ data, loading, dataKey, valueFormatter, 
         />
         <Tooltip 
           contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
-          formatter={(value) => [formatTooltipValue(value as number), tooltipTitle]}
+          formatter={(value) => [
+            <span style={{ color: '#00C49F' }}>{formatTooltipValue(value as number)}</span>, 
+            tooltipTitle
+          ]}
+          labelStyle={{ color: '#fff' }}
         />
         <Bar dataKey={dataKey} radius={[0, 4, 4, 0]} maxBarSize={20}>
           {data.map((entry, index) => (

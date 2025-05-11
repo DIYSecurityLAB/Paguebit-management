@@ -50,7 +50,14 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
           fontSize={11}
           tickFormatter={(value) => formatCurrency(value, { compact: true })}
         />
-        <Tooltip contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }} formatter={(value) => formatCurrency(value as number)} />
+        <Tooltip 
+          contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }} 
+          formatter={(value) => [
+            <span style={{ color: '#00C49F' }}>{formatCurrency(value as number)}</span>, 
+            'Valor'
+          ]}
+          labelStyle={{ color: '#fff' }}
+        />
         <Area 
           type="monotone" 
           dataKey="amount" 

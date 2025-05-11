@@ -28,7 +28,14 @@ export default function UsersGrowthChart({ usersByMonth, loading, height = 250 }
         <CartesianGrid strokeDasharray="3 3" vertical={false} />
         <XAxis dataKey="month" axisLine={false} tickLine={false} fontSize={11} />
         <YAxis allowDecimals={false} axisLine={false} tickLine={false} fontSize={11} />
-        <Tooltip contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }} formatter={(value) => [`${value} usuários`, 'Novos usuários']} />
+        <Tooltip 
+          contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }} 
+          formatter={(value) => [
+            <span style={{ color: '#00C49F' }}>{`${value} usuários`}</span>, 
+            'Novos usuários'
+          ]}
+          labelStyle={{ color: '#fff' }}
+        />
         <Bar dataKey="count" fill="#8884d8" radius={[4, 4, 0, 0]} maxBarSize={40} />
       </BarChart>
     </ResponsiveContainer>
