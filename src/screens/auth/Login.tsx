@@ -3,9 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../contexts/AuthContext";
-import { Loader2, Mail, Lock, Eye, EyeOff } from "lucide-react";
+import { Loader2, Mail, Lock, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import Button from "../../components/Button";
 import apiClient from "../../datasource/api-client";
+import logo from '../../assets/PagueBit_black.svg';
+import logoDark from '../../assets/PagueBit_white.svg';
+import { useTheme } from '../../hooks/useTheme';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -15,6 +18,7 @@ export default function Login() {
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const { theme, setTheme } = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +60,25 @@ export default function Login() {
       <div className="w-full max-w-md bg-card border border-border rounded-2xl shadow-xl p-8">
         <div className="mb-8 text-center">
           <div className="flex justify-center mb-4">
-            <span className="bg-primary text-primary-foreground rounded-full px-4 py-2 text-2xl font-bold shadow">
-              P
-            </span>
+            <img
+              src={theme === 'dark' ? logoDark : logo}
+              alt="Pague Bit Logo"
+              className="h-14 w-auto"
+              style={{ display: 'inline-block' }}
+            />
           </div>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="absolute right-6 top-6 p-2 rounded-full hover:bg-muted transition-colors"
+            aria-label="Alternar tema"
+            type="button"
+          >
+            {theme === 'dark' ? (
+              <Sun className="h-5 w-5 text-yellow-400" />
+            ) : (
+              <Moon className="h-5 w-5 text-slate-600" />
+            )}
+          </button>
           <h1 className="text-3xl font-bold text-foreground mb-2">Bem-vindo de volta</h1>
           <p className="text-muted-foreground">Acesse sua conta para continuar</p>
         </div>

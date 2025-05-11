@@ -3,6 +3,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
+import logo from '../assets/PagueBit_black.svg';
+import logoDark from '../assets/PagueBit_white.svg';
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
@@ -68,12 +70,12 @@ export default function Header() {
               to="/" 
               className="text-xl font-bold text-foreground flex items-center group"
             >
-              <span className="bg-primary text-primary-foreground p-1 rounded mr-2 group-hover:rotate-6 transition-transform duration-300">
-                P
-              </span>
-              <span className="group-hover:text-primary transition-colors duration-300">
-                PagueBit
-              </span>
+              <img
+                src={theme === 'dark' ? logoDark : logo}
+                alt="Pague Bit Logo"
+                className="h-9 w-auto mr-2"
+                style={{ display: 'inline-block' }}
+              />
             </Link>
           </div>
 
