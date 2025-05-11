@@ -7,12 +7,19 @@ import withdrawalRepository from '../../repository/withdrawal-repository';
 import { formatCurrency } from '../../utils/format';
 import { Link } from 'react-router-dom';
 
-// Importar componentes de gráficos
+// Importar componentes de gráficos existentes
 import UsersGrowthChart from '../charts/UsersGrowthChart';
 import PaymentsStatusChart from '../charts/PaymentsStatusChart';
 import PaymentsMonthlyChart from '../charts/PaymentsMonthlyChart';
 import WithdrawalsStatusChart from '../charts/WithdrawalsStatusChart';
 import TopUsersChart from '../charts/TopUsersChart';
+
+// Importar novos componentes de gráficos
+// import PaymentsFunnelChart from '../charts/PaymentsFunnelChart';
+import PaymentsDistributionChart from '../charts/PaymentsDistributionChart';
+// import ProcessingTimeChart from '../charts/ProcessingTimeChart';
+// import WalletsUsageChart from '../charts/WalletsUsageChart';
+
 import { User, Payment, Withdrawal } from '../../models/types';
 
 export default function Dashboard() {
@@ -226,6 +233,20 @@ export default function Dashboard() {
         />
       </div>
 
+      {/* Novos gráficos: Funil de Pagamentos e Distribuição por Valor */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* COMENTADO: Funil de Pagamentos 
+        <ChartCard 
+          title="Funil de Pagamentos" 
+          content={<PaymentsFunnelChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
+        />
+        */}
+        <ChartCard 
+          title="Distribuição por Valor" 
+          content={<PaymentsDistributionChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
+        />
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Top usuários por valor */}
         <ChartCard 
@@ -243,6 +264,34 @@ export default function Dashboard() {
           content={<WithdrawalsStatusChart withdrawalsByStatus={stats.withdrawalsByStatus} loading={loadingWithdrawals} height={200} />} 
         />
       </div>
+
+      {/* COMENTADO: Tempo Médio de Processamento e Carteiras Utilizadas 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <ChartCard 
+          title="Tempo Médio de Processamento" 
+          content={
+            <ProcessingTimeChart 
+              payments={paymentsData?.data || []} 
+              withdrawals={withdrawalsData?.data || []} 
+              loading={loadingPayments || loadingWithdrawals} 
+              height={200} 
+            />
+          } 
+        />
+        <ChartCard 
+          title="Carteiras Utilizadas (Pagamentos)" 
+          content={
+            <WalletsUsageChart 
+              payments={paymentsData?.data || []} 
+              withdrawals={withdrawalsData?.data || []} 
+              type="payment"
+              loading={loadingPayments} 
+              height={200} 
+            />
+          } 
+        />
+      </div>
+      */}
 
       {/* Pagamentos mensais */}
       <ChartCard 
