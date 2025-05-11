@@ -11,6 +11,7 @@ import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
 import apiClient from '../../datasource/api-client';
+import OcrNameSuggestion from '../../components/OcrNameSuggestion';
 
 interface PaymentsModalProps {
   payment: Payment;
@@ -75,16 +76,17 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
 
     if (payment.receipt) {
       actions.push(
-        <Button
-          key="download"
-          variant="outline"
-          onClick={handleDownloadReceipt}
-          isLoading={isLoading}
-          leftIcon={<Download className="h-4 w-4" />}
-          className="w-full sm:w-auto"
-        >
-          Baixar Comprovante
-        </Button>
+        <div key="download-group" className="flex flex-col items-start w-full sm:w-auto">
+          <Button
+            variant="outline"
+            onClick={handleDownloadReceipt}
+            isLoading={isLoading}
+            leftIcon={<Download className="h-4 w-4" />}
+            className="w-full sm:w-auto"
+          >
+            Baixar Comprovante
+          </Button>
+        </div>
       );
     }
 
@@ -209,8 +211,11 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
             <div>
               <div className="flex items-start justify-between flex-wrap gap-1 mb-2">
                 <label className="text-sm font-medium text-muted-foreground">Comprovante</label>
-                <div className="text-xs text-muted-foreground">
-                  {window.innerWidth > 640 ? 'Clique para ampliar' : 'Toque para ampliar'}
+                <div className="flex flex-col items-end">
+                  <div className="text-xs text-muted-foreground">
+                    {window.innerWidth > 640 ? 'Clique para ampliar' : 'Toque para ampliar'}
+                  </div>
+                  <OcrNameSuggestion receipt={payment.receipt} />
                 </div>
               </div>
               <div 

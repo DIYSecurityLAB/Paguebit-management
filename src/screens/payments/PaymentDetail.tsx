@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
@@ -12,6 +12,7 @@ import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import apiClient from '../../datasource/api-client';
 import { toast } from 'sonner';
+import Tesseract from 'tesseract.js';
 
 export default function PaymentDetail() {
   const { id } = useParams();
@@ -20,6 +21,7 @@ export default function PaymentDetail() {
   const [notFound, setNotFound] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [suggestedName, setSuggestedName] = useState<string | null>(null);
 
   const { data: payment, isLoading, error } = useQuery(
     ['payment', id],
@@ -86,6 +88,32 @@ export default function PaymentDetail() {
   const handleRejectPayment = async () => {
     await updateStatusMutation.mutateAsync(PaymentStatus.REJECTED);
   };
+
+  // OCR para sugerir nome do remetente
+  useEffect(() => {
+    setSuggestedName(null);
+    const receipt = payment?.receipt || '';
+    if (!receipt) return;
+
+    let cancelled = false;
+    async function extractName() {
+      try {
+        const { data } = await Tesseract.recognize(
+          receipt.startsWith('data:') ? receipt : `data:image/jpeg;base64,${receipt}`,
+          'por'
+        );
+        const lines = data.text.split('\n').map(l => l.trim()).filter(Boolean);
+        const possibleName = lines.find(line =>
+          /^[A-ZÁÉÍÓÚÃÕÂÊÎÔÛÇ ]{5,}$/.test(line) && !/BANCO|AGENCIA|CONTA|VALOR|CPF|CNPJ|PIX|DOC|TED|R\$|FAVORECIDO|RECEBEDOR/i.test(line)
+        );
+        if (!cancelled) setSuggestedName(possibleName || null);
+      } catch {
+        if (!cancelled) setSuggestedName(null);
+      }
+    }
+    extractName();
+    return () => { cancelled = true; };
+  }, [payment?.receipt]);
 
   if (isLoading) return <Loading />;
   if (notFound || error) {
@@ -250,6 +278,11 @@ export default function PaymentDetail() {
                   </Button>
                 </div>
               </div>
+              {suggestedName && (
+                <div className="mt-2 text-xs text-muted-foreground">
+                  Nome sugerido pelo OCR: <span className="font-semibold">{suggestedName}</span>
+                </div>
+              )}
               <div className="mt-4 relative group border border-border rounded-lg overflow-hidden aspect-video">
                 <img
                   src={receiptImageSrc}
