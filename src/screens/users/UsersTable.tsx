@@ -1,7 +1,10 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { Eye, ExternalLink, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { 
+  Eye, ExternalLink, ArrowUp, ArrowDown, ChevronUp, ChevronDown,
+  ArrowUpDown, CalendarDays, Mail, User as UserIcon
+} from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -10,6 +13,7 @@ import UsersModal from './UsersModal';
 import { User } from '../../models/types';
 import userRepository from '../../repository/user-repository';
 import { toast } from 'sonner';
+import Select from '../../components/Select';
 
 export default function UsersTable() {
   const navigate = useNavigate();
@@ -197,31 +201,88 @@ export default function UsersTable() {
     setCurrentPage(1);
   }, [queryClient]);
 
+  // Opções para o Select de ordenação com ícones
+  const sortOptions = [
+    { 
+      value: 'createdAt-desc', 
+      label: 'Mais recentes', 
+      icon: <CalendarDays className="h-4 w-4 text-purple-500" /> 
+    },
+    { 
+      value: 'createdAt-asc', 
+      label: 'Mais antigos', 
+      icon: <CalendarDays className="h-4 w-4 text-blue-500" /> 
+    },
+    { 
+      value: 'email-asc', 
+      label: 'Email (A-Z)', 
+      icon: <Mail className="h-4 w-4 text-green-500" /> 
+    },
+    { 
+      value: 'email-desc', 
+      label: 'Email (Z-A)', 
+      icon: <Mail className="h-4 w-4 text-red-500" /> 
+    },
+    { 
+      value: 'firstName-asc', 
+      label: 'Nome (A-Z)', 
+      icon: <UserIcon className="h-4 w-4 text-cyan-500" /> 
+    },
+    { 
+      value: 'firstName-desc', 
+      label: 'Nome (Z-A)', 
+      icon: <UserIcon className="h-4 w-4 text-orange-500" /> 
+    },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="sm:hidden mb-4">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="px-4 py-2 bg-card border border-border rounded-md text-sm text-foreground font-medium flex justify-between items-center w-full"
-        >
-          <span>{filtersExpanded ? "Ocultar filtros" : "Ver filtros"}</span>
-          {filtersExpanded ? (
-            <ChevronUp className="h-4 w-4 ml-2" />
-          ) : (
-            <ChevronDown className="h-4 w-4 ml-2" />
-          )}
-        </button>
-      </div>
+      {/* Cabeçalho e filtros */}
+      <div className="space-y-3">
+        {/* Botão para expandir/contrair filtros em dispositivos móveis */}
+        <div className="sm:hidden">
+          <button
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
+          >
+            <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
+            {filtersExpanded ? (
+              <ChevronUp className="h-4 w-4 ml-2" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-2" />
+            )}
+          </button>
+        </div>
 
-      {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
-      <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
-        <FilterBar
-          filters={filterOptions}
-          onFilterChange={handleFilterChange}
-          className="mb-4"
-          isLoading={isFiltering && isLoading}
-        />
+        {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
+        <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
+          <FilterBar
+            filters={filterOptions}
+            onFilterChange={handleFilterChange}
+            className="mb-4"
+            isLoading={isFiltering && isLoading}
+          />
+        </div>
+
+        {/* Ordenação em um card separado com design aprimorado */}
+        <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <label className="text-sm font-medium flex items-center whitespace-nowrap">
+              <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+              Ordenar por:
+            </label>
+            <div className="w-full sm:w-64">
+              <Select
+                options={sortOptions}
+                value={`${orderBy}-${orderDirection}`}
+                onChange={(value) => {
+                  const [field, direction] = value.split('-');
+                  handleSort(field);
+                }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {error ? (

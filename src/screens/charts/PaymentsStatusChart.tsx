@@ -52,6 +52,7 @@ const renderActiveShape = (props: any) => {
 
 export default function PaymentsStatusChart({ paymentsByStatus, loading, height = 250 }: Props) {
   const [activeIndex, setActiveIndex] = useState<number | undefined>(undefined);
+  const [activeMetric, setActiveMetric] = useState<'amount' | 'count'>('amount');
 
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
   
@@ -61,6 +62,9 @@ export default function PaymentsStatusChart({ paymentsByStatus, loading, height 
     amount,
     count
   }));
+
+  // Determinar o título com base na métrica ativa
+  const metricTitle = activeMetric === 'amount' ? 'Valor' : 'Quantidade';
 
   // Função para manipular o clique na legenda
   const handleLegendClick = (data: any, index: number) => {
@@ -96,51 +100,80 @@ export default function PaymentsStatusChart({ paymentsByStatus, loading, height 
   };
 
   return (
-    <ResponsiveContainer width="100%" height={height}>
-      <PieChart>
-        <Pie
-          activeIndex={activeIndex}
-          activeShape={renderActiveShape}
-          data={data}
-          dataKey="amount"
-          nameKey="statusLabel"
-          cx="50%"
-          cy="50%"
-          outerRadius={height / 3}
-          innerRadius={height / 6}
-          paddingAngle={2}
-        >
-          {data.map((entry, idx) => (
-            <Cell key={entry.status} fill={COLORS[idx % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip 
-          formatter={(value, name, props) => {
-            const formattedValue = (
-              <span style={{ color: '#00C49F' }}>
-                {formatCurrency(value as number)}
-              </span>
-            );
-            
-            // Adicionar a contagem entre parênteses
-            const count = props.payload.count;
-            return [
-              <div>
-                {formattedValue} <span className="text-xs text-gray-300">({count} transações)</span>
-              </div>, 
-              name
-            ];
-          }}
-          contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
-          labelStyle={{ color: '#fff' }}
-        />
-        <Legend 
-          layout="vertical" 
-          verticalAlign="middle" 
-          align="right" 
-          content={renderCustomizedLegend}
-        />
-      </PieChart>
-    </ResponsiveContainer>
+    <div className="h-full flex flex-col">
+      <div className="flex justify-between items-center mb-4">
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => setActiveMetric('count')}
+            className={`px-2 py-1 text-xs rounded ${
+              activeMetric === 'count' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Quantidade
+          </button>
+          <button
+            onClick={() => setActiveMetric('amount')}
+            className={`px-2 py-1 text-xs rounded ${
+              activeMetric === 'amount' 
+                ? 'bg-primary text-primary-foreground' 
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Valor
+          </button>
+        </div>
+      </div>
+
+      <div className="flex-1">
+        <ResponsiveContainer width="100%" height={height}>
+          <PieChart>
+            <Pie
+              activeIndex={activeIndex}
+              activeShape={renderActiveShape}
+              data={data}
+              dataKey={activeMetric}
+              nameKey="statusLabel"
+              cx="50%"
+              cy="50%"
+              outerRadius={height / 3}
+              innerRadius={height / 6}
+              paddingAngle={2}
+            >
+              {data.map((entry, idx) => (
+                <Cell key={entry.status} fill={COLORS[idx % COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip 
+              formatter={(value, name, props) => {
+                if (activeMetric === 'amount') {
+                  return [
+                    <div className="text-white">
+                      {formatCurrency(value as number)} <span className="text-xs text-gray-300">({props.payload.count} transações)</span>
+                    </div>,
+                    name
+                  ];
+                }
+                return [
+                  <div className="text-white">
+                    {value} transações <span className="text-xs text-gray-300">({formatCurrency(props.payload.amount)})</span>
+                  </div>,
+                  name
+                ];
+              }}
+              contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
+              labelStyle={{ color: '#fff' }}
+            />
+            <Legend 
+              layout="vertical" 
+              verticalAlign="middle" 
+              align="right" 
+              content={renderCustomizedLegend}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      </div>
+    </div>
   );
 }

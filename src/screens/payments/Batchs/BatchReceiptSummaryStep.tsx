@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import Modal from '../../components/Modal';
-import Button from '../../components/Button';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import { ArrowLeft, Download, Edit, Eye, XCircle, CheckCircle } from 'lucide-react';
-import { formatCurrency } from '../../utils/format';
-import ImageViewer from '../../components/ImageViewer';
+import { formatCurrency } from '../../../utils/format';
+import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
 
 interface SummaryStepProps {

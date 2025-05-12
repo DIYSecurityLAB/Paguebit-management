@@ -19,6 +19,8 @@ import TopUsersChart from '../charts/TopUsersChart';
 import PaymentsDistributionChart from '../charts/PaymentsDistributionChart';
 // import ProcessingTimeChart from '../charts/ProcessingTimeChart';
 // import WalletsUsageChart from '../charts/WalletsUsageChart';
+import PaymentTypeChart from '../charts/PaymentTypeChart';
+import ReferralsChart from '../charts/ReferralsChart';
 
 import { User, Payment, Withdrawal } from '../../models/types';
 
@@ -70,7 +72,6 @@ export default function Dashboard() {
 
     // Top usuários
     const topUsersByAmount = processTopUsersByAmount(payments, users);
-    const topUsersByCount = processTopUsersByCount(payments, users);
 
     return {
       totalUsers,
@@ -83,7 +84,6 @@ export default function Dashboard() {
       paymentsByStatus,
       withdrawalsByStatus,
       topUsersByAmount,
-      topUsersByCount,
       receiptsCount,
       withdrawalsProcessingCount,
       withdrawalsPendingCount,
@@ -209,7 +209,7 @@ export default function Dashboard() {
         {/* Removemos a mensagem geral de "tudo em dia" pois agora mostramos mensagens específicas */}
       </div>
 
-      {/* Cards de estatísticas (menores e mais compactos) */}
+      {/* Cards de estatísticas */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard 
           title="Usuários" 
@@ -242,78 +242,52 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Gráficos - Mais compactos e responsivos */}
+      {/* Principais Fontes e Tipos de Pagamento */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* Crescimento de usuários e pagamentos por status */}
         <ChartCard 
-          title="Crescimento de Usuários" 
-          content={<UsersGrowthChart usersByMonth={stats.usersByMonth} loading={loadingUsers} height={180} />} 
+          title="Tipos de Pagamento" 
+          content={<PaymentTypeChart payments={paymentsData?.data || []} loading={loadingPayments} height={420} />} 
         />
         <ChartCard 
-          title="Pagamentos por Status" 
-          content={<PaymentsStatusChart paymentsByStatus={stats.paymentsByStatus} loading={loadingPayments} height={180} />} 
+          title="Principais Fontes de Indicação" 
+          content={<ReferralsChart users={usersData?.data || []} loading={loadingUsers} height={420} limit={10} />} 
         />
       </div>
 
-      {/* Novos gráficos: Funil de Pagamentos e Distribuição por Valor */}
+      {/* Top Usuários e Pagamentos por Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        {/* COMENTADO: Funil de Pagamentos 
         <ChartCard 
-          title="Funil de Pagamentos" 
-          content={<PaymentsFunnelChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
+          title="Top Usuários" 
+          content={
+            <TopUsersChart 
+              data={stats.topUsersByAmount} 
+              loading={loadingPayments} 
+              valueFormatter={formatCurrency} 
+              height={420}
+            />
+          } 
         />
-        */}
+        <ChartCard 
+          title="Pagamentos por Status" 
+          content={<PaymentsStatusChart paymentsByStatus={stats.paymentsByStatus} loading={loadingPayments} height={420} />} 
+        />
+      </div>
+
+      {/* Crescimento, Distribuição e Saques */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <ChartCard 
+          title="Crescimento de Usuários" 
+          content={<UsersGrowthChart usersByMonth={stats.usersByMonth} loading={loadingUsers} height={220} />} 
+        />
         <ChartCard 
           title="Distribuição por Valor" 
           content={<PaymentsDistributionChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
         />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {/* Top usuários por valor */}
-        <ChartCard 
-          title="Top Usuários por Valor" 
-          content={<TopUsersChart data={stats.topUsersByAmount} loading={loadingPayments} dataKey="amount" valueFormatter={formatCurrency} height={200} />} 
-        />
-        {/* Top usuários por quantidade */}
-        <ChartCard 
-          title="Top Usuários por Quantidade" 
-          content={<TopUsersChart data={stats.topUsersByCount} loading={loadingPayments} dataKey="count" height={200} />} 
-        />
-        {/* Saques por status */}
         <ChartCard 
           title="Saques por Status" 
-          content={<WithdrawalsStatusChart withdrawalsByStatus={stats.withdrawalsByStatus} loading={loadingWithdrawals} height={200} />} 
+          content={<WithdrawalsStatusChart withdrawalsByStatus={stats.withdrawalsByStatus} loading={loadingWithdrawals} height={220} />} 
         />
       </div>
-
-      {/* COMENTADO: Tempo Médio de Processamento e Carteiras Utilizadas 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <ChartCard 
-          title="Tempo Médio de Processamento" 
-          content={
-            <ProcessingTimeChart 
-              payments={paymentsData?.data || []} 
-              withdrawals={withdrawalsData?.data || []} 
-              loading={loadingPayments || loadingWithdrawals} 
-              height={200} 
-            />
-          } 
-        />
-        <ChartCard 
-          title="Carteiras Utilizadas (Pagamentos)" 
-          content={
-            <WalletsUsageChart 
-              payments={paymentsData?.data || []} 
-              withdrawals={withdrawalsData?.data || []} 
-              type="payment"
-              loading={loadingPayments} 
-              height={200} 
-            />
-          } 
-        />
-      </div>
-      */}
 
       {/* Pagamentos mensais */}
       <ChartCard 
@@ -413,12 +387,14 @@ function processWithdrawalsByStatus(withdrawals: Withdrawal[]): Record<string, n
 }
 
 function processTopUsersByAmount(payments: Payment[], users: User[]) {
-  // Considerar apenas pagamentos com status 'paid', 'approved' ou 'withdrawal_processing'
   const validStatuses = ['paid', 'approved', 'withdrawal_processing'];
   const userAmounts: Record<string, { userId: string; amount: number; count: number }> = {};
+  
   payments.forEach((p) => {
     if (!validStatuses.includes(p.status)) return;
-    if (!userAmounts[p.userId]) userAmounts[p.userId] = { userId: p.userId, amount: 0, count: 0 };
+    if (!userAmounts[p.userId]) {
+      userAmounts[p.userId] = { userId: p.userId, amount: 0, count: 0 };
+    }
     userAmounts[p.userId].amount += p.amount || 0;
     userAmounts[p.userId].count += 1;
   });
@@ -433,31 +409,5 @@ function processTopUsersByAmount(payments: Payment[], users: User[]) {
       ...item,
       name: userMap[item.userId] || `Usuário ${item.userId.slice(0, 5)}...`,
     }))
-    .sort((a, b) => b.amount - a.amount)
-    .slice(0, 5);
-}
-
-function processTopUsersByCount(payments: Payment[], users: User[]) {
-  // Considerar apenas pagamentos com status 'paid', 'approved' ou 'withdrawal_processing'
-  const validStatuses = ['paid', 'approved', 'withdrawal_processing'];
-  const userCounts: Record<string, { userId: string; count: number; amount: number }> = {};
-  payments.forEach((p) => {
-    if (!validStatuses.includes(p.status)) return;
-    if (!userCounts[p.userId]) userCounts[p.userId] = { userId: p.userId, count: 0, amount: 0 };
-    userCounts[p.userId].count += 1;
-    userCounts[p.userId].amount += p.amount || 0;
-  });
-
-  const userMap: Record<string, string> = users.reduce((map, user) => {
-    map[user.id] = `${user.firstName} ${user.lastName}`;
-    return map;
-  }, {} as Record<string, string>);
-
-  return Object.values(userCounts)
-    .map((item) => ({
-      ...item,
-      name: userMap[item.userId] || `Usuário ${item.userId.slice(0, 5)}...`,
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 5);
+    .sort((a, b) => b.amount - a.amount); // Remover o .slice(0, 5) aqui
 }

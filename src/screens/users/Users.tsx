@@ -77,7 +77,7 @@ export default function Users() {
   return (
     <div className="space-y-4">
       <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold text-foreground">Users</h1>
+        <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
         <ExcelExport
           onExport={exportUsers}
           filename="relatorio_usuarios"

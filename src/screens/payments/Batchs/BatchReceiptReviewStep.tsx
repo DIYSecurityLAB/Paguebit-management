@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
-import Modal from '../../components/Modal';
-import Button from '../../components/Button';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
 import { ArrowLeft, ArrowRight, Edit, Check, Eye, ZoomIn, XCircle, CheckCircle } from 'lucide-react';
-import { Payment } from '../../models/types';
-import { formatCurrency } from '../../utils/format';
-import OcrNameSuggestion from '../../components/OcrNameSuggestion';
-import ImageViewer from '../../components/ImageViewer';
+import { Payment } from '../../../models/types';
+import { formatCurrency } from '../../../utils/format';
+import OcrNameSuggestion from '../../../components/OcrNameSuggestion';
+import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
 
 interface ReviewStepProps {

@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, PlusSquare, TrendingUp, PiggyBank, AlertTriangle, TrendingDown } from 'lucide-react';
+import { ArrowLeft, PlusSquare, TrendingUp, PiggyBank, AlertTriangle, TrendingDown, Copy } from 'lucide-react';
 import { format, differenceInDays, differenceInMonths, subMonths, isSameMonth } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, ScatterChart, Scatter
@@ -16,6 +17,7 @@ import userRepository from '../../repository/user-repository';
 import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import PaymentsModal from '../payments/PaymentsModal';
+import { toast } from 'sonner';
 
 // Interfaces para os dados dos gráficos
 interface MonthlyDataItem {
@@ -56,6 +58,7 @@ export default function UserDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [copiedWallet, setCopiedWallet] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -85,6 +88,18 @@ export default function UserDetail() {
 
     fetchData();
   }, [id]);
+
+  // Função para copiar o endereço da carteira
+  const handleCopyWallet = (walletType: string, address: string) => {
+    navigator.clipboard.writeText(address);
+    setCopiedWallet(walletType);
+    toast.success('Endereço copiado com sucesso!');
+    
+    // Limpar a mensagem de copiado após alguns segundos
+    setTimeout(() => {
+      setCopiedWallet(null);
+    }, 1500);
+  };
 
   // Mover todos os cálculos para useMemo hooks para evitar problemas com ordem de hooks
   const paymentStats = useMemo(() => {
@@ -125,7 +140,7 @@ export default function UserDetail() {
       );
       
       result.push({
-        date: format(monthDate, 'MMM yyyy'),
+        date: format(monthDate, 'MMM yyyy', { locale: ptBR }),
         count: monthPayments.length
       });
     }
@@ -154,7 +169,7 @@ export default function UserDetail() {
       if (!payment.createdAt || !payment.amount) return acc;
       
       const date = new Date(payment.createdAt);
-      const month = format(date, 'MMM yyyy');
+      const month = format(date, 'MMM yyyy', { locale: ptBR });
       
       const existingMonth = acc.find(item => item.month === month);
       if (existingMonth) {
@@ -296,10 +311,26 @@ export default function UserDetail() {
                 address && (
                   <div key={type}>
                     <label className="text-sm text-muted-foreground">{type}</label>
-                    <p className="text-foreground break-all">{address}</p>
+                    <div className="flex items-center gap-2 mt-1">
+                      <p className="text-foreground break-all flex-1">{address}</p>
+                      <button
+                        type="button"
+                        className="p-1 rounded hover:bg-muted transition-colors flex-shrink-0"
+                        onClick={() => handleCopyWallet(type, address)}
+                        title="Copiar endereço da carteira"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      {copiedWallet === type && (
+                        <span className="text-xs text-green-600 ml-1">Copiado!</span>
+                      )}
+                    </div>
                   </div>
                 )
               ))}
+              {!Object.values(user.wallets).some(Boolean) && (
+                <p className="text-sm text-muted-foreground">Nenhuma carteira configurada</p>
+              )}
             </div>
           </div>
         </div>

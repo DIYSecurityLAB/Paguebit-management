@@ -9,7 +9,7 @@ import { format } from 'date-fns';
 import { useState } from 'react';
 import Button from '../../components/Button';
 import { Download } from 'lucide-react';
-import BatchReceiptDownloadModal from './BatchReceiptDownloadModal';
+import BatchReceiptDownloadModal from './Batchs/BatchReceiptDownloadModal';
 
 export default function Payments() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);

@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
-import Modal from '../../components/Modal';
-import Button from '../../components/Button';
-import paymentRepository from '../../repository/payment-repository';
-import { Payment, PaymentStatus } from '../../models/types';
+import Modal from '../../../components/Modal';
+import Button from '../../../components/Button';
+import paymentRepository from '../../../repository/payment-repository';
+import { Payment, PaymentStatus } from '../../../models/types';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import ReviewStep from './BatchReceiptReviewStep';
