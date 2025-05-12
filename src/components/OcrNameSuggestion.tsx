@@ -24,7 +24,9 @@ export default function OcrNameSuggestion({ receipt, onNameDetected }: OcrNameSu
     'sobre a transação', 'valor', 'data do pagamento', 'horário', 'dados do pagamento',
     'efí', 'banco inter', 'fitbank', 'cora', 'plebankcombr', 'fraguismo', 'quem pagou',
     // Palavras genéricas indesejadas
-    'estamos aqui para ajudar', 'me ajuda', 'ouvidoria', 'atendimento', 'informações adicionais', 'Estamos aqui para ajudar se você tiver alguma'
+    'estamos aqui para ajudar', 'me ajuda', 'ouvidoria', 'atendimento', 'informações adicionais', 'Estamos aqui para ajudar se você tiver alguma',
+    // Adicionados para evitar nomes indesejados:
+    'informações', 'informacoes', 'adicionais', 'informações adicionais'
   ];
   
 const COMMON_NAMES = [
@@ -119,14 +121,14 @@ const COMMON_NAMES = [
               }
             }
             if (nomeIdx !== -1) {
-              // Busca a próxima linha válida: pelo menos 3 letras, só letras e espaços, sem caracteres especiais
+              // Busca a próxima linha válida: pelo menos 3 letras, só letras, espaços e asteriscos, sem outros caracteres especiais
               for (let k = nomeIdx + 1; k < lines.length; k++) {
                 const candidate = lines[k];
                 const candidateLower = candidate.toLowerCase();
                 if (
                   candidate.length > 2 &&
-                  candidate.replace(/[^A-Za-zÀ-ú]/g, '').length >= 3 &&
-                  /^[A-Za-zÀ-ú\s]+$/.test(candidate) && // só letras e espaços
+                  candidate.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
+                  /^[A-Za-zÀ-ú\s*]+$/.test(candidate) && // só letras, espaços e asteriscos
                   candidateLower !== 'nome' &&
                   candidateLower !== 'nome:' &&
                   !IGNORE_KEYWORDS.some(key => candidateLower.includes(key)) &&
@@ -164,8 +166,8 @@ const COMMON_NAMES = [
                   const candidateLower = candidate.toLowerCase();
                   if (
                     candidate.length > 2 &&
-                    candidate.replace(/[^A-Za-zÀ-ú]/g, '').length >= 3 &&
-                    /^[A-Za-zÀ-ú\s]+$/.test(candidate) &&
+                    candidate.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
+                    /^[A-Za-zÀ-ú\s*]+$/.test(candidate) &&
                     candidateLower !== 'nome' &&
                     candidateLower !== 'nome:' &&
                     !IGNORE_KEYWORDS.some(key => candidateLower.includes(key)) &&
@@ -199,8 +201,8 @@ const COMMON_NAMES = [
                 const candidateLower = candidate.toLowerCase();
                 if (
                   candidate.length > 2 &&
-                  candidate.replace(/[^A-Za-zÀ-ú]/g, '').length >= 3 &&
-                  /^[A-Za-zÀ-ú\s]+$/.test(candidate) && // só letras e espaços
+                  candidate.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
+                  /^[A-Za-zÀ-ú\s*]+$/.test(candidate) && // só letras, espaços e asteriscos
                   candidateLower !== 'nome' &&
                   candidateLower !== 'nome:' &&
                   !IGNORE_KEYWORDS.some(k => candidateLower.includes(k)) &&
@@ -220,8 +222,8 @@ const COMMON_NAMES = [
         // Fallback: pega o nome mais próximo de um nome comum (até 2 caracteres de diferença)
         if (!foundName) {
           const fallbackCandidates = lines.filter(line =>
-            /^[A-ZÀ-Ú\s]{5,}$/.test(line) &&
-            line.replace(/[^A-Za-zÀ-ú]/g, '').length >= 3 &&
+            /^[A-ZÀ-Ú\s*]{5,}$/.test(line) &&
+            line.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
             !IGNORE_KEYWORDS.some(k => line.toLowerCase().includes(k)) &&
             !line.toLowerCase().includes('estamos aqui para ajudar') &&
             !line.match(/\d{5,}/) &&
@@ -249,7 +251,7 @@ const COMMON_NAMES = [
             foundName = bestCandidate;
           } else {
             foundName = fallbackCandidates.sort((a, b) =>
-              b.replace(/[^A-Za-zÀ-ú]/g, '').length - a.replace(/[^A-Za-zÀ-ú]/g, '').length
+              b.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length - a.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length
             )[0] || '';
           }
         }
@@ -257,11 +259,11 @@ const COMMON_NAMES = [
         // Se ainda não achou, pega a primeira linha não vazia com pelo menos 3 letras e só letras/espaços
         if (!foundName) {
           const candidates = lines.filter(line =>
-            line.replace(/[^A-Za-zÀ-ú]/g, '').length >= 3 &&
-            /^[A-Za-zÀ-ú\s]+$/.test(line)
+            line.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
+            /^[A-Za-zÀ-ú\s*]+$/.test(line)
           );
           foundName = candidates.sort((a, b) =>
-            b.replace(/[^A-Za-zÀ-ú]/g, '').length - a.replace(/[^A-Za-zÀ-ú]/g, '').length
+            b.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length - a.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length
           )[0] || '';
         }
 
