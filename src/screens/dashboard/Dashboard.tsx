@@ -59,10 +59,20 @@ export default function Dashboard() {
 
     // Pagamentos
     const totalPayments = payments.length;
-    const totalPaid = payments.filter(p => p.status === 'paid').reduce((sum, p) => sum + (p.amount || 0), 0);
-    const paidCount = payments.filter(p => p.status === 'paid').length;
-    const totalRetido = payments.filter(p => ['approved', 'withdrawal_processing'].includes(p.status)).reduce((sum, p) => sum + (p.amount || 0), 0);
-    const totalTransacted = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const paymentsPaid = payments.filter(p => p.status === 'paid');
+    const totalPaid = paymentsPaid.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const paidCount = paymentsPaid.length;
+    const paymentsRetidos = payments.filter(p => ['approved', 'withdrawal_processing'].includes(p.status));
+    const totalRetido = paymentsRetidos.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const retidoCount = paymentsRetidos.length;
+    const totalTransacted = payments.reduce((sum, p) => sum + (p.amount || 0), 0) +
+      withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
+    const totalPaymentsAndWithdrawalsCount = payments.length + withdrawals.length;
+
+    // Valor total de saques concluídos
+    const withdrawalsCompleted = withdrawals.filter(w => w.status === 'completed');
+    const totalWithdrawalsCompleted = withdrawalsCompleted.reduce((sum, w) => sum + (w.amount || 0), 0);
+    const withdrawalsCompletedCount = withdrawalsCompleted.length;
 
     // Pagamentos por status
     const paymentsByStatus = processPaymentsByStatus(payments);
@@ -87,7 +97,13 @@ export default function Dashboard() {
       receiptsCount,
       withdrawalsProcessingCount,
       withdrawalsPendingCount,
-      withdrawalsToProcessCount
+      withdrawalsToProcessCount,
+      totalWithdrawalsCompleted,
+      withdrawalsCompletedCount,
+      totalPaymentsCount: payments.length,
+      totalWithdrawalsCount: withdrawals.length,
+      totalPaymentsAndWithdrawalsCount,
+      retidoCount
     };
   }, [usersData, paymentsData, withdrawalsData]);
 
@@ -221,24 +237,42 @@ export default function Dashboard() {
         <StatCard 
           title="Total Movimentado" 
           value={formatCurrency(stats.totalTransacted)} 
+          subtext={
+            <span className="text-muted-foreground">
+              {stats.totalPaymentsAndWithdrawalsCount} movim. 
+              <span className="ml-1">({stats.totalPaymentsCount} pag., {stats.totalWithdrawalsCount} saq.)</span>
+            </span>
+          }
           icon={<BarChart3 className="h-5 w-5 text-indigo-500" />}
           linkTo="/payments"
-          loading={loadingPayments}
+          loading={loadingPayments || loadingWithdrawals}
         />
         <StatCard 
-          title="Pagamentos Pagos" 
-          value={stats.paidCount} 
-          subtext={formatCurrency(stats.totalPaid)}
+          title="Saques Concluídos" 
+          value={formatCurrency(stats.totalWithdrawalsCompleted)} 
+          subtext={
+            <span className="text-muted-foreground">
+              {stats.paidCount} pag. pagos, {stats.withdrawalsCompletedCount} saq. concluídos
+            </span>
+          }
           icon={<DollarSign className="h-5 w-5 text-green-500" />}
-          linkTo="/payments"
-          loading={loadingPayments}
+          linkTo="/withdrawals?status=completed"
+          loading={loadingWithdrawals || loadingPayments}
         />
         <StatCard 
           title="Pagamentos Retidos" 
           value={formatCurrency(stats.totalRetido)} 
+          subtext={
+            <span className="text-muted-foreground">
+              {stats.retidoCount} pag. retidos
+              {stats.withdrawalsPendingCount > 0 && (
+                <> &middot; {stats.withdrawalsPendingCount} saq. pendentes</>
+              )}
+            </span>
+          }
           icon={<CreditCard className="h-5 w-5 text-orange-500" />}
           linkTo="/payments"
-          loading={loadingPayments}
+          loading={loadingPayments || loadingWithdrawals}
         />
       </div>
 
@@ -331,7 +365,7 @@ function StatCard({
           ) : (
             <>
               <p className="text-lg font-bold text-foreground mt-1">{value}</p>
-              {subtext && <p className="text-xs text-accent">{subtext}</p>}
+              {subtext && <p className="text-xs text-muted-foreground">{subtext}</p>}
             </>
           )}
         </div>
