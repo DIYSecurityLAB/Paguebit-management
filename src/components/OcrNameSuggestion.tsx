@@ -4,11 +4,13 @@ import Tesseract from 'tesseract.js';
 interface OcrNameSuggestionProps {
   receipt: string | undefined;
   onNameDetected?: (name: string) => void;
+  onFraguismoCheck?: (hasFraguismo: boolean) => void; // NOVO: callback opcional para informar se "fraguismo" está presente
 }
 
-export default function OcrNameSuggestion({ receipt, onNameDetected }: OcrNameSuggestionProps) {
+export default function OcrNameSuggestion({ receipt, onNameDetected, onFraguismoCheck }: OcrNameSuggestionProps) {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [suggestedName, setSuggestedName] = useState<string>('');
+  const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
 
   // Palavras-chave para identificar o pagador
   const PAYER_KEYWORDS = [
@@ -58,7 +60,7 @@ const COMMON_NAMES = [
   'amaral', 'gonzaga', 'lopes', 'marques', 'albuquerque', 'braga', 'nogueira', 'carvalho',
   'teixeira', 'henrique', 'nunes', 'damasceno', 'meireles', 'rodrigues', 'amigo', 
   'dos santos', 'peixoto', 'gama', 'mota', 'romero', 'lemos', 'tavares', 'prado', 
-  'ribeiro', 'almeida', 'santos', 'coelho', 'batista', 'parente', 'ramos', 'barroso',
+  'ribeiro', 'almeida', 'santos', 'coelho', 'batista', 'parente', 'ramos', 'barroso', 'maria', 'barbosa'
 ];
 
   // Função para calcular a distância de Levenshtein entre duas strings
@@ -84,6 +86,7 @@ const COMMON_NAMES = [
 
   useEffect(() => {
     setSuggestedName('');
+    setHasFraguismo(null);
     if (!receipt) return;
 
     setOcrLoading(true);
@@ -104,6 +107,11 @@ const COMMON_NAMES = [
 
         const normalizedLines = lines.map(line => line.toLowerCase());
         let foundName = '';
+
+        // NOVO: verificar se "fraguismo" aparece em alguma linha
+        const hasFraguismoLocal = normalizedLines.some(line => line.includes('fraguismo'));
+        setHasFraguismo(hasFraguismoLocal);
+        if (onFraguismoCheck) onFraguismoCheck(hasFraguismoLocal);
 
         // Regex para detectar CNPJ/CPF/números longos
         const cpfCnpjRegex = /\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{11,})\b/;
@@ -134,7 +142,8 @@ const COMMON_NAMES = [
                   !IGNORE_KEYWORDS.some(key => candidateLower.includes(key)) &&
                   !candidate.match(/\d{5,}/) &&
                   !candidate.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
-                  !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, ''))
+                  !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, '')) &&
+                  !candidateLower.includes('fraguismo') // NUNCA sugerir linha com "fraguismo"
                 ) {
                   // Remove prefixo "nome" se existir no início
                   const processedCandidate = candidate.replace(/^nome[:\s]+/i, '').trim();
@@ -173,7 +182,8 @@ const COMMON_NAMES = [
                     !IGNORE_KEYWORDS.some(key => candidateLower.includes(key)) &&
                     !candidate.match(/\d{5,}/) &&
                     !candidate.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
-                    !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, ''))
+                    !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, '')) &&
+                    !candidateLower.includes('fraguismo')
                   ) {
                     const processedCandidate = candidate.replace(/^nome[:\s]+/i, '').trim();
                     if (processedCandidate.length >= 3) {
@@ -208,7 +218,8 @@ const COMMON_NAMES = [
                   !IGNORE_KEYWORDS.some(k => candidateLower.includes(k)) &&
                   !candidate.match(/\d{5,}/) &&
                   !candidate.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
-                  !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, ''))
+                  !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, '')) &&
+                  !candidateLower.includes('fraguismo')
                 ) {
                   foundName = candidate;
                   break;
@@ -228,7 +239,8 @@ const COMMON_NAMES = [
             !line.toLowerCase().includes('estamos aqui para ajudar') &&
             !line.match(/\d{5,}/) &&
             !line.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
-            !cpfCnpjRegex.test(line.replace(/[ .\-\/]/g, ''))
+            !cpfCnpjRegex.test(line.replace(/[ .\-\/]/g, '')) &&
+            !line.toLowerCase().includes('fraguismo')
           ).map(candidate => candidate.replace(/^nome[:\s]+/i, '').trim());
 
           // Busca o candidato com menor distância de Levenshtein para qualquer nome comum
@@ -260,7 +272,8 @@ const COMMON_NAMES = [
         if (!foundName) {
           const candidates = lines.filter(line =>
             line.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
-            /^[A-Za-zÀ-ú\s*]+$/.test(line)
+            /^[A-Za-zÀ-ú\s*]+$/.test(line) &&
+            !line.toLowerCase().includes('fraguismo')
           );
           foundName = candidates.sort((a, b) =>
             b.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length - a.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length
@@ -275,6 +288,26 @@ const COMMON_NAMES = [
           foundName = '';
         }
 
+        // ETAPA EXTRA: se a sugestão final ainda contiver "fraguismo", buscar a primeira linha que contenha um common name completo
+        if (foundName && foundName.toLowerCase().includes('fraguismo')) {
+          // Filtra todas as linhas que contenham pelo menos um common name completo e não contenham "fraguismo"
+          const commonCandidates = lines.filter(line => {
+            const words = line.toLowerCase().split(/\s+/);
+            return words.some(word => COMMON_NAMES.includes(word)) && !line.toLowerCase().includes('fraguismo');
+          });
+          if (commonCandidates.length > 0) {
+            // Escolhe a linha com maior comprimento, presumindo ser mais completa
+            foundName = commonCandidates.sort((a, b) => b.length - a.length)[0];
+          } else {
+            foundName = 'Nome não identificado';
+          }
+        }
+
+        // Se ainda não achou nada, define como "Nome não identificado"
+        if (!foundName) {
+          foundName = 'Nome não identificado';
+        }
+
         if (!cancelled) {
           setSuggestedName(foundName);
           // Chamar o callback se fornecido
@@ -283,7 +316,10 @@ const COMMON_NAMES = [
           }
         }
       } catch {
-        if (!cancelled) setSuggestedName('');
+        if (!cancelled) {
+          setSuggestedName('Nome não identificado');
+          setHasFraguismo(null);
+        }
       } finally {
         if (!cancelled) setOcrLoading(false);
       }
@@ -291,7 +327,7 @@ const COMMON_NAMES = [
 
     extractName();
     return () => { cancelled = true; };
-  }, [receipt, onNameDetected]);
+  }, [receipt, onNameDetected, onFraguismoCheck]);
 
   return (
     <div className="text-xs text-muted-foreground mt-1 min-h-[18px]">
@@ -301,10 +337,7 @@ const COMMON_NAMES = [
           <span>
             Nome identificado pelo OCR:{" "}
             <span className="font-semibold">
-              {suggestedName ||
-                // Sugestão aleatória da lista de nomes comuns
-                COMMON_NAMES[Math.floor(Math.random() * COMMON_NAMES.length)]
-              }
+              {suggestedName}
             </span>
           </span>
         )

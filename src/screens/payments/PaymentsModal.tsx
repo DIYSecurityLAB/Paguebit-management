@@ -23,6 +23,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [isLoading, setIsLoading] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation(
@@ -241,9 +242,18 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
                   <div className="text-xs text-muted-foreground">
                     {window.innerWidth > 640 ? 'Clique para ampliar' : 'Toque para ampliar'}
                   </div>
-                  <OcrNameSuggestion receipt={payment.receipt} />
+                  <OcrNameSuggestion
+                    receipt={payment.receipt}
+                    onFraguismoCheck={setHasFraguismo}
+                  />
+                  {/* AVISO extra caso não tenha "fraguismo" - mostrar só aqui */}
                 </div>
               </div>
+              {hasFraguismo === false && (
+                <div className="text-xs text-red-500 font-semibold mb-2">
+                  Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
+                </div>
+              )}
               <div 
                 className="relative group border border-border rounded-lg overflow-hidden aspect-[4/3] cursor-pointer shadow-sm hover:shadow-md transition-shadow"
                 onClick={() => setIsImageViewerOpen(true)}

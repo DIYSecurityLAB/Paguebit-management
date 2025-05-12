@@ -33,6 +33,7 @@ export default function ReviewStep({
   const [isEditing, setIsEditing] = useState(false);
   const [isIgnored, setIsIgnored] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
 
   const currentPayment = payments[currentIndex];
   const isLastPayment = currentIndex === payments.length - 1;
@@ -51,6 +52,14 @@ export default function ReviewStep({
       }
     }
   }, [currentPayment, reviewedPayments]);
+
+  // NOVO: controlar se o nome foi editado manualmente
+  const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
+
+  // Resetar flag de edição manual ao trocar de comprovante
+  useEffect(() => {
+    setNameManuallyEdited(false);
+  }, [currentPayment]);
 
   // Salvar o comprovante atual no estado
   const saveCurrentReview = () => {
@@ -127,6 +136,7 @@ export default function ReviewStep({
               Revise os comprovantes e os nomes identificados pelo OCR. 
               Você pode editar os nomes se necessário. Ao final, será gerado um PDF com a lista de doações e as imagens dos comprovantes.
             </p>
+          
           </div>
 
           {/* Progresso */}
@@ -170,7 +180,10 @@ export default function ReviewStep({
                       <Button 
                         variant="ghost" 
                         size="sm" 
-                        onClick={() => setIsEditing(false)}
+                        onClick={() => {
+                          setIsEditing(false);
+                          setNameManuallyEdited(true); // Marcar como editado manualmente
+                        }}
                         leftIcon={<Check className="h-4 w-4" />}
                       >
                         Confirmar
@@ -192,27 +205,38 @@ export default function ReviewStep({
                     <input
                       type="text"
                       value={currentName}
-                      onChange={(e) => setCurrentName(e.target.value)}
+                      onChange={(e) => {
+                        setCurrentName(e.target.value);
+                        setNameManuallyEdited(true); // Marcar como editado manualmente ao digitar
+                      }}
                       className="w-full p-2 border border-input rounded-md mt-1 dark:bg-background dark:text-foreground"
                       placeholder="Digite o nome correto"
                     />
                   ) : (
                     <div className="flex items-center mt-1">
-                      {currentName ? (
-                        <p className={`font-medium ${isIgnored ? 'text-muted-foreground line-through' : ''}`}>
-                          {currentName}
-                        </p>
-                      ) : (
-                        <div className="w-full">
+                      <div className="w-full">
+                        {/* Só roda o OCR se o nome não foi editado manualmente */}
+                        {!nameManuallyEdited && (
                           <OcrNameSuggestion 
                             receipt={currentPayment.receipt} 
                             onNameDetected={setCurrentName}
+                            onFraguismoCheck={setHasFraguismo}
                           />
-                        </div>
-                      )}
+                        )}
+                        {/* Se já editou manualmente, mostra apenas o nome */}
+                        {nameManuallyEdited && (
+                          <span className="font-medium">{currentName}</span>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
+                  {/* AVISO global para o comprovante atual */}
+            {hasFraguismo === false && (
+              <div className="text-xs text-red-500 font-semibold mt-2">
+                Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
+              </div>
+            )}
 
                 {/* Comprovante */}
                 <div>

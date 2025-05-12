@@ -52,6 +52,15 @@ export default function SummaryStep({
     }
   };
 
+  // NOVO: verificar se algum nome não contém "fraguismo"
+  const anyMissingFraguismo = validPayments.some(item =>
+    !item.name?.toLowerCase().includes('fraguismo')
+  );
+  // NOVO: lista de ids dos comprovantes sem "fraguismo"
+  const missingFraguismoIds = validPayments
+    .filter(item => !item.name?.toLowerCase().includes('fraguismo'))
+    .map(item => item.payment.id);
+
   return (
     <>
       <Modal
@@ -70,6 +79,12 @@ export default function SummaryStep({
                 </span>
               )}
             </p>
+            {/* AVISO extra caso algum não tenha "fraguismo" */}
+            {anyMissingFraguismo && (
+              <div className="text-xs text-red-500 font-semibold mt-2">
+                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "fraguismo" identificado. Verifique se o comprovante corresponde ao destino correto!
+              </div>
+            )}
           </div>
 
           <div className="text-sm text-muted-foreground flex justify-between">
@@ -114,7 +129,14 @@ export default function SummaryStep({
                           />
                         ) : (
                           <span 
-                            className={`${item.ignored ? 'line-through' : ''} cursor-pointer hover:underline`}
+                            className={
+                              [
+                                item.ignored ? 'line-through' : '',
+                                // NOVO: vermelho se não tem "fraguismo" e não está ignorado
+                                !item.ignored && !item.name?.toLowerCase().includes('fraguismo') ? 'text-red-500 font-semibold' : '',
+                                'cursor-pointer hover:underline'
+                              ].join(' ')
+                            }
                             onClick={() => !item.ignored && startEditing(item)}
                             title="Clique para editar"
                           >
