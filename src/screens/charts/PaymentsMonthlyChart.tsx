@@ -102,9 +102,9 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
         {/* Filtros de categoria */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveCategory('all')}
             className={`px-2 py-1 text-xs rounded ${
@@ -137,7 +137,7 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
           </button>
         </div>
         {/* Filtros de período */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setPeriod('day')}
             className={`px-2 py-1 text-xs rounded ${
@@ -169,7 +169,7 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
             Mês
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">{getCategoryTitle()} {getPeriodTitle()}</span>
+        <span className="text-xs text-muted-foreground hidden sm:inline-block">{getCategoryTitle()} {getPeriodTitle()}</span>
       </div>
       <div className="flex-1">
         <ResponsiveContainer width="100%" height={height}>

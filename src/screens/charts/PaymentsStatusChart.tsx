@@ -101,8 +101,8 @@ export default function PaymentsStatusChart({ paymentsByStatus, loading, height 
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveMetric('count')}
             className={`px-2 py-1 text-xs rounded ${
@@ -125,54 +125,72 @@ export default function PaymentsStatusChart({ paymentsByStatus, loading, height 
           </button>
         </div>
       </div>
-
-      <div className="flex-1">
-        <ResponsiveContainer width="100%" height={height}>
-          <PieChart>
-            <Pie
-              activeIndex={activeIndex}
-              activeShape={renderActiveShape}
-              data={data}
-              dataKey={activeMetric}
-              nameKey="statusLabel"
-              cx="50%"
-              cy="50%"
-              outerRadius={height / 3}
-              innerRadius={height / 6}
-              paddingAngle={2}
-            >
-              {data.map((entry, idx) => (
-                <Cell key={entry.status} fill={COLORS[idx % COLORS.length]} />
-              ))}
-            </Pie>
-            <Tooltip 
-              formatter={(value, name, props) => {
-                if (activeMetric === 'amount') {
+      {/* Gráfico em cima, legenda/descrição embaixo no mobile e desktop */}
+      <div className="flex flex-col flex-1 gap-4 items-center">
+        <div className="flex-1 min-w-0 flex flex-col items-center w-full">
+          <ResponsiveContainer width="100%" height={height}>
+            <PieChart>
+              <Pie
+                activeIndex={activeIndex}
+                activeShape={renderActiveShape}
+                data={data}
+                dataKey={activeMetric}
+                nameKey="statusLabel"
+                cx="50%"
+                cy="50%"
+                outerRadius={height / 3}
+                innerRadius={height / 6}
+                paddingAngle={2}
+                onClick={(_, idx) => setActiveIndex(idx)}
+              >
+                {data.map((entry, idx) => (
+                  <Cell key={entry.status} fill={COLORS[idx % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip 
+                formatter={(value, name, props) => {
+                  if (activeMetric === 'amount') {
+                    return [
+                      <div className="text-white">
+                        {formatCurrency(value as number)} <span className="text-xs text-gray-300">({props.payload.count} transações)</span>
+                      </div>,
+                      name
+                    ];
+                  }
                   return [
                     <div className="text-white">
-                      {formatCurrency(value as number)} <span className="text-xs text-gray-300">({props.payload.count} transações)</span>
+                      {value} transações <span className="text-xs text-gray-300">({formatCurrency(props.payload.amount)})</span>
                     </div>,
                     name
                   ];
-                }
-                return [
-                  <div className="text-white">
-                    {value} transações <span className="text-xs text-gray-300">({formatCurrency(props.payload.amount)})</span>
-                  </div>,
-                  name
-                ];
-              }}
-              contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
-              labelStyle={{ color: '#fff' }}
-            />
-            <Legend 
-              layout="vertical" 
-              verticalAlign="middle" 
-              align="right" 
-              content={renderCustomizedLegend}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+                }}
+                contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
+                labelStyle={{ color: '#fff' }}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+          {/* Legenda/descrição abaixo do gráfico, responsiva e funcional */}
+          <div className="w-full mt-4">
+            <div className="flex flex-wrap justify-center gap-2">
+              {data.map((entry, idx) => (
+                <div
+                  key={entry.status}
+                  className={`flex items-center gap-1 text-xs cursor-pointer ${activeIndex === idx ? 'font-semibold' : ''}`}
+                  onClick={() => setActiveIndex(activeIndex === idx ? undefined : idx)}
+                >
+                  <span
+                    className="inline-block w-3 h-3 rounded-sm"
+                    style={{ backgroundColor: COLORS[idx % COLORS.length] }}
+                  />
+                  <span>{entry.statusLabel}</span>
+                  <span className="ml-1 text-xs text-muted-foreground">
+                    ({activeMetric === 'count' ? entry.count : formatCurrency(entry.amount)})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

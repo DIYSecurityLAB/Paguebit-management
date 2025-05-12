@@ -78,3 +78,29 @@
     font-family: 'Lexend Deca', sans-serif;
   }
 }
+
+/* Adicione este código para a animação de virar cartas */
+@layer utilities {
+  .card-flip {
+    perspective: 1000px;
+    transform-style: preserve-3d;
+  }
+
+  .card-front,
+  .card-back {
+    backface-visibility: hidden;
+    transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+  }
+
+  .card-back {
+    transform: rotateY(180deg);
+  }
+
+  .flipped .card-front {
+    transform: rotateY(180deg);
+  }
+
+  .flipped .card-back {
+    transform: rotateY(0deg);
+  }
+}

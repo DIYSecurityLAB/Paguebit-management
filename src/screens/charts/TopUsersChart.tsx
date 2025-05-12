@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 
 interface UserData {
   userId: string;
@@ -20,6 +21,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 export default function TopUsersChart({ data, loading, valueFormatter, height = 250 }: Props) {
   const [activeMetric, setActiveMetric] = useState<'amount' | 'count'>('amount');
   const [limit, setLimit] = useState(5);
+  const navigate = useNavigate();
   
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
   
@@ -49,8 +51,8 @@ export default function TopUsersChart({ data, loading, valueFormatter, height = 
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <div className="flex gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveMetric('amount')}
             className={`px-2 py-1 text-xs rounded ${
@@ -72,9 +74,8 @@ export default function TopUsersChart({ data, loading, valueFormatter, height = 
             Quantidade
           </button>
         </div>
-
         {/* Seletor de limite (direita) */}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap justify-center items-center gap-3">
           <span className="text-xs text-muted-foreground">
             Mostrando {sortedData.length} de {totalUsers}
           </span>
@@ -152,6 +153,14 @@ export default function TopUsersChart({ data, loading, valueFormatter, height = 
               dataKey={activeMetric}
               radius={[4, 4, 0, 0]}
               maxBarSize={35}
+              // Adiciona evento de clique na barra para navegar para detalhes do usuário
+              onClick={(_, idx) => {
+                const user = sortedData[idx];
+                if (user?.userId) {
+                  navigate(`/users/${user.userId}`);
+                }
+              }}
+              cursor="pointer"
             >
               {sortedData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

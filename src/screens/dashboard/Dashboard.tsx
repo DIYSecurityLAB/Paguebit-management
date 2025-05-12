@@ -21,6 +21,8 @@ import PaymentsDistributionChart from '../charts/PaymentsDistributionChart';
 // import WalletsUsageChart from '../charts/WalletsUsageChart';
 import PaymentTypeChart from '../charts/PaymentTypeChart';
 import ReferralsChart from '../charts/ReferralsChart';
+// ADICIONAR:
+import ActiveUsersChart from '../charts/ActiveUsersChart';
 
 import { User, Payment, Withdrawal } from '../../models/types';
 
@@ -323,8 +325,19 @@ export default function Dashboard() {
           title="Crescimento de Usuários" 
           content={<UsersGrowthChart users={usersData?.data || []} loading={loadingUsers} height={220} />} 
         />
+        {/* NOVO GRÁFICO DE USUÁRIOS ATIVOS */}
+        <ChartCard 
+          title="Usuários Ativos (pagamento retido ou pago)" 
+          content={
+            <ActiveUsersChart 
+              users={usersData?.data || []} 
+              payments={paymentsData?.data || []} 
+              loading={loadingUsers || loadingPayments} 
+              height={220}
+            />
+          }
+        />
       </div>
-
       {/* Pagamentos mensais */}
       <ChartCard 
         title="Pagamentos Mensais" 

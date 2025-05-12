@@ -81,9 +81,9 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
         {/* Filtros de categoria */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveCategory('all')}
             className={`px-2 py-1 text-xs rounded ${
@@ -115,9 +115,8 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
             Pagos
           </button>
         </div>
-        
         {/* Filtros de métrica */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveMetric('count')}
             className={`px-2 py-1 text-xs rounded ${
@@ -139,8 +138,8 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
             Valor
           </button>
         </div>
-        
-        <span className="text-xs text-muted-foreground">{getCategoryTitle()} por valor • {getMetricTitle()}</span>
+        {/* Texto só em telas médias para cima */}
+        <span className="text-xs text-muted-foreground hidden sm:inline-block">{getCategoryTitle()} por valor • {getMetricTitle()}</span>
       </div>
       <div className="flex-1">
         {!hasData ? (

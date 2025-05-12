@@ -113,9 +113,9 @@ export default function UsersGrowthChart({ users, loading, height = 250 }: Props
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
         {/* Filtros de métrica */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setMetric('total')}
             className={`px-2 py-1 text-xs rounded ${
@@ -138,7 +138,7 @@ export default function UsersGrowthChart({ users, loading, height = 250 }: Props
           </button>
         </div>
         {/* Filtros de período */}
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setPeriod('day')}
             className={`px-2 py-1 text-xs rounded ${
@@ -170,7 +170,7 @@ export default function UsersGrowthChart({ users, loading, height = 250 }: Props
             Mês
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">{getMetricTitle()} {getPeriodTitle()}</span>
+        <span className="text-xs text-muted-foreground hidden sm:inline-block">{getMetricTitle()} {getPeriodTitle()}</span>
       </div>
       <div className="flex-1">
         <ResponsiveContainer width="100%" height={height}>

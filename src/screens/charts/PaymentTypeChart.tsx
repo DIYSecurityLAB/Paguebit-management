@@ -107,9 +107,9 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
 
   return (
     <div style={containerStyle}>
-      <div className="flex justify-between items-center mb-4">
-        {/* Filtros de métrica (esquerda) */}
-        <div className="flex gap-1.5">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+        {/* Filtros de métrica */}
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveMetric('count')}
             className={`px-2 py-1 text-xs rounded ${
@@ -131,9 +131,8 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
             Valor
           </button>
         </div>
-
-        {/* Filtros de categoria (direita) */}
-        <div className="flex gap-1.5">
+        {/* Filtros de categoria */}
+        <div className="flex flex-wrap justify-center gap-1.5">
           <button
             onClick={() => setActiveCategory('all')}
             className={`px-2 py-1 text-xs rounded ${

@@ -87,16 +87,18 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex justify-between items-center mb-4">
-        <div className="text-xs text-muted-foreground">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
+        <div className="text-xs text-muted-foreground text-center sm:text-left">
           Mostrando {data.length} de {totalSources} fontes
         </div>
-        <button
-          onClick={() => setExpanded(!expanded)}
-          className="px-2 py-1 text-xs rounded bg-muted text-muted-foreground hover:bg-muted/80"
-        >
-          {expanded ? 'Mostrar menos' : 'Ver todas'}
-        </button>
+        <div className="flex flex-wrap justify-center gap-1.5">
+          <button
+            onClick={() => setExpanded(!expanded)}
+            className="px-2 py-1 text-xs rounded bg-muted text-muted-foreground hover:bg-muted/80"
+          >
+            {expanded ? 'Mostrar menos' : 'Ver todas'}
+          </button>
+        </div>
       </div>
 
       <div className="flex-1">
