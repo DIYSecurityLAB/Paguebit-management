@@ -33,73 +33,72 @@ const NAME_MAPPINGS: Record<string, string> = {
 
 // Função para normalizar nomes de referência
 function normalizeReferralName(referral: string): string {
-  // Converter para minúsculo e remover espaços extras
   const normalized = referral.toLowerCase().trim();
-  
-  // Verificar se existe um mapeamento direto
   if (NAME_MAPPINGS[normalized]) {
     return NAME_MAPPINGS[normalized];
   }
-
-  // Se não houver mapeamento direto, retornar o nome normalizado
   return normalized;
 }
 
 export default function ReferralsChart({ users, loading, height = 250, limit = 5 }: Props) {
+  // HOOKS DEVEM SER SEMPRE CHAMADOS NA MESMA ORDEM!
+  // 1. useState
   const [expanded, setExpanded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [modalReferral, setModalReferral] = useState<string | null>(null);
   const [modalReferralIdx, setModalReferralIdx] = useState<number | null>(null);
 
+  // 2. useMemo para processar dados
+  const { data, totalSources, usersByReferral } = useMemo(() => {
+    // Processar e agrupar os dados de indicação
+    const referralCounts: Record<string, number> = {};
+    let noReferralCount = 0;
+
+    users.forEach(user => {
+      if (user.referral) {
+        const normalizedReferral = normalizeReferralName(user.referral);
+        if (normalizedReferral) {
+          referralCounts[normalizedReferral] = (referralCounts[normalizedReferral] || 0) + 1;
+        } else {
+          noReferralCount++;
+        }
+      } else {
+        noReferralCount++;
+      }
+    });
+
+    // Adicionar contagem sem indicação
+    referralCounts['sem_indicacao'] = noReferralCount;
+
+    // Converter para array e ordenar (sem limite quando expandido)
+    const dataArr = Object.entries(referralCounts)
+      .map(([source, count]) => ({
+        name: source === 'sem_indicacao' ? 'Sem Indicação' : source,
+        count
+      }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, expanded ? undefined : limit);
+
+    const totalSources = Object.keys(referralCounts).length;
+
+    // Mapear usuários por indicação
+    const usersByReferral: Record<string, User[]> = {};
+    users.forEach(user => {
+      const ref = user.referral ? normalizeReferralName(user.referral) : 'sem_indicacao';
+      if (!usersByReferral[ref]) usersByReferral[ref] = [];
+      usersByReferral[ref].push(user);
+    });
+
+    return { data: dataArr, totalSources, usersByReferral };
+  }, [users, expanded, limit]);
+
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
-  
+
   if (!users?.length) return (
     <div className="flex items-center justify-center h-32 text-sm text-muted-foreground">
       Sem dados disponíveis
     </div>
   );
-
-  // Processar e agrupar os dados de indicação
-  const referralCounts: Record<string, number> = {};
-  let noReferralCount = 0;
-
-  users.forEach(user => {
-    if (user.referral) {
-      const normalizedReferral = normalizeReferralName(user.referral);
-      if (normalizedReferral) {
-        referralCounts[normalizedReferral] = (referralCounts[normalizedReferral] || 0) + 1;
-      } else {
-        noReferralCount++;
-      }
-    } else {
-      noReferralCount++;
-    }
-  });
-
-  // Adicionar contagem sem indicação
-  referralCounts['sem_indicacao'] = noReferralCount;
-
-  // Converter para array e ordenar (sem limite quando expandido)
-  const data = Object.entries(referralCounts)
-    .map(([source, count]) => ({ 
-      name: source === 'sem_indicacao' ? 'Sem Indicação' : source,
-      count
-    }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, expanded ? undefined : limit); // Aplicar limite apenas quando não expandido
-
-  const totalSources = Object.keys(referralCounts).length;
-
-  // Mapear usuários por indicação
-  const usersByReferral = useMemo(() => {
-    const map: Record<string, User[]> = {};
-    users.forEach(user => {
-      const ref = user.referral ? normalizeReferralName(user.referral) : 'sem_indicacao';
-      if (!map[ref]) map[ref] = [];
-      map[ref].push(user);
-    });
-    return map;
-  }, [users]);
 
   // Handler para abrir modal e setar índice
   const handleBarClick = (_: any, idx: number) => {
