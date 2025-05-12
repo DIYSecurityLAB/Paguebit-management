@@ -92,7 +92,9 @@ export default function Dashboard() {
   }, [usersData, paymentsData, withdrawalsData]);
 
   // Verificar se há alguma tarefa pendente
-  const hasPendingTasks = stats.receiptsCount > 0 || stats.withdrawalsToProcessCount > 0;
+  const hasReceiptPendingTasks = stats.receiptsCount > 0;
+  const hasWithdrawalPendingTasks = stats.withdrawalsToProcessCount > 0;
+  const hasPendingTasks = hasReceiptPendingTasks || hasWithdrawalPendingTasks;
 
   return (
     <div className="space-y-4">
@@ -139,52 +141,72 @@ export default function Dashboard() {
           </div>
         )}
 
-        {/* Avisos de comprovantes e saques (quando os dados já foram carregados) */}
-        {!loadingPayments && stats.receiptsCount > 0 && (
-          <Link to="/payments?status=receipt_sent" className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 hover:bg-amber-500/20 transition-colors">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-amber-500" />
-              <div>
-                <h3 className="font-medium text-amber-500">Comprovantes para verificar</h3>
-                <p className="text-sm text-muted-foreground">
-                  <strong>{stats.receiptsCount}</strong> pagamento(s) com comprovante enviado aguardando verificação
-                </p>
+        {/* Avisos de comprovantes (quando os dados já foram carregados) */}
+        {!loadingPayments && (
+          <>
+            {stats.receiptsCount > 0 ? (
+              <Link to="/payments?status=receipt_sent" className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 hover:bg-amber-500/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
+                  <div>
+                    <h3 className="font-medium text-amber-500">Comprovantes para verificar</h3>
+                    <p className="text-sm text-muted-foreground">
+                      <strong>{stats.receiptsCount}</strong> pagamento(s) com comprovante enviado aguardando verificação
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <div>
+                    <h3 className="font-medium text-green-500">Sem comprovantes pendentes</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Não há comprovantes para verificar no momento.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </Link>
+            )}
+          </>
         )}
         
-        {!loadingWithdrawals && stats.withdrawalsToProcessCount > 0 && (
-          <Link to="/withdrawals?status=pending,processing" className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 hover:bg-blue-500/20 transition-colors">
-            <div className="flex items-center gap-2">
-              <AlertCircle className="h-5 w-5 text-blue-500" />
-              <div>
-                <h3 className="font-medium text-blue-500">Saques para processar</h3>
-                <p className="text-sm text-muted-foreground">
-                  <strong>{stats.withdrawalsToProcessCount}</strong> saque(s) aguardando processamento
-                  {stats.withdrawalsPendingCount > 0 && stats.withdrawalsProcessingCount > 0 && (
-                    <span> ({stats.withdrawalsPendingCount} pendentes e {stats.withdrawalsProcessingCount} em processamento)</span>
-                  )}
-                </p>
+        {/* Avisos de saques (quando os dados já foram carregados) */}
+        {!loadingWithdrawals && (
+          <>
+            {stats.withdrawalsToProcessCount > 0 ? (
+              <Link to="/withdrawals?status=pending,processing" className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 hover:bg-blue-500/20 transition-colors">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-blue-500" />
+                  <div>
+                    <h3 className="font-medium text-blue-500">Saques para processar</h3>
+                    <p className="text-sm text-muted-foreground">
+                      <strong>{stats.withdrawalsToProcessCount}</strong> saque(s) aguardando processamento
+                      {stats.withdrawalsPendingCount > 0 && stats.withdrawalsProcessingCount > 0 && (
+                        <span> ({stats.withdrawalsPendingCount} pendentes e {stats.withdrawalsProcessingCount} em processamento)</span>
+                      )}
+                    </p>
+                  </div>
+                </div>
+              </Link>
+            ) : (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-5 w-5 text-green-500" />
+                  <div>
+                    <h3 className="font-medium text-green-500">Sem saques pendentes</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Não há saques para processar no momento.
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
-          </Link>
+            )}
+          </>
         )}
 
-        {/* Mensagem de "tudo em dia" (somente quando não está carregando e não há tarefas pendentes) */}
-        {!loadingPayments && !loadingWithdrawals && !hasPendingTasks && (
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 col-span-1 md:col-span-2">
-            <div className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              <div>
-                <h3 className="font-medium text-green-500">Tudo em dia!</h3>
-                <p className="text-sm text-muted-foreground">
-                  Não há comprovantes para verificar ou saques para processar no momento.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Removemos a mensagem geral de "tudo em dia" pois agora mostramos mensagens específicas */}
       </div>
 
       {/* Cards de estatísticas (menores e mais compactos) */}

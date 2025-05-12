@@ -178,37 +178,38 @@ export default function PaymentsCard() {
 
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-        <div className="w-full sm:w-auto flex flex-col gap-3">
+      {/* Cabeçalho e filtros */}
+      <div className="space-y-3">
+        {/* Botão de expansão de filtros (apenas mobile) */}
+        <div className="sm:hidden">
           <button
             onClick={() => setFiltersExpanded(!filtersExpanded)}
-            className="sm:hidden px-4 py-2 bg-card border border-border rounded-md text-sm text-foreground font-medium flex justify-between items-center w-full"
+            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
           >
-            <span>{filtersExpanded ? "Ocultar filtros" : "Ver filtros"}</span>
+            <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
             {filtersExpanded ? (
               <ChevronUp className="h-4 w-4 ml-2" />
             ) : (
               <ChevronDown className="h-4 w-4 ml-2" />
             )}
           </button>
-          
-          {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
-          <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
-            <FilterBar
-              filters={filterOptions}
-              onFilterChange={handleFilterChange}
-              isLoading={isFiltering && isLoading}
-            />
-          </div>
         </div>
         
-        {/* Ordenação - agora dentro do flex container principal */}
-        <div className="w-full sm:w-auto mt-2 sm:mt-0">
+        {/* Filtros (visíveis em desktop ou quando expandidos em mobile) */}
+        <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
+          <FilterBar
+            filters={filterOptions}
+            onFilterChange={handleFilterChange}
+            isLoading={isFiltering && isLoading}
+          />
+        </div>
+
+        {/* Ordenação em um card separado */}
+        <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
           <div className="flex items-center">
-            <label className="text-sm mr-2">Ordenar por:</label>
+            <label className="text-sm font-medium mr-3 whitespace-nowrap">Ordenar por:</label>
             <select 
-              className="p-2 border border-border rounded-md bg-background text-sm flex-1 sm:flex-none" 
+              className="flex-grow px-3 py-1.5 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary appearance-none" 
               value={`${orderBy}-${orderDirection}`}
               onChange={(e) => {
                 const [field, direction] = e.target.value.split('-');
@@ -226,18 +227,23 @@ export default function PaymentsCard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      {/* Lista de cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
         {(isLoading || isFiltering) ? (
-          Array.from({ length: 3 }).map((_, index) => (
+          Array.from({ length: 6 }).map((_, index) => (
             <div key={index} className="animate-pulse">
               <div className="h-48 bg-card rounded-lg"></div>
             </div>
           ))
+        ) : data?.data.length === 0 ? (
+          <div className="col-span-full flex items-center justify-center p-8 bg-card border border-border rounded-lg">
+            <p className="text-muted-foreground">Nenhum pagamento encontrado.</p>
+          </div>
         ) : (
           data?.data.map((payment) => (
             <CardItem
               key={payment.id}
-              title={`Pagamento #${payment.id.slice(0, 8)}`}
+              title={`Pagamento #${payment.id}`}
               onClick={() => setSelectedPayment(payment)}
             >
               <div className="space-y-2">

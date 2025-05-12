@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
-import { Download, CheckCircle, XCircle, ZoomIn } from 'lucide-react';
+import { Download, CheckCircle, XCircle, ZoomIn, Copy } from 'lucide-react';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
@@ -22,6 +22,7 @@ interface PaymentsModalProps {
 export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
+  const [copied, setCopied] = useState(false);
   const queryClient = useQueryClient();
 
   const updateStatusMutation = useMutation(
@@ -121,6 +122,13 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   // Usar o receipt como está sem manipulação
   const receiptImageSrc = payment.receipt || '';
 
+  // Função para copiar o ID do pagamento
+  const handleCopyId = () => {
+    navigator.clipboard.writeText(payment.id);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
   return (
     <>
       <Modal
@@ -130,6 +138,24 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
         footer={renderActions()}
       >
         <div className="space-y-4">
+          {/* Adiciona exibição do ID do pagamento */}
+          <div>
+            <label className="text-sm text-muted-foreground">ID do Pagamento</label>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-xs break-all">{payment.id}</span>
+              <button
+                type="button"
+                className="p-1 rounded hover:bg-muted transition-colors"
+                onClick={handleCopyId}
+                title="Copiar ID"
+              >
+                <Copy className="h-4 w-4" />
+              </button>
+              {copied && (
+                <span className="text-xs text-green-600 ml-1">Copiado!</span>
+              )}
+            </div>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="text-sm text-muted-foreground">Valor</label>

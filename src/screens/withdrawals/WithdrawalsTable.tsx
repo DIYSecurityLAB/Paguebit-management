@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
-import { Eye, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
+import { Eye, ArrowUp, ArrowDown, ChevronDown, ChevronUp, ArrowUpDown, CalendarDays, DollarSign, BarChart4, CheckCircle } from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -262,29 +262,76 @@ export default function WithdrawalsTable() {
 
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="sm:hidden mb-4">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="px-4 py-2 bg-card border border-border rounded-md text-sm text-foreground font-medium flex justify-between items-center w-full"
-        >
-          <span>{filtersExpanded ? "Ocultar filtros" : "Ver filtros"}</span>
-          {filtersExpanded ? (
-            <ChevronUp className="h-4 w-4 ml-2" />
-          ) : (
-            <ChevronDown className="h-4 w-4 ml-2" />
-          )}
-        </button>
-      </div>
+      {/* Cabeçalho e filtros */}
+      <div className="space-y-3">
+        {/* Botão para expandir/contrair filtros em dispositivos móveis */}
+        <div className="sm:hidden">
+          <button
+            onClick={() => setFiltersExpanded(!filtersExpanded)}
+            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
+          >
+            <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
+            {filtersExpanded ? (
+              <ChevronUp className="h-4 w-4 ml-2" />
+            ) : (
+              <ChevronDown className="h-4 w-4 ml-2" />
+            )}
+          </button>
+        </div>
 
-      {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
-      <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
-        <FilterBar
-          filters={filterOptions}
-          onFilterChange={handleFilterChange}
-          className="mb-4"
-          isLoading={isFiltering && isLoading} // Só bloqueia quando ambos estão ativos
-        />
+        {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
+        <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
+          <FilterBar
+            filters={filterOptions}
+            onFilterChange={handleFilterChange}
+            className="mb-4"
+            isLoading={isFiltering && isLoading}
+          />
+        </div>
+
+        {/* Ordenação em um card separado com design aprimorado */}
+        <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <label className="text-sm font-medium flex items-center whitespace-nowrap">
+              <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+              Ordenar por:
+            </label>
+            <div className="relative w-full sm:w-auto">
+              <select 
+                className="w-full sm:w-64 px-3 py-2 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary appearance-none pl-9" 
+                value={`${orderBy}-${orderDirection}`}
+                onChange={(e) => {
+                  const [field, direction] = e.target.value.split('-');
+                  handleSort(field);
+                }}
+              >
+                <option value="createdAt-desc" className="py-2">Mais recentes</option>
+                <option value="createdAt-asc" className="py-2">Mais antigos</option>
+                <option value="amount-desc" className="py-2">Maior valor</option>
+                <option value="amount-asc" className="py-2">Menor valor</option>
+                <option value="status-asc" className="py-2">Status (A-Z)</option>
+                <option value="status-desc" className="py-2">Status (Z-A)</option>
+                <option value="completedAt-desc" className="py-2">Concluído - Recente</option>
+                <option value="completedAt-asc" className="py-2">Concluído - Antigo</option>
+              </select>
+              {/* Ícone baseado na seleção atual */}
+              <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                {orderBy === 'createdAt' && <CalendarDays className="h-4 w-4" />}
+                {orderBy === 'amount' && <DollarSign className="h-4 w-4" />}
+                {orderBy === 'status' && <BarChart4 className="h-4 w-4" />}
+                {orderBy === 'completedAt' && <CheckCircle className="h-4 w-4" />}
+              </div>
+              {/* Indicador de direção */}
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                {orderDirection === 'asc' ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {error ? (

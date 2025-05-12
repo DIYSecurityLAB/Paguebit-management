@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
-import { Eye, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, ChevronUp, ChevronDown, ArrowDownUp, CalendarDays, DollarSign, ArrowUpDown, BarChart4, Clock, SortAsc, SortDesc, CheckCircle, AlertCircle, Loader, Filter } from 'lucide-react';
 import CardItem from '../../components/CardItem';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -12,6 +12,7 @@ import { Withdrawal } from '../../models/types';
 import withdrawalRepository from '../../repository/withdrawal-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
+import Select from '../../components/Select';
 
 export default function WithdrawalsCard() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -168,52 +169,94 @@ export default function WithdrawalsCard() {
     setCurrentPage(1); // Voltar para a primeira página
   }, []);
 
+  // Opções para o Select de ordenação com ícones
+  const sortOptions = [
+    { 
+      value: 'createdAt-desc', 
+      label: 'Mais recentes', 
+      icon: <CalendarDays className="h-4 w-4 text-purple-500" /> 
+    },
+    { 
+      value: 'createdAt-asc', 
+      label: 'Mais antigos', 
+      icon: <CalendarDays className="h-4 w-4 text-blue-500" /> 
+    },
+    { 
+      value: 'amount-desc', 
+      label: 'Maior valor', 
+      icon: <DollarSign className="h-4 w-4 text-green-500" /> 
+    },
+    { 
+      value: 'amount-asc', 
+      label: 'Menor valor', 
+      icon: <DollarSign className="h-4 w-4 text-yellow-500" /> 
+    },
+    { 
+      value: 'status-asc', 
+      label: 'Status (A-Z)', 
+      icon: <SortAsc className="h-4 w-4 text-cyan-500" /> 
+    },
+    { 
+      value: 'status-desc', 
+      label: 'Status (Z-A)', 
+      icon: <SortDesc className="h-4 w-4 text-orange-500" /> 
+    },
+  ];
+
+  // Opções para o status com ícones
+  const statusOptions = [
+    { value: '', label: 'Todos os status', icon: <Filter className="h-4 w-4 text-gray-500" /> },
+    { value: 'pending', label: 'Pendente', icon: <Clock className="h-4 w-4 text-yellow-500" /> },
+    { value: 'processing', label: 'Processando', icon: <Loader className="h-4 w-4 text-blue-500" /> },
+    { value: 'completed', label: 'Concluído', icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
+    { value: 'failed', label: 'Falha', icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
+  ];
+
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="flex flex-col sm:flex-row justify-between items-start gap-3">
-        <div className="w-full sm:w-auto flex flex-col gap-3">
+      {/* Cabeçalho e filtros */}
+      <div className="space-y-3">
+        {/* Botão de expansão de filtros (apenas mobile) */}
+        <div className="sm:hidden">
           <button
             onClick={() => setFiltersExpanded(!filtersExpanded)}
-            className="sm:hidden px-4 py-2 bg-card border border-border rounded-md text-sm text-foreground font-medium flex justify-between items-center w-full"
+            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
           >
-            <span>{filtersExpanded ? "Ocultar filtros" : "Ver filtros"}</span>
+            <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
             {filtersExpanded ? (
               <ChevronUp className="h-4 w-4 ml-2" />
             ) : (
               <ChevronDown className="h-4 w-4 ml-2" />
             )}
           </button>
-          
-          {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
-          <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
-            <FilterBar
-              filters={filterOptions}
-              onFilterChange={handleFilterChange}
-              isLoading={isFiltering && isLoading}
-            />
-          </div>
         </div>
         
-        {/* Ordenação - agora dentro do flex container principal */}
-        <div className="w-full sm:w-auto mt-2 sm:mt-0">
-          <div className="flex items-center">
-            <label className="text-sm mr-2">Ordenar por:</label>
-            <select 
-              className="p-2 border border-border rounded-md bg-background text-sm flex-1 sm:flex-none" 
-              value={`${orderBy}-${orderDirection}`}
-              onChange={(e) => {
-                const [field, direction] = e.target.value.split('-');
-                handleSortChange(field, direction as 'asc' | 'desc');
-              }}
-            >
-              <option value="createdAt-desc">Mais recentes</option>
-              <option value="createdAt-asc">Mais antigos</option>
-              <option value="amount-desc">Maior valor</option>
-              <option value="amount-asc">Menor valor</option>
-              <option value="status-asc">Status (A-Z)</option>
-              <option value="status-desc">Status (Z-A)</option>
-            </select>
+        {/* Filtros (visíveis em desktop ou quando expandidos em mobile) */}
+        <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
+          <FilterBar
+            filters={filterOptions}
+            onFilterChange={handleFilterChange}
+            isLoading={isFiltering && isLoading}
+          />
+        </div>
+
+        {/* Ordenação em um card separado com design aprimorado */}
+        <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+            <label className="text-sm font-medium flex items-center whitespace-nowrap">
+              <ArrowUpDown className="h-4 w-4 mr-2 text-muted-foreground" />
+              Ordenar por:
+            </label>
+            <div className="w-full sm:w-64">
+              <Select
+                options={sortOptions}
+                value={`${orderBy}-${orderDirection}`}
+                onChange={(value) => {
+                  const [field, direction] = value.split('-');
+                  handleSortChange(field, direction as 'asc' | 'desc');
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
