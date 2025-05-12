@@ -79,6 +79,59 @@
   }
 }
 
+/* Scrollbar estilizado para todo o site */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted));
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+  background: hsl(var(--muted));
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(120deg, hsl(var(--muted-foreground)), hsl(var(--accent)));
+  border-radius: 8px;
+  min-height: 30px;
+  transition: background 0.2s;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(120deg, hsl(var(--accent)), hsl(var(--secondary)));
+}
+
+::-webkit-scrollbar-corner {
+  background: hsl(var(--muted));
+}
+
+/* Scrollbar para modo dark */
+.dark * {
+  scrollbar-color: hsl(var(--muted-foreground)) hsl(var(--muted));
+}
+
+.dark ::-webkit-scrollbar {
+  background: hsl(var(--muted));
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: linear-gradient(120deg, hsl(var(--muted-foreground)), hsl(var(--accent)));
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(120deg, hsl(var(--accent)), hsl(var(--secondary)));
+}
+
+.dark ::-webkit-scrollbar-corner {
+  background: hsl(var(--muted));
+}
+
+/* Suavidade no scroll */
+html {
+  scroll-behavior: smooth;
+}
+
 /* Adicione este código para a animação de virar cartas */
 @layer utilities {
   .card-flip {

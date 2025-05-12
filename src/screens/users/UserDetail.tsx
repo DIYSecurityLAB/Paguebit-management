@@ -301,6 +301,26 @@ export default function UserDetail() {
                 <label className="text-sm text-muted-foreground">Telefone</label>
                 <p className="text-foreground">{user.phoneNumber}</p>
               </div>
+              {/* NOVO: Indicação */}
+              <div>
+                <label className="text-sm text-muted-foreground">Indicação</label>
+                <p className="text-foreground">{user.referral || <span className="text-muted-foreground">Não informado</span>}</p>
+              </div>
+              {/* NOVO: Data de criação */}
+              <div>
+                <label className="text-sm text-muted-foreground">Criado em</label>
+                <p className="text-foreground">
+                  {user.createdAt
+                    ? format(new Date(user.createdAt), 'dd/MM/yyyy HH:mm')
+                    : <span className="text-muted-foreground">Não informado</span>
+                  }
+                </p>
+              </div>
+              {/* NOVO: Role */}
+              <div>
+                <label className="text-sm text-muted-foreground">Tipo de Usuário</label>
+                <p className="text-foreground">{user.role}</p>
+              </div>
             </div>
           </div>
 

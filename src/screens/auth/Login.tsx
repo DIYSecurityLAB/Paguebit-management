@@ -150,6 +150,12 @@ export default function Login() {
         <div className="mt-8 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} PagueBit. Todos os direitos reservados.
         </div>
+        {/* NOVO: Link para jogos */}
+        <div className="mt-4 text-center text-xs text-muted-foreground">
+          <span>
+            Quer se distrair? <a href="/notfound" className="text-primary hover:underline">Jogue alguns jogos enquanto espera seu acesso de admin</a>
+          </span>
+        </div>
       </div>
     </div>
   );

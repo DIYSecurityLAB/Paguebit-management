@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import { User } from '../../models/types';
+import Modal from '../../components/Modal';
+import { ArrowUpRight } from 'lucide-react';
 
 interface Props {
   users: User[];
@@ -45,7 +47,10 @@ function normalizeReferralName(referral: string): string {
 
 export default function ReferralsChart({ users, loading, height = 250, limit = 5 }: Props) {
   const [expanded, setExpanded] = useState(false);
-  
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalReferral, setModalReferral] = useState<string | null>(null);
+  const [modalReferralIdx, setModalReferralIdx] = useState<number | null>(null);
+
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
   
   if (!users?.length) return (
@@ -85,6 +90,35 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
 
   const totalSources = Object.keys(referralCounts).length;
 
+  // Mapear usuários por indicação
+  const usersByReferral = useMemo(() => {
+    const map: Record<string, User[]> = {};
+    users.forEach(user => {
+      const ref = user.referral ? normalizeReferralName(user.referral) : 'sem_indicacao';
+      if (!map[ref]) map[ref] = [];
+      map[ref].push(user);
+    });
+    return map;
+  }, [users]);
+
+  // Handler para abrir modal e setar índice
+  const handleBarClick = (_: any, idx: number) => {
+    const ref = data[idx].name === 'Sem Indicação' ? 'sem_indicacao' : data[idx].name;
+    setModalReferral(ref);
+    setModalReferralIdx(idx);
+    setModalOpen(true);
+  };
+
+  // Navegação no modal
+  const handleModalNav = (direction: -1 | 1) => {
+    if (modalReferralIdx == null) return;
+    const newIdx = modalReferralIdx + direction;
+    if (newIdx < 0 || newIdx >= data.length) return;
+    const ref = data[newIdx].name === 'Sem Indicação' ? 'sem_indicacao' : data[newIdx].name;
+    setModalReferral(ref);
+    setModalReferralIdx(newIdx);
+  };
+
   return (
     <div className="h-full flex flex-col">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 gap-2">
@@ -105,8 +139,8 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
         <ResponsiveContainer width="100%" height={height}>
           <BarChart
             data={data}
-            layout="horizontal" // Mudado para horizontal
-            margin={{ top: 5, right: 30, left: 30, bottom: 40 }} // Ajustado margens
+            layout="horizontal"
+            margin={{ top: 5, right: 30, left: 30, bottom: 40 }}
           >
             <CartesianGrid strokeDasharray="3 3" vertical={true} horizontal={false} />
             <XAxis 
@@ -115,10 +149,10 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
               axisLine={false}
               tickLine={false}
               fontSize={11}
-              angle={-45} // Rotacionar labels para melhor legibilidade
-              textAnchor="end" // Alinhar texto ao final
-              height={70} // Dar mais espaço para os labels
-              interval={0} // Mostrar todos os labels
+              angle={-45}
+              textAnchor="end"
+              height={70}
+              interval={0}
             />
             <YAxis 
               type="number"
@@ -142,8 +176,10 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
             />
             <Bar 
               dataKey="count" 
-              radius={[4, 4, 0, 0]} // Ajustado para layout horizontal
-              maxBarSize={35} // Barras mais grossas
+              radius={[4, 4, 0, 0]}
+              maxBarSize={35}
+              onClick={handleBarClick}
+              cursor="pointer"
             >
               {data.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -152,6 +188,69 @@ export default function ReferralsChart({ users, loading, height = 250, limit = 5
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {/* MODAL DE USUÁRIOS POR INDICAÇÃO */}
+      <Modal
+        title={
+          <div className="flex items-center gap-2">
+            {/* Setas de navegação */}
+            <button
+              className="p-1 rounded hover:bg-muted transition disabled:opacity-30"
+              disabled={modalReferralIdx === 0}
+              onClick={() => handleModalNav(-1)}
+              aria-label="Anterior"
+              type="button"
+            >
+              <span style={{fontSize: 20, display: 'inline-block'}}>&larr;</span>
+            </button>
+            <span>
+              {modalReferral === 'sem_indicacao'
+                ? 'Usuários sem indicação'
+                : `vindos de "${modalReferral}"`}
+            </span>
+            <button
+              className="p-1 rounded hover:bg-muted transition disabled:opacity-30"
+              disabled={modalReferralIdx == null || modalReferralIdx === data.length - 1}
+              onClick={() => handleModalNav(1)}
+              aria-label="Próximo"
+              type="button"
+            >
+              <span style={{fontSize: 20, display: 'inline-block'}}>&rarr;</span>
+            </button>
+          </div>
+        }
+        isOpen={modalOpen}
+        onClose={() => setModalOpen(false)}
+        size="md"
+      >
+        <div className="max-h-[60vh] overflow-y-auto">
+          {modalReferral && usersByReferral[modalReferral] && usersByReferral[modalReferral].length > 0 ? (
+            <ul className="divide-y divide-border">
+              {usersByReferral[modalReferral].map(u => (
+                <li
+                  key={u.id}
+                  className="py-2 flex flex-col cursor-pointer rounded transition group"
+                  onClick={() => {
+                    setModalOpen(false);
+                    window.location.href = `/users/${u.id}`;
+                  }}
+                  title="Ver detalhes do usuário"
+                >
+                  <span className="font-medium text-foreground flex items-center gap-1">
+                    {u.firstName} {u.lastName}
+                    <ArrowUpRight className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100" />
+                  </span>
+                  <span className="text-xs text-muted-foreground">{u.email}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <div className="text-sm text-muted-foreground py-6 text-center">
+              Nenhum usuário encontrado.
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
