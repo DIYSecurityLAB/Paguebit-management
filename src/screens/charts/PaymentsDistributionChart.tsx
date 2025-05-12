@@ -20,9 +20,11 @@ const VALUE_RANGES = [
 ];
 
 type CategoryType = 'all' | 'retained' | 'paid';
+type MetricType = 'count' | 'amount';
 
 export default function PaymentsDistributionChart({ payments, loading, height = 250 }: Props) {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
+  const [activeMetric, setActiveMetric] = useState<MetricType>('count');
 
   // Filtragem baseada na categoria selecionada
   let filteredPayments = payments;
@@ -33,7 +35,7 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
   }
 
   const data = useMemo(() => {
-    // Filtrar apenas pagamentos com status relevante (já filtrado acima)
+    // Filtrar apenas pagamentos com status relevante
     const relevantPayments = filteredPayments.filter(p =>
       ['paid', 'approved', 'withdrawal_processing'].includes(p.status)
     );
@@ -68,6 +70,14 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
       case 'paid': return 'Pagos';
     }
   };
+
+  // Obter o título da métrica atual
+  const getMetricTitle = () => {
+    return activeMetric === 'count' ? 'Quantidade' : 'Valor';
+  };
+
+  // Garantir que temos dados para exibir
+  const hasData = data.some(item => item[activeMetric] > 0);
 
   return (
     <div className="h-full flex flex-col">
@@ -105,44 +115,78 @@ export default function PaymentsDistributionChart({ payments, loading, height = 
             Pagos
           </button>
         </div>
-        <span className="text-xs text-muted-foreground">{getCategoryTitle()} por valor</span>
+        
+        {/* Filtros de métrica */}
+        <div className="flex gap-1.5">
+          <button
+            onClick={() => setActiveMetric('count')}
+            className={`px-2 py-1 text-xs rounded ${
+              activeMetric === 'count'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Quantidade
+          </button>
+          <button
+            onClick={() => setActiveMetric('amount')}
+            className={`px-2 py-1 text-xs rounded ${
+              activeMetric === 'amount'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+            }`}
+          >
+            Valor
+          </button>
+        </div>
+        
+        <span className="text-xs text-muted-foreground">{getCategoryTitle()} por valor • {getMetricTitle()}</span>
       </div>
       <div className="flex-1">
-        <ResponsiveContainer width="100%" height={height}>
-          <BarChart data={data}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-            <XAxis 
-              dataKey="label" 
-              axisLine={false} 
-              tickLine={false} 
-              fontSize={11}
-              angle={-15}
-              textAnchor="end"
-              height={60}
-            />
-            <YAxis 
-              allowDecimals={false} 
-              axisLine={false} 
-              tickLine={false} 
-              fontSize={11} 
-            />
-            <Tooltip 
-              contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
-              formatter={(value, name) => [
-                <span style={{ color: '#00C49F' }}>{value}</span>, 
-                name === 'count' ? 'Pagamentos' : 'Total'
-              ]}
-              labelStyle={{ color: '#fff' }}
-            />
-            <Bar 
-              name="Pagamentos" 
-              dataKey="count" 
-              fill="#8884d8" 
-              radius={[4, 4, 0, 0]} 
-              maxBarSize={50} 
-            />
-          </BarChart>
-        </ResponsiveContainer>
+        {!hasData ? (
+          <div className="flex items-center justify-center h-full text-sm text-muted-foreground">
+            Sem dados para exibir
+          </div>
+        ) : (
+          <ResponsiveContainer width="100%" height={height}>
+            <BarChart data={data}>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} />
+              <XAxis 
+                dataKey="label" 
+                axisLine={false} 
+                tickLine={false} 
+                fontSize={11}
+                angle={-15}
+                textAnchor="end"
+                height={60}
+              />
+              <YAxis 
+                allowDecimals={false} 
+                axisLine={false} 
+                tickLine={false} 
+                fontSize={11}
+                tickFormatter={activeMetric === 'amount' ? (value) => formatCurrency(value, { compact: true }) : undefined}
+              />
+              <Tooltip 
+                contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
+                formatter={(value, name) => [
+                  activeMetric === 'amount'
+                    ? <span style={{ color: '#00C49F' }}>{formatCurrency(value as number)}</span>
+                    : <span style={{ color: '#00C49F' }}>{value}</span>,
+                  activeMetric === 'count' ? 'Pagamentos' : 'Valor total'
+                ]}
+                labelStyle={{ color: '#fff' }}
+              />
+              <Bar 
+                name={activeMetric === 'count' ? "Pagamentos" : "Valor total"}
+                dataKey={activeMetric}
+                fill="#8884d8" 
+                radius={[4, 4, 0, 0]} 
+                maxBarSize={50} 
+              />
+            </BarChart>
+          </ResponsiveContainer>
+        )}
       </div>
     </div>
   );

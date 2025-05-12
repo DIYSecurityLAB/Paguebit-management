@@ -14,7 +14,7 @@ type PeriodType = 'day' | 'week' | 'month';
 
 export default function PaymentsMonthlyChart({ payments, loading, height = 250 }: Props) {
   const [activeCategory, setActiveCategory] = useState<CategoryType>('all');
-  const [period, setPeriod] = useState<PeriodType>('month');
+  const [period, setPeriod] = useState<PeriodType>('week');
 
   // Filtragem baseada na categoria selecionada
   let filteredPayments = payments;

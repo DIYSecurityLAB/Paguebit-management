@@ -274,18 +274,20 @@ export default function Dashboard() {
       </div>
 
       {/* Crescimento, Distribuição e Saques */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 gap-3">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <ChartCard 
+            title="Distribuição por Valor" 
+            content={<PaymentsDistributionChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
+          />
+          <ChartCard 
+            title="Saques por Status" 
+            content={<WithdrawalsStatusChart withdrawalsByStatus={stats.withdrawalsByStatus} loading={loadingWithdrawals} height={220} />} 
+          />
+        </div>
         <ChartCard 
           title="Crescimento de Usuários" 
-          content={<UsersGrowthChart usersByMonth={stats.usersByMonth} loading={loadingUsers} height={220} />} 
-        />
-        <ChartCard 
-          title="Distribuição por Valor" 
-          content={<PaymentsDistributionChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
-        />
-        <ChartCard 
-          title="Saques por Status" 
-          content={<WithdrawalsStatusChart withdrawalsByStatus={stats.withdrawalsByStatus} loading={loadingWithdrawals} height={220} />} 
+          content={<UsersGrowthChart users={usersData?.data || []} loading={loadingUsers} height={220} />} 
         />
       </div>
 
