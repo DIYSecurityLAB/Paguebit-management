@@ -38,8 +38,29 @@ class PaymentRepository {
     return apiClient.get<Payment>(`/payments/${id}`);
   }
 
-  async updatePaymentStatus(id: string, status: PaymentStatus, notes?: string): Promise<Payment> {
-    return apiClient.put<Payment>(`/payments/${id}/status`, { status, notes });
+  async updatePaymentStatus(id: string, status: PaymentStatus, notes?: string, payerName?: string): Promise<Payment> {
+    // Preparar o corpo da requisição com todos os dados necessários
+    const body: Record<string, any> = { status };
+    
+    // Adicionar notes apenas se fornecido
+    if (notes !== undefined) {
+      body.notes = notes;
+    }
+    
+    // Se payerName for fornecido, use o endpoint genérico de atualização
+    if (payerName !== undefined) {
+      return this.updatePayment(id, { ...body, payerName });
+    }
+    
+    // Caso contrário, use o endpoint específico de status
+    console.log('Corpo da requisição (status):', body);
+    return apiClient.put<Payment>(`/payments/${id}/status`, body);
+  }
+
+  // Novo método para atualização genérica
+  async updatePayment(id: string, data: Record<string, any>): Promise<Payment> {
+    console.log(`Atualizando pagamento completo ID: ${id}`, data);
+    return apiClient.put<Payment>(`/payments/${id}`, data);
   }
 
   async uploadReceipt(id: string, receipt: string): Promise<Payment> {

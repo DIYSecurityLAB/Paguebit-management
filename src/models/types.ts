@@ -26,14 +26,15 @@ export interface User {
   referral?: string;
   pictureUrl?: string;
   role: string;
-  createdAt?: string; // Data de criação do usuário
-  updatedAt?: string; // Data de atualização do usuário
+  createdAt?: string;  
+  updatedAt?: string;  
   verificationStatus?: {
     email?: string;
     phone?: string;
     document?: string;
   };
-  verificationLevel?: number; // Nível de verificação do usuário
+  verificationLevel?: number;  
+  active: boolean; 
 }
 
 export interface UserCreateInput {
@@ -88,6 +89,7 @@ export interface Payment {
   walletType?: string;
   walletAddress?: string;
   email: string;
+  payerName?: string; // Nome do pagador (opcional)
   transactionType: 'dinamic' | 'static';
   receivingMode: string;
   observation?: string;

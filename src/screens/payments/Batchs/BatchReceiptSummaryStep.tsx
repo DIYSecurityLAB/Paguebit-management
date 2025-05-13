@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
-import { ArrowLeft, Download, Edit, Eye, XCircle, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Download, Edit, Eye, XCircle, CheckCircle, Copy, FileDown } from 'lucide-react';
 import { formatCurrency } from '../../../utils/format';
 import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
+import { toast } from 'sonner';
 
 interface SummaryStepProps {
   isOpen: boolean;
@@ -30,6 +31,8 @@ export default function SummaryStep({
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [editingItemId, setEditingItemId] = useState<string | null>(null);
   const [editedName, setEditedName] = useState('');
+  const [isDownloadingImages, setIsDownloadingImages] = useState(false);
+  const [isCopyingList, setIsCopyingList] = useState(false);
   
   const validPayments = reviewedPayments.filter(item => !item.ignored);
   
@@ -52,14 +55,98 @@ export default function SummaryStep({
     }
   };
 
-  // NOVO: verificar se algum nome não contém "fraguismo"
-  const anyMissingFraguismo = validPayments.some(item =>
-    !item.name?.toLowerCase().includes('fraguismo')
-  );
-  // NOVO: lista de ids dos comprovantes sem "fraguismo"
+  // CORRIGIDO: verificar usando a propriedade hasFraguismo em vez da presença da string no nome
+  const anyMissingFraguismo = validPayments.some(item => item.hasFraguismo === false);
+  
+  // CORRIGIDO: lista de ids dos comprovantes sem "fraguismo"
   const missingFraguismoIds = validPayments
-    .filter(item => !item.name?.toLowerCase().includes('fraguismo'))
+    .filter(item => item.hasFraguismo === false)
     .map(item => item.payment.id);
+
+  // NOVO: Função para copiar lista para a área de transferência
+  const handleCopyList = async () => {
+    if (validPayments.length === 0) {
+      toast.error('Nenhum comprovante selecionado para copiar');
+      return;
+    }
+
+    try {
+      setIsCopyingList(true);
+      
+      // Ordenar pagamentos do maior para o menor valor
+      const sortedPayments = [...validPayments].sort((a, b) => 
+        (b.payment.amount || 0) - (a.payment.amount || 0)
+      );
+      
+      // Criar texto formatado com a lista de comprovantes
+      let listText = "Comprovantes de Doação\n\n";
+      
+      sortedPayments.forEach(({ payment, name }) => {
+        listText += `R$ ${payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - ${name}\n`;
+      });
+      
+      // Copiar para a área de transferência
+      await navigator.clipboard.writeText(listText);
+      toast.success('Lista copiada para a área de transferência!');
+    } catch (error) {
+      console.error('Erro ao copiar lista:', error);
+      toast.error('Falha ao copiar lista');
+    } finally {
+      setIsCopyingList(false);
+    }
+  };
+
+  // NOVO: Função para baixar todas as imagens
+  const handleDownloadImages = async () => {
+    if (validPayments.length === 0) {
+      toast.error('Nenhum comprovante selecionado para download');
+      return;
+    }
+
+    try {
+      setIsDownloadingImages(true);
+      
+      // Ordenar pagamentos do maior para o menor valor
+      const sortedPayments = [...validPayments].sort((a, b) => 
+        (b.payment.amount || 0) - (a.payment.amount || 0)
+      );
+      
+      // Processar o download de cada imagem
+      for (let i = 0; i < sortedPayments.length; i++) {
+        const { payment, name } = sortedPayments[i];
+        
+        if (payment.receipt) {
+          // Preparar a imagem (remover prefixo data: se existir)
+          const imgData = payment.receipt.startsWith('data:') 
+            ? payment.receipt 
+            : `data:image/jpeg;base64,${payment.receipt}`;
+          
+          // Criar um nome de arquivo baseado no valor e nome
+          const valor = payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 }).replace('.', '-').replace(',', '-');
+          const cleanName = name.replace(/[/\\?%*:|"<>]/g, '_').substring(0, 30); // Limitar tamanho e remover caracteres inválidos
+          const fileName = `R$${valor}_${cleanName}.jpg`;
+          
+          // Criar um link temporário para download
+          const a = document.createElement('a');
+          a.href = imgData;
+          a.download = fileName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          
+          // Pequena pausa para não sobrecarregar o navegador
+          await new Promise(resolve => setTimeout(resolve, 300));
+        }
+      }
+      
+      toast.success(`${sortedPayments.length} imagens baixadas com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao baixar imagens:', error);
+      toast.error('Falha ao baixar imagens');
+    } finally {
+      setIsDownloadingImages(false);
+    }
+  };
 
   return (
     <>
@@ -132,8 +219,8 @@ export default function SummaryStep({
                             className={
                               [
                                 item.ignored ? 'line-through' : '',
-                                // NOVO: vermelho se não tem "fraguismo" e não está ignorado
-                                !item.ignored && !item.name?.toLowerCase().includes('fraguismo') ? 'text-red-500 font-semibold' : '',
+                                // CORRIGIDO: vermelho apenas se hasFraguismo é explicitamente false
+                                !item.ignored && item.hasFraguismo === false ? 'text-red-500 font-semibold' : '',
                                 'cursor-pointer hover:underline'
                               ].join(' ')
                             }
@@ -186,6 +273,33 @@ export default function SummaryStep({
                 ))}
               </tbody>
             </table>
+          </div>
+
+          {/* NOVO: Painel de ações adicionais */}
+          <div className="border border-border rounded-md p-3">
+            <h3 className="text-sm font-medium mb-2">Ações adicionais</h3>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant="outline"
+                onClick={handleCopyList}
+                isLoading={isCopyingList}
+                disabled={validPayments.length === 0}
+                leftIcon={<Copy className="h-4 w-4" />}
+                size="sm"
+              >
+                Copiar Lista
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleDownloadImages}
+                isLoading={isDownloadingImages}
+                disabled={validPayments.length === 0}
+                leftIcon={<FileDown className="h-4 w-4" />}
+                size="sm"
+              >
+                Baixar Imagens ({validPayments.length})
+              </Button>
+            </div>
           </div>
 
           <div className="flex flex-col sm:flex-row justify-between gap-2">

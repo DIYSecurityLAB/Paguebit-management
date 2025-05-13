@@ -74,7 +74,8 @@ export default function ReviewStep({
       updated[existingIndex] = {
         ...updated[existingIndex],
         name: currentName || 'Nome não identificado',
-        ignored: isIgnored
+        ignored: isIgnored,
+        hasFraguismo: hasFraguismo // Salvar o status de fraguismo
       };
       setReviewedPayments(updated);
     } else {
@@ -84,7 +85,8 @@ export default function ReviewStep({
         { 
           payment: currentPayment,
           name: currentName || 'Nome não identificado',
-          ignored: isIgnored
+          ignored: isIgnored,
+          hasFraguismo: hasFraguismo // Salvar o status de fraguismo
         }
       ]);
     }
