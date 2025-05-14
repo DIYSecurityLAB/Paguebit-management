@@ -4,8 +4,10 @@ import {
   WithdrawalQueryParams, 
   Withdrawal, 
   WithdrawalCompleteInput, 
-  WithdrawalStatusUpdate 
+  WithdrawalStatusUpdate,
+  AuditLogInput
 } from '../models/types';
+import auditRepository from './audit-repository';
 
 interface ApiWithdrawalResponse {
   withdrawals: Withdrawal[];
@@ -72,22 +74,54 @@ class WithdrawalRepository {
     paymentIds: string[];
     destinationWallet: string;
     destinationWalletType: string;
-  }): Promise<Withdrawal> {
-    return apiClient.post<Withdrawal>('/withdrawals', withdrawalData);
+  }, currentUserId?: string): Promise<Withdrawal> {
+    const result = await apiClient.post<Withdrawal>('/withdrawals', withdrawalData);
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Criação de saque',
+        withdrawalId: result.id,
+        newValue: JSON.stringify(withdrawalData),
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 
-  async completeWithdrawal(data: WithdrawalCompleteInput): Promise<Withdrawal> {
-    return apiClient.put<Withdrawal>(`/withdrawals/${data.id}/complete`, {
+  async completeWithdrawal(data: WithdrawalCompleteInput, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
+    const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/complete`, {
       txId: data.txId,
       notes: data.notes
     });
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Conclusão de saque',
+        withdrawalId: data.id,
+        previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
+        newValue: JSON.stringify(data),
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 
-  async updateWithdrawalStatus(data: WithdrawalStatusUpdate): Promise<Withdrawal> {
-    return apiClient.put<Withdrawal>(`/withdrawals/${data.id}/status`, {
+  async updateWithdrawalStatus(data: WithdrawalStatusUpdate, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
+    const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/status`, {
       status: data.status,
       failedReason: data.failedReason
     });
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Atualização de status de saque',
+        withdrawalId: data.id,
+        previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
+        newValue: JSON.stringify(data),
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 }
 

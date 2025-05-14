@@ -237,3 +237,38 @@ export interface AuthResponse {
   user: User;
   token?: string;
 }
+
+export interface AuditLog {
+  id: string;
+  userId: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  action: string;
+  createdAt: string;
+  paymentId?: string;
+  affectedUserId?: string;
+  affectedUser?: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  withdrawalId?: string;
+  notificationId?: string;
+  previousValue?: string;
+  newValue?: string;
+}
+
+// Para criação de log (input)
+export interface AuditLogInput {
+  userId: string;
+  action: string;
+  paymentId?: string;
+  affectedUserId?: string;
+  withdrawalId?: string;
+  notificationId?: string;
+  previousValue?: string;
+  newValue?: string;
+}

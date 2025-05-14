@@ -1,5 +1,6 @@
 import apiClient from '../datasource/api-client';
-import { PaginatedResponse, PaginationParams, User, UserCreateInput, UserStats } from '../models/types';
+import { PaginatedResponse, PaginationParams, User, UserCreateInput, UserStats, AuditLogInput } from '../models/types';
+import auditRepository from './audit-repository';
 
 interface UserQueryParams extends PaginationParams {
   name?: string;
@@ -42,16 +43,47 @@ class UserRepository {
     return apiClient.get<User>(`/users/${id}`);
   }
 
-  async createUser(user: UserCreateInput): Promise<User> {
-    return apiClient.post<User>('/users', user);
+  async createUser(user: UserCreateInput, currentUserId?: string): Promise<User> {
+    const result = await apiClient.post<User>('/users', user);
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Criação de usuário',
+        affectedUserId: result.id,
+        newValue: JSON.stringify(user),
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 
-  async updateUser(id: string, userData: Partial<User>): Promise<User> {
-    return apiClient.put<User>(`/users/${id}`, userData);
+  async updateUser(id: string, userData: Partial<User>, currentUserId?: string, previousUser?: User): Promise<User> {
+    const result = await apiClient.put<User>(`/users/${id}`, userData);
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Atualização de usuário',
+        affectedUserId: id,
+        previousValue: previousUser ? JSON.stringify(previousUser) : undefined,
+        newValue: JSON.stringify(userData),
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 
-  async deleteUser(id: string): Promise<{ message: string }> {
-    return apiClient.delete<{ message: string }>(`/users/${id}`);
+  async deleteUser(id: string, currentUserId?: string, previousUser?: User): Promise<{ message: string }> {
+    const result = await apiClient.delete<{ message: string }>(`/users/${id}`);
+    if (currentUserId) {
+      const audit: AuditLogInput = {
+        userId: currentUserId,
+        action: 'Exclusão de usuário',
+        affectedUserId: id,
+        previousValue: previousUser ? JSON.stringify(previousUser) : undefined,
+      };
+      auditRepository.createAuditLog(audit).catch(() => {});
+    }
+    return result;
   }
 
   async getUserStats(): Promise<UserStats> {

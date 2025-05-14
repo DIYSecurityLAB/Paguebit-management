@@ -17,6 +17,7 @@ const Login = lazy(() => import('./screens/auth/Login'));
 const NotFound = lazy(() => import('./screens/NotFound'));
 const Dashboard = lazy(() => import('./screens/dashboard/Dashboard'));
 const Doacoes = lazy(() => import('./screens/doacoes/Doacoes'));
+const AuditLogs = lazy(() => import('./screens/audit/AuditLogs')); // Nova página de logs
 
 function App() {
   return (
@@ -37,6 +38,9 @@ function App() {
             <Route path="withdrawals/:id" element={<ProtectedRoute><WithdrawalDetail /></ProtectedRoute>} />
             <Route path="notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
             <Route path="doacoes" element={<ProtectedRoute><Doacoes /></ProtectedRoute>} />
+            
+            {/* Rota para logs de auditoria (oculta do menu principal) */}
+            <Route path="logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
           </Route>
           
           <Route path="*" element={<NotFound />} />

@@ -12,6 +12,7 @@ import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
 import apiClient from '../../datasource/api-client';
 import OcrNameSuggestion from '../../components/OcrNameSuggestion';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface PaymentsModalProps {
   payment: Payment;
@@ -25,13 +26,22 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [copied, setCopied] = useState(false);
   const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // Pega o usuário logado
   const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const statusPopoverRef = useRef<HTMLDivElement>(null);
 
   const updateStatusMutation = useMutation(
-    (status: PaymentStatus) => paymentRepository.updatePaymentStatus(payment.id, status),
+    (status: PaymentStatus) =>
+      paymentRepository.updatePaymentStatus(
+        payment.id,
+        status,
+        undefined,
+        undefined,
+        user?.uid, // userId para auditoria
+        payment.status // status anterior
+      ),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('payments');
