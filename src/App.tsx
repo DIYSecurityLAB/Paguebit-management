@@ -7,7 +7,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // Lazy-loaded screens
 const Users = lazy(() => import('./screens/users/Users'));
-const UserDetail = lazy(() => import('./screens/users/UserDetail'));
+const UserDetail = lazy(() => import('./screens/users/userdetails/UserDetail'));
 const Payments = lazy(() => import('./screens/payments/Payments'));
 const PaymentDetail = lazy(() => import('./screens/payments/PaymentDetail'));
 const Withdrawals = lazy(() => import('./screens/withdrawals/Withdrawals'));

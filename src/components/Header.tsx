@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home } from 'lucide-react';
+import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home, Search } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
 import logo from '../assets/PagueBit_black.svg';
@@ -40,6 +40,7 @@ export default function Header() {
     { path: '/payments', label: 'Pagamentos', icon: CreditCard, key: 'p' },
     { path: '/users', label: 'Usuários', icon: Users, key: 'u' },
     { path: '/withdrawals', label: 'Saques', icon: Wallet, key: 's' },
+    { path: '/logs', label: 'Atividade', icon: Search, key: 'a' },
     { path: '/notifications', label: 'Notificações', icon: Bell, key: 'n' },
   ];
 
@@ -64,8 +65,8 @@ export default function Header() {
     <header className="sticky top-0 z-40 w-full bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
-          {/* Logo / Brand */}
-          <div className="flex-shrink-0 flex items-center">
+          {/* Logo / Brand - largura fixa em desktop */}
+          <div className="flex-shrink-0 flex items-center pl-0 lg:w-1/6">
             <Link 
               to="/" 
               className="text-xl font-bold text-foreground flex items-center group"
@@ -79,21 +80,21 @@ export default function Header() {
             </Link>
           </div>
 
-          {/* Desktop Navigation */}
-          <nav className="hidden md:flex space-x-1">
+          {/* Desktop Navigation - centralizado e largura fixa */}
+          <nav className="hidden lg:flex items-center justify-center lg:w-4/6 space-x-2">
             {navItems.map(({ path, label, icon: Icon, key }) => (
               <Link
                 key={path}
                 to={path}
-                className={`flex items-center px-3 py-2 rounded-md text-sm font-medium transition-all duration-200 relative group
+                className={`flex items-center px-2 py-1.5 rounded-md text-xs font-medium transition-all duration-200 relative group
                   ${isActive(path) 
                     ? 'text-primary bg-primary/10' 
                     : 'text-foreground/80 hover:text-foreground hover:bg-muted'
                   }`}
               >
-                <Icon className="mr-1.5 h-5 w-5" />
+                <Icon className="mr-1 h-4 w-4" />
                 {label}
-                <span className="text-xs opacity-50 ml-1">(Alt+{key})</span>
+                <span className="text-[10px] opacity-50 ml-0.5">(Alt+{key})</span>
                 
                 {/* Animated underline on hover and active */}
                 {isActive(path) ? (
@@ -108,8 +109,8 @@ export default function Header() {
             ))}
           </nav>
 
-          {/* Right controls */}
-          <div className="flex items-center space-x-2">
+          {/* Right controls - largura fixa e padding ajustado */}
+          <div className="flex items-center space-x-2 lg:w-1/6 justify-end pr-4">
             {/* Theme Toggle */}
             <motion.button
               onClick={toggleTheme}
@@ -126,7 +127,7 @@ export default function Header() {
             </motion.button>
 
             {/* Mobile menu button */}
-            <div className="md:hidden">
+            <div className="lg:hidden">
               <motion.button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 rounded-md hover:bg-muted transition-colors"
@@ -153,7 +154,7 @@ export default function Header() {
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3, ease: "easeInOut" }}
-            className="md:hidden bg-background border-t border-border"
+            className="lg:hidden bg-background border-t border-border"
           >
             <div className="shadow-lg">
               <div className="grid grid-cols-2 divide-x divide-border">
@@ -189,7 +190,7 @@ export default function Header() {
               >
                 <div className="flex justify-center">
                   <div className="text-center text-muted-foreground text-xs">
-                    <p>© {new Date().getFullYear()} Krux Admin</p>
+                    <p>© {new Date().getFullYear()} PagueBit Admin</p>
                     <button 
                       onClick={toggleTheme}
                       className="mt-2 flex items-center justify-center mx-auto px-3 py-1 rounded-full bg-background border border-border hover:bg-muted transition-colors"
