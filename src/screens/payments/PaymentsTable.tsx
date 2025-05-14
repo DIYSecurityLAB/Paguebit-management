@@ -23,6 +23,8 @@ export default function PaymentsTable() {
     userId: '',
     name: '',
     email: '',
+    id: '', // Alterado de paymentId para id
+    transactionType: '', // Novo filtro adicionado
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
@@ -88,6 +90,21 @@ export default function PaymentsTable() {
         { value: 'paid', label: 'Pago' },
         { value: 'withdrawal_processing', label: 'Processamento de Saque' },
       ],
+    },
+    {
+      key: 'transactionType',
+      label: 'Tipo de Transação',
+      type: 'select' as const,
+      options: [
+        { value: 'static', label: 'QR Estático' },
+        { value: 'dynamic', label: 'QR Dinâmico' },
+      ],
+    },
+    {
+      key: 'id',
+      label: 'ID do Pagamento',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do pagamento',
     },
     {
       key: 'dateRange',
@@ -248,6 +265,8 @@ export default function PaymentsTable() {
         userId: '',
         name: '',
         email: '',
+        id: '',
+        transactionType: '',
       });
       
       // Força uma nova consulta ao limpar os filtros
@@ -265,6 +284,8 @@ export default function PaymentsTable() {
         userId: '',
         name: '',
         email: '',
+        id: '',
+        transactionType: '',
       };
       
       // Atualizando apenas as propriedades fornecidas
@@ -274,6 +295,8 @@ export default function PaymentsTable() {
       if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
       if (newFilters.name) updatedFilters.name = newFilters.name;
       if (newFilters.email) updatedFilters.email = newFilters.email;
+      if (newFilters.id) updatedFilters.id = newFilters.id;
+      if (newFilters.transactionType) updatedFilters.transactionType = newFilters.transactionType;
       
       setFilters(updatedFilters);
     }

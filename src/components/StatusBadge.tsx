@@ -8,7 +8,8 @@ import {
   XCircle, 
   DollarSign,
   Loader,
-  AlertCircle 
+  AlertCircle,
+  ChevronDown 
 } from 'lucide-react';
 
 type StatusType = string;
@@ -16,9 +17,11 @@ type StatusType = string;
 interface StatusBadgeProps {
   status: StatusType;
   className?: string;
+  onClick?: () => void;
+  clickable?: boolean;
 }
 
-export default function StatusBadge({ status, className }: StatusBadgeProps) {
+export default function StatusBadge({ status, className, onClick, clickable }: StatusBadgeProps) {
   // Função para determinação do estilo baseado no status
   const getStatusConfig = (statusType: StatusType) => {
     switch (statusType) {
@@ -116,16 +119,23 @@ export default function StatusBadge({ status, className }: StatusBadgeProps) {
   const config = getStatusConfig(status);
 
   return (
-    <div className={cn(
-      'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border',
-      config.bg,
-      config.text,
-      config.border,
-      className
-    )}>
+    <div 
+      className={cn(
+        'inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium border',
+        config.bg,
+        config.text,
+        config.border,
+        clickable && 'cursor-pointer hover:shadow-md transition-shadow',
+        className
+      )}
+      onClick={onClick}
+      role={clickable ? "button" : undefined}
+      tabIndex={clickable ? 0 : undefined}
+    >
       <div className="flex items-center gap-1.5">
         {config.icon}
         <span>{config.label}</span>
+        {clickable && <ChevronDown className="h-3 w-3 ml-0.5" />}
       </div>
     </div>
   );

@@ -76,8 +76,10 @@ export enum PaymentStatus {
   PENDING = "pending",
   RECEIPT_SENT = "receipt_sent",
   UNDER_REVIEW = "under_review",
-  COMPLETED = "approved",
-  REJECTED = "not_approved",
+  APPROVED = "approved",
+  NOT_APPROVED = "not_approved",
+  COMPLETED = "completed",
+  REJECTED = "rejected",
   PAID = "paid",
   WITHDRAWAL_PROCESSING = "withdrawal_processing"
 }
@@ -89,13 +91,13 @@ export interface Payment {
   walletType?: string;
   walletAddress?: string;
   email: string;
-  payerName?: string; // Nome do pagador (opcional)
+  payerName?: string; 
   transactionType: 'dinamic' | 'static';
   receivingMode: string;
   observation?: string;
   qrCodeUrl?: string;
   qrCopyPaste?: string;
-  status: string; // Idealmente, isso seria PaymentStatus, mas para manter compatibilidade mantemos como string
+  status: string; 
   createdAt: string;
   updatedAt: string;
   notes?: string;
@@ -212,6 +214,8 @@ export interface PaymentQueryParams extends PaginationParams {
   dateTo?: string;
   name?: string;
   email?: string;
+  id?: string; // Alterado de paymentId para id para corresponder ao backend
+  transactionType?: string; // Novo filtro para tipo da transação
 }
 
 export interface UserQueryParams extends PaginationParams {

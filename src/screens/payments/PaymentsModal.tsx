@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import { Download, CheckCircle, XCircle, ZoomIn, Copy } from 'lucide-react';
@@ -25,6 +25,10 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [copied, setCopied] = useState(false);
   const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
+  const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
+  const [statusLoading, setStatusLoading] = useState(false);
+  const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
+  const statusPopoverRef = useRef<HTMLDivElement>(null);
 
   const updateStatusMutation = useMutation(
     (status: PaymentStatus) => paymentRepository.updatePaymentStatus(payment.id, status),
@@ -71,6 +75,23 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
 
   const handleStatusUpdate = async (status: PaymentStatus) => {
     await updateStatusMutation.mutateAsync(status);
+  };
+
+  // Função para iniciar alteração de status com confirmação
+  const handleChangeStatus = (status: PaymentStatus, label: string) => {
+    setShowStatusConfirm({ status, label });
+  };
+
+  // Função para confirmar alteração de status
+  const confirmChangeStatus = async () => {
+    if (!showStatusConfirm) return;
+    setStatusLoading(true);
+    try {
+      await updateStatusMutation.mutateAsync(showStatusConfirm.status);
+      setShowStatusConfirm(null);
+    } finally {
+      setStatusLoading(false);
+    }
   };
 
   const renderActions = () => {
@@ -130,6 +151,72 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
     setTimeout(() => setCopied(false), 1200);
   };
 
+  // Fechar popover quando clicar fora dele
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (statusPopoverRef.current && !statusPopoverRef.current.contains(event.target as Node)) {
+        setStatusPopoverOpen(false);
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
+  // Renderizar opções rápidas de status para o popover
+  const renderStatusPopoverOptions = () => {
+    // Lista de status possíveis (exceto o atual)
+    const statusOptions: { value: PaymentStatus, label: string }[] = [
+      { value: PaymentStatus.PENDING, label: 'Pendente' },
+      { value: PaymentStatus.RECEIPT_SENT, label: 'Comprovante Enviado' },
+      { value: PaymentStatus.UNDER_REVIEW, label: 'Em Análise' },
+      { value: PaymentStatus.APPROVED, label: 'Aprovado' },
+      { value: PaymentStatus.NOT_APPROVED, label: 'Não Aprovado' },
+      { value: PaymentStatus.WITHDRAWAL_PROCESSING, label: 'Processamento de Saque' },
+      { value: PaymentStatus.COMPLETED, label: 'Concluído' },
+      { value: PaymentStatus.REJECTED, label: 'Rejeitado' },
+    ]
+ 
+    .filter(opt => opt.value !== PaymentStatus.COMPLETED)
+    .filter(opt => opt.value !== PaymentStatus.PAID)
+    .filter(opt => !(payment.transactionType !== 'static' && opt.value === PaymentStatus.RECEIPT_SENT))
+    .filter(opt => opt.value !== payment.status);
+
+    return (
+      <div className="absolute z-50 mt-1 w-60 rounded-md shadow-lg bg-card border border-border">
+        <div className="p-2">
+          <div className="text-xs font-medium text-muted-foreground mb-2 px-2 py-1 border-b">
+            Alterar status para:
+          </div>
+          <div className="max-h-60 overflow-y-auto space-y-1">
+            {statusOptions.length > 0 ? (
+              statusOptions.map(opt => (
+                <button
+                  key={opt.value}
+                  className="w-full text-left px-3 py-2 text-sm rounded-md hover:bg-muted/70 focus:outline-none focus:bg-muted transition-colors"
+                  onClick={() => {
+                    setStatusPopoverOpen(false);
+                    handleChangeStatus(opt.value, opt.label);
+                  }}
+                  disabled={statusLoading || updateStatusMutation.isLoading}
+                >
+                  {opt.label}
+                </button>
+              ))
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground italic">
+                Não há status disponíveis para alteração
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <>
       <Modal
@@ -164,8 +251,14 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
             </div>
             <div>
               <label className="text-sm text-muted-foreground">Status</label>
-              <div className="mt-1">
-                <StatusBadge status={payment.status} />
+              <div className="mt-1 relative" ref={statusPopoverRef}>
+                <StatusBadge 
+                  status={payment.status} 
+                  clickable={true}
+                  onClick={() => setStatusPopoverOpen(!statusPopoverOpen)}
+                  className="ring-2 ring-transparent hover:ring-primary/30"
+                />
+                {statusPopoverOpen && renderStatusPopoverOptions()}
               </div>
             </div>
             <div>
@@ -275,6 +368,42 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
           )}
         </div>
       </Modal>
+
+      {/* Modal de confirmação para alteração de status */}
+      {showStatusConfirm && (
+        <Modal
+          isOpen={!!showStatusConfirm}
+          onClose={() => setShowStatusConfirm(null)}
+          title="Confirmação de Alteração de Status"
+          footer={
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowStatusConfirm(null)}
+                disabled={statusLoading}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="success"
+                onClick={confirmChangeStatus}
+                isLoading={statusLoading}
+              >
+                Confirmar
+              </Button>
+            </div>
+          }
+        >
+          <div className="space-y-2">
+            <div className="text-yellow-700 font-semibold">
+              Atenção: você está alterando o status para <span className="font-bold">{showStatusConfirm.label}</span>.
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Tem certeza disso? Suas ações são gravadas e auditadas.
+            </div>
+          </div>
+        </Modal>
+      )}
 
       {payment.receipt && (
         <ImageViewer
