@@ -12,6 +12,7 @@ import { Payment, PaymentStatus } from '../../models/types';
 import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function PaymentsCard() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,10 +33,18 @@ export default function PaymentsCard() {
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  
+  const { user } = useAuth();
+
   const updateStatusMutation = useMutation(
     (params: { id: string; status: PaymentStatus }) => 
-      paymentRepository.updatePaymentStatus(params.id, params.status),
+      paymentRepository.updatePaymentStatus(
+        params.id,
+        params.status,
+        undefined,
+        undefined,
+        user?.uid,
+        data?.data.find(p => p.id === params.id)?.status
+      ),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('payments');
@@ -321,7 +330,7 @@ export default function PaymentsCard() {
                       className="flex-1"
                       onClick={(e) => {
                         e.stopPropagation();
-                        updateStatusMutation.mutate({ id: payment.id, status: PaymentStatus.COMPLETED });
+                        updateStatusMutation.mutate({ id: payment.id, status: PaymentStatus.APPROVED });
                       }}
                       isLoading={updateStatusMutation.isLoading}
                       leftIcon={<CheckCircle className="h-4 w-4" />}

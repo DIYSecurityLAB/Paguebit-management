@@ -128,7 +128,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
         <Button
           key="approve"
           variant="success"
-          onClick={() => handleStatusUpdate(PaymentStatus.COMPLETED)}
+          onClick={() => handleStatusUpdate(PaymentStatus.APPROVED)}
           isLoading={updateStatusMutation.isLoading}
           leftIcon={<CheckCircle className="h-4 w-4" />}
           className="w-full sm:w-auto"

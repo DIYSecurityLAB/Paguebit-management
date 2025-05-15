@@ -13,11 +13,13 @@ import { formatCurrency } from '../../utils/format';
 import apiClient from '../../datasource/api-client';
 import { toast } from 'sonner';
 import Tesseract from 'tesseract.js';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function PaymentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { user } = useAuth(); // Pega o usuário logado
   const [notFound, setNotFound] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -36,7 +38,14 @@ export default function PaymentDetail() {
   );
 
   const updateStatusMutation = useMutation(
-    (status: PaymentStatus) => paymentRepository.updatePaymentStatus(id as string, status),
+    (status: PaymentStatus) => paymentRepository.updatePaymentStatus(
+      id as string,
+      status,
+      undefined,
+      undefined,
+      user?.uid, // userId para auditoria
+      payment?.status // status anterior
+    ),
     {
       onSuccess: () => {
         queryClient.invalidateQueries(['payment', id]);
@@ -82,7 +91,7 @@ export default function PaymentDetail() {
   };
 
   const handleApprovePayment = async () => {
-    await updateStatusMutation.mutateAsync(PaymentStatus.COMPLETED);
+    await updateStatusMutation.mutateAsync(PaymentStatus.APPROVED); // Corrigido para APPROVED
   };
 
   const handleRejectPayment = async () => {

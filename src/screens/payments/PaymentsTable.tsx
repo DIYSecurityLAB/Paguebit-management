@@ -12,6 +12,7 @@ import { Payment, PaymentStatus } from '../../models/types';
 import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function PaymentsTable() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -32,10 +33,18 @@ export default function PaymentsTable() {
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const { user } = useAuth(); // Adicione para pegar o usuário logado
   
   const updateStatusMutation = useMutation(
     (params: { id: string; status: PaymentStatus }) => 
-      paymentRepository.updatePaymentStatus(params.id, params.status),
+      paymentRepository.updatePaymentStatus(
+        params.id,
+        params.status,
+        undefined,
+        undefined,
+        user?.uid, // userId para auditoria
+        data?.data.find(p => p.id === params.id)?.status // status anterior para auditoria
+      ),
     {
       onSuccess: () => {
         queryClient.invalidateQueries('payments');
@@ -228,7 +237,8 @@ export default function PaymentsTable() {
               <Button
                 variant="success"
                 size="sm"
-                onClick={() => updateStatusMutation.mutate({ id: payment.id, status: PaymentStatus.COMPLETED })}
+                // Corrigido para APPROVED e auditoria
+                onClick={() => updateStatusMutation.mutate({ id: payment.id, status: PaymentStatus.APPROVED })}
                 isLoading={updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
               >
