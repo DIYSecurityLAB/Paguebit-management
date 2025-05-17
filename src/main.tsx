@@ -6,6 +6,13 @@ import { Toaster } from 'sonner';
 import App from './App';
 import './index.css';
 
+// Proteção contra cliquejacking (frame busting)
+if (window.top !== window.self && window.top) {
+  window.top.location.href = window.self.location.href;
+}
+
+ 
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
