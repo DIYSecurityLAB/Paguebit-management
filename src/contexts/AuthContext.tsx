@@ -17,9 +17,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       setLoading(false);
+      if (currentUser) {
+        const token = await currentUser.getIdToken();
+        localStorage.setItem('token', token);
+      } else {
+        localStorage.removeItem('token');
+      }
     });
 
     return () => unsubscribe();
@@ -28,6 +34,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const logout = async () => {
     await auth.signOut();
     setUser(null);
+    localStorage.removeItem('token'); // Remove o token ao fazer logout
     navigate("/login");
   };
 

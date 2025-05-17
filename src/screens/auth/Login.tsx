@@ -32,6 +32,9 @@ export default function Login() {
       if (!firebaseUser) throw new Error("Usuário não autenticado no Firebase");
       const token = await firebaseUser.getIdToken();
 
+      // Salva o token no localStorage para o interceptor do Axios
+      localStorage.setItem('token', token);
+
       // Chamar o backend para validar e obter o usuário do sistema
       const response = await apiClient.post<{ user: any }>(
         "/auth/login",
@@ -43,6 +46,7 @@ export default function Login() {
       if (userData.role !== "admin") {
         setError("Acesso restrito: apenas administradores podem acessar.");
         await auth.signOut();
+        localStorage.removeItem('token'); // Remove o token se não for admin
         return;
       }
 

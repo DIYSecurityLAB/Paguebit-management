@@ -28,8 +28,13 @@ export class ApiClient {
     this.api.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem('token');
-        if (token) {
+        // Não envia o header Authorization para rotas públicas
+        const publicRoutes = ['/auth/login', '/auth/me'];
+        const isPublic = publicRoutes.some(route => config.url?.includes(route));
+        if (token && !isPublic) {
           config.headers.Authorization = `Bearer ${token}`;
+        } else {
+          delete config.headers.Authorization;
         }
         return config;
       },
