@@ -19,41 +19,51 @@ export default function Login() {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const { theme, setTheme } = useTheme();
+  const [loginAttempts, setLoginAttempts] = useState(0);
+
+  const MAX_ATTEMPTS = 5;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     setIsLoading(true);
     setError("");
 
+    // Sanitizar entradas
+    const sanitizedEmail = email.trim();
+    const sanitizedPassword = password.trim();
+
+    if (loginAttempts >= MAX_ATTEMPTS) {
+      setError("Muitas tentativas. Tente novamente mais tarde.");
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      await signInWithEmailAndPassword(auth, email, password);
-      // Obter o token do Firebase
+      await signInWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
       const firebaseUser = auth.currentUser;
       if (!firebaseUser) throw new Error("Usuário não autenticado no Firebase");
       const token = await firebaseUser.getIdToken();
-
-      // Salva o token no localStorage para o interceptor do Axios
       localStorage.setItem('token', token);
 
-      // Chamar o backend para validar e obter o usuário do sistema
       const response = await apiClient.post<{ user: any }>(
         "/auth/login",
         { token }
       );
       const userData = response.user || response;
 
-      // Verificar se é admin
       if (userData.role !== "admin") {
         setError("Acesso restrito: apenas administradores podem acessar.");
         await auth.signOut();
-        localStorage.removeItem('token'); // Remove o token se não for admin
+        localStorage.removeItem('token');
         return;
       }
 
-      // Se for admin, navega normalmente
+      setLoginAttempts(0); // resetar tentativas em caso de sucesso
       navigate("/");
     } catch (err: any) {
-      setError("Erro ao fazer login. Verifique suas credenciais.");
+      setLoginAttempts((prev) => prev + 1);
+      setError("Credenciais inválidas. Tente novamente.");
     } finally {
       setIsLoading(false);
     }
