@@ -30,11 +30,21 @@ export class ApiClient {
         const token = localStorage.getItem('token');
         // Não envia o header Authorization para rotas públicas
         const publicRoutes = ['/auth/login', '/auth/me'];
-        const isPublic = publicRoutes.some(route => config.url?.includes(route));
+        const urlPath = config.url ? new URL(config.url, this.api.defaults.baseURL).pathname : '';
+        const isPublic = publicRoutes.includes(urlPath);
         if (token && !isPublic) {
           config.headers.Authorization = `Bearer ${token}`;
         } else {
           delete config.headers.Authorization;
+        }
+        // Adiciona o header x-public-api-token para rotas públicas
+        if (isPublic) {
+          const publicApiToken = import.meta.env.VITE_PUBLIC_API_TOKEN;
+          if (publicApiToken) {
+            config.headers['x-public-api-token'] = publicApiToken;
+          }
+        } else {
+          delete config.headers['x-public-api-token'];
         }
         return config;
       },
