@@ -24,6 +24,7 @@ export interface User {
     state?: string;
   };
   referral?: string;
+  monthlyVolume: number;
   pictureUrl?: string;
   role: string;
   createdAt?: string;  
@@ -62,6 +63,7 @@ export interface UserCreateInput {
     state?: string;
   };
   referral?: string;
+  monthlyVolume: number;
   pictureUrl?: string;
 }
 
