@@ -552,6 +552,22 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 />
               </div>
             )}
+
+            {selectedStatus === 'completed' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Hash da Transação <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={txId}
+                  onChange={(e) => setTxId(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                  placeholder="Hash da transação no blockchain"
+                  required
+                />
+              </div>
+            )}
             
             <div className="flex justify-end gap-2">
               <Button
@@ -562,9 +578,23 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               </Button>
               <Button
                 variant={selectedStatus === 'failed' ? 'danger' : selectedStatus === 'completed' ? 'success' : 'default'}
-                onClick={handleStatusUpdate}
+                onClick={async () => {
+                  if (selectedStatus === 'completed' && !txId.trim()) {
+                    toast.error('Hash da transação é obrigatório');
+                    return;
+                  }
+                  if (selectedStatus === 'failed' && !failedReason) {
+                    toast.error('Motivo da falha é obrigatório');
+                    return;
+                  }
+                  await handleStatusUpdate();
+                }}
                 isLoading={updateStatusMutation.isLoading}
-                disabled={(selectedStatus === 'failed' && !failedReason) || updateStatusMutation.isLoading}
+                disabled={
+                  (selectedStatus === 'failed' && !failedReason) ||
+                  (selectedStatus === 'completed' && !txId.trim()) ||
+                  updateStatusMutation.isLoading
+                }
                 rightIcon={<ChevronRight className="h-4 w-4" />}
               >
                 {updateStatusMutation.isLoading 

@@ -106,23 +106,25 @@ class WithdrawalRepository {
     return result;
   }
 
-  async updateWithdrawalStatus(data: WithdrawalStatusUpdate, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
-    const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/status`, {
-      status: data.status,
-      failedReason: data.failedReason
-    });
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Atualização de status de saque',
-        withdrawalId: data.id,
-        previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
-        newValue: JSON.stringify(data),
-      };
-      auditRepository.createAuditLog(audit).catch(() => {});
+    async updateWithdrawalStatus(data: WithdrawalStatusUpdate, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
+      const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/status`, {
+        status: data.status,
+        failedReason: data.failedReason,
+        // Envia o hash da transação ao atualizar status para completed
+        txId: data.status === 'completed' ? data.txId : undefined
+      });
+      if (currentUserId) {
+        const audit: AuditLogInput = {
+          userId: currentUserId,
+          action: 'Atualização de status de saque',
+          withdrawalId: data.id,
+          previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
+          newValue: JSON.stringify(data),
+        };
+        auditRepository.createAuditLog(audit).catch(() => {});
+      }
+      return result;
     }
-    return result;
-  }
 }
 
 export default new WithdrawalRepository();

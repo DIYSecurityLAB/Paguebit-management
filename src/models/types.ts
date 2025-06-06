@@ -152,6 +152,7 @@ export interface WithdrawalStatusUpdate {
   id: string;
   status: keyof WithdrawalStatus;
   failedReason?: string;
+  txId?: string;
 }
 
 export interface NotifyModel {
