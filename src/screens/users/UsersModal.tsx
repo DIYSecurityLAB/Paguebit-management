@@ -119,6 +119,14 @@ export default function UsersModal({ user, isOpen, onClose }: UsersModalProps) {
                 <p className="font-medium">{user.referral}</p>
               </div>
             )}
+            <div>
+              <label className="text-sm text-muted-foreground">Planeja transacionar mensalmente</label>
+              <p className="font-medium">
+                R$ {user.monthlyVolume !== undefined && user.monthlyVolume !== null
+                  ? formatCurrency(user.monthlyVolume)
+                  : <span className="text-red-500">sem informação</span>}
+              </p>
+            </div>
           </div>
 
           <div>

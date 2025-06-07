@@ -32,6 +32,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const [selectedStatus, setSelectedStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | null>(null);
   const [failedReason, setFailedReason] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [copyTxIdSuccess, setCopyTxIdSuccess] = useState(false);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   
@@ -63,7 +64,8 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       withdrawalRepository.updateWithdrawalStatus({
         id: withdrawal.id,
         status,
-        failedReason: status === 'failed' ? failedReason : undefined
+        failedReason: status === 'failed' ? failedReason : undefined,
+        txId: status === 'completed' ? txId : undefined
       }),
     {
       onSuccess: () => {
@@ -72,6 +74,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         setShowStatusForm(false);
         setSelectedStatus(null);
         setFailedReason('');
+        setTxId(''); // Limpar txId ao concluir
         onClose();
       },
       onError: () => {
@@ -128,6 +131,18 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     } catch (err) {
       console.error('Falha ao copiar texto:', err);
       toast.error('Falha ao copiar endereço');
+    }
+  };
+
+  const handleCopyTxId = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyTxIdSuccess(true);
+      setTimeout(() => setCopyTxIdSuccess(false), 2000);
+      toast.success('Hash da transação copiado com sucesso');
+    } catch (err) {
+      console.error('Falha ao copiar texto:', err);
+      toast.error('Falha ao copiar hash');
     }
   };
 
@@ -316,6 +331,27 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <p className="font-medium text-foreground">
                   {format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm')}
                 </p>
+              </div>
+            )}
+            
+            {/* Exibir o Hash da Transação caso exista */}
+            {withdrawal.txId && (
+              <div className="col-span-2 flex justify-between items-start mt-2">
+                <div className="flex-1 pr-2">
+                  <p className="text-sm text-muted-foreground">Hash da Transação</p>
+                  <p className="font-medium text-foreground break-all">{withdrawal.txId}</p>
+                </div>
+                <button
+                  onClick={() => handleCopyTxId(withdrawal.txId || '')}
+                  className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
+                  title="Copiar hash da transação"
+                >
+                  {copyTxIdSuccess ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Copy className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
               </div>
             )}
           </div>
@@ -552,6 +588,22 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 />
               </div>
             )}
+
+            {selectedStatus === 'completed' && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  Hash da Transação <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={txId}
+                  onChange={(e) => setTxId(e.target.value)}
+                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
+                  placeholder="Hash da transação no blockchain"
+                  required
+                />
+              </div>
+            )}
             
             <div className="flex justify-end gap-2">
               <Button
@@ -562,9 +614,23 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               </Button>
               <Button
                 variant={selectedStatus === 'failed' ? 'danger' : selectedStatus === 'completed' ? 'success' : 'default'}
-                onClick={handleStatusUpdate}
+                onClick={async () => {
+                  if (selectedStatus === 'completed' && !txId.trim()) {
+                    toast.error('Hash da transação é obrigatório');
+                    return;
+                  }
+                  if (selectedStatus === 'failed' && !failedReason) {
+                    toast.error('Motivo da falha é obrigatório');
+                    return;
+                  }
+                  await handleStatusUpdate();
+                }}
                 isLoading={updateStatusMutation.isLoading}
-                disabled={(selectedStatus === 'failed' && !failedReason) || updateStatusMutation.isLoading}
+                disabled={
+                  (selectedStatus === 'failed' && !failedReason) ||
+                  (selectedStatus === 'completed' && !txId.trim()) ||
+                  updateStatusMutation.isLoading
+                }
                 rightIcon={<ChevronRight className="h-4 w-4" />}
               >
                 {updateStatusMutation.isLoading 

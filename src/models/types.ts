@@ -24,6 +24,7 @@ export interface User {
     state?: string;
   };
   referral?: string;
+  monthlyVolume: number;
   pictureUrl?: string;
   role: string;
   createdAt?: string;  
@@ -62,6 +63,7 @@ export interface UserCreateInput {
     state?: string;
   };
   referral?: string;
+  monthlyVolume: number;
   pictureUrl?: string;
 }
 
@@ -150,6 +152,7 @@ export interface WithdrawalStatusUpdate {
   id: string;
   status: keyof WithdrawalStatus;
   failedReason?: string;
+  txId?: string;
 }
 
 export interface NotifyModel {

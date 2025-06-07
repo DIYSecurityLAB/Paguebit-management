@@ -118,6 +118,10 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
           <label className="text-sm text-muted-foreground">Telefone</label>
           <p className="text-foreground">{user.phoneNumber}</p>
         </div>
+        <div>
+          <label className="text-sm text-muted-foreground">Planeja transacionar mensalmente</label>
+          <p className="text-foreground">R$ {user.monthlyVolume}</p>
+        </div>
         {/* Indicação editável */}
         <div>
           <label className="text-sm text-muted-foreground">Indicação</label>
