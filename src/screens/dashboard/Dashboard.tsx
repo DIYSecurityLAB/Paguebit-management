@@ -30,15 +30,15 @@ export default function Dashboard() {
   // Buscar todos os dados necessários
   const { data: usersData, isLoading: loadingUsers } = useQuery(
     'allUsers',
-    () => userRepository.getUsers({ page: 1, limit: 1000 })
+    () => userRepository.getUsers({ page: 1, limit: 10000 })
   );
   const { data: paymentsData, isLoading: loadingPayments } = useQuery(
     'allPayments',
-    () => paymentRepository.getPayments({ page: 1, limit: 1000 })
+    () => paymentRepository.getPayments({ page: 1, limit: 100000 })
   );
   const { data: withdrawalsData, isLoading: loadingWithdrawals } = useQuery(
     'allWithdrawals',
-    () => withdrawalRepository.getWithdrawals({ page: 1, limit: 1000 })
+    () => withdrawalRepository.getWithdrawals({ page: 1, limit: 10000 })
   );
 
   // Dados agregados
