@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { format } from 'date-fns';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Copy } from 'lucide-react';
 import Loading from '../../components/Loading';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
@@ -18,6 +18,7 @@ export default function WithdrawalDetail() {
   const navigate = useNavigate();
   const [notFound, setNotFound] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
 
   const { data: withdrawal, isLoading, error } = useQuery(
     ['withdrawal', id],
@@ -45,6 +46,13 @@ export default function WithdrawalDetail() {
     }
   );
 
+  // Função para copiar o QR Code ID
+  const handleCopyQrCodeId = (qrCodeId: string) => {
+    navigator.clipboard.writeText(qrCodeId);
+    setCopiedQrId(qrCodeId);
+    setTimeout(() => setCopiedQrId(null), 1500);
+  };
+
   const paymentColumns = [
     {
       header: 'Valor',
@@ -60,6 +68,31 @@ export default function WithdrawalDetail() {
       header: 'Tipo',
       accessor: (payment: Payment) => (
         <span className="capitalize">{payment.transactionType === 'static' ? 'Estático' : 'Dinâmico'}</span>
+      ),
+    },
+    {
+      header: 'QR Code ID',
+      accessor: (payment: Payment) => (
+        <div className="flex items-center gap-1">
+          <span className="font-mono text-xs truncate max-w-[180px]">{payment.qrCodeId}</span>
+          {payment.qrCodeId && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleCopyQrCodeId(payment.qrCodeId);
+              }}
+              className="p-1 rounded hover:bg-muted transition-colors"
+              title="Copiar QR Code ID"
+            >
+              <Copy className="h-3 w-3" />
+              {copiedQrId === payment.qrCodeId && (
+                <span className="absolute text-xs bg-green-100 text-green-800 px-1 py-0.5 rounded -mt-8 ml-1">
+                  Copiado!
+                </span>
+              )}
+            </button>
+          )}
+        </div>
       ),
     },
     {

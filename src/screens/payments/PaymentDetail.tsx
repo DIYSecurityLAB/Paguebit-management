@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
-import { ArrowLeft, ZoomIn, Download, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, ZoomIn, Download, CheckCircle, XCircle, Copy } from 'lucide-react';
 import Loading from '../../components/Loading';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
@@ -19,11 +19,13 @@ export default function PaymentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Pega o usuário logado
+  const { user } = useAuth();
   const [notFound, setNotFound] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState(false);
+  const [copiedQrId, setCopiedQrId] = useState(false);
 
   const { data: payment, isLoading, error } = useQuery(
     ['payment', id],
@@ -124,6 +126,22 @@ export default function PaymentDetail() {
     return () => { cancelled = true; };
   }, [payment?.receipt]);
 
+  // Função para copiar o ID
+  const handleCopyId = () => {
+    if (!payment?.id) return;
+    navigator.clipboard.writeText(payment.id);
+    setCopiedId(true);
+    setTimeout(() => setCopiedId(false), 1500);
+  };
+
+  // Função para copiar o QR Code ID
+  const handleCopyQrCodeId = () => {
+    if (!payment?.qrCodeId) return;
+    navigator.clipboard.writeText(payment.qrCodeId);
+    setCopiedQrId(true);
+    setTimeout(() => setCopiedQrId(false), 1500);
+  };
+
   if (isLoading) return <Loading />;
   if (notFound || error) {
     return (
@@ -168,8 +186,42 @@ export default function PaymentDetail() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-muted-foreground">ID</label>
-                  <p className="font-medium break-all">{payment?.id}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium break-all">{payment?.id}</p>
+                    <button
+                      type="button"
+                      className="p-1 rounded hover:bg-muted transition-colors"
+                      onClick={handleCopyId}
+                      title="Copiar ID"
+                    >
+                      <Copy className="h-4 w-4" />
+                    </button>
+                    {copiedId && (
+                      <span className="text-xs text-green-600">Copiado!</span>
+                    )}
+                  </div>
                 </div>
+                
+                {payment?.qrCodeId && (
+                  <div>
+                    <label className="text-sm text-muted-foreground">QR Code ID</label>
+                    <div className="flex items-center gap-2">
+                      <p className="font-medium break-all">{payment.qrCodeId}</p>
+                      <button
+                        type="button"
+                        className="p-1 rounded hover:bg-muted transition-colors"
+                        onClick={handleCopyQrCodeId}
+                        title="Copiar QR Code ID"
+                      >
+                        <Copy className="h-4 w-4" />
+                      </button>
+                      {copiedQrId && (
+                        <span className="text-xs text-green-600">Copiado!</span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 <div>
                   <label className="text-sm text-muted-foreground">Valor</label>
                   <p className="font-medium">{formatCurrency(payment?.amount || 0)}</p>
