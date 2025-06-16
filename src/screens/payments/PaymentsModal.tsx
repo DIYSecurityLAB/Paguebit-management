@@ -24,6 +24,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [isLoading, setIsLoading] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [copiedQrId, setCopiedQrId] = useState(false);
   const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth(); // Pega o usuário logado
@@ -161,6 +162,13 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
     setTimeout(() => setCopied(false), 1200);
   };
 
+  // Função para copiar o QR Code ID
+  const handleCopyQrCodeId = () => {
+    navigator.clipboard.writeText(payment.qrCodeId);
+    setCopiedQrId(true);
+    setTimeout(() => setCopiedQrId(false), 1200);
+  };
+
   // Fechar popover quando clicar fora dele
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -254,6 +262,28 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
               )}
             </div>
           </div>
+
+          {/* Adiciona exibição do QR Code ID */}
+          {payment.qrCodeId && (
+            <div>
+              <label className="text-sm text-muted-foreground">QR Code ID</label>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-mono text-xs break-all">{payment.qrCodeId}</span>
+                <button
+                  type="button"
+                  className="p-1 rounded hover:bg-muted transition-colors"
+                  onClick={handleCopyQrCodeId}
+                  title="Copiar QR Code ID"
+                >
+                  <Copy className="h-4 w-4" />
+                </button>
+                {copiedQrId && (
+                  <span className="text-xs text-green-600 ml-1">Copiado!</span>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
               <label className="text-sm text-muted-foreground">Valor</label>
