@@ -8,6 +8,7 @@ import Pagination from '../../components/Pagination';
 import StatusBadge from '../../components/StatusBadge';
 import Button from '../../components/Button';
 import WithdrawalsModal from './WithdrawalsModal';
+import WithdrawalNetworkSummary from '../../components/WithdrawalNetworkSummary';
 import { Withdrawal } from '../../models/types';
 import withdrawalRepository from '../../repository/withdrawal-repository';
 import { formatCurrency } from '../../utils/format';
@@ -333,6 +334,9 @@ export default function WithdrawalsTable() {
           </div>
         </div>
       </div>
+
+      {/* Componente de resumo de saques por rede */}
+      <WithdrawalNetworkSummary />
 
       {error ? (
         <div className="text-center p-6 bg-card rounded-lg border border-border">
