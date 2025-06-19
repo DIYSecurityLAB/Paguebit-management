@@ -27,6 +27,14 @@ export class ApiClient {
     // Request interceptor
     this.api.interceptors.request.use(
       (config) => {
+        // Log da requisição
+        console.log('[ApiClient] Request:', {
+          url: config.url,
+          method: config.method,
+          headers: config.headers,
+          data: config.data
+        });
+
         const token = localStorage.getItem('token');
         // Não envia o header Authorization para rotas públicas
         const publicRoutes = ['/auth/login', '/auth/me'];
