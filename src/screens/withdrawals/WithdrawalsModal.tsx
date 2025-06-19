@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
+import { Link } from 'react-router-dom';
 import { 
   CheckCircle, XCircle, ChevronDown, ChevronUp, Copy, Info,
-  AlertTriangle, Clock, RotateCw, ChevronRight, Coins, Check
+  AlertTriangle, Clock, RotateCw, ChevronRight, Coins, Check,
+  QrCode, X, User, Users, ExternalLink
 } from 'lucide-react';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
@@ -16,6 +18,7 @@ import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
 import { useWithdrawalFees } from '../../hooks/useWithdrawalFees';
 import PaymentsModal from '../payments/PaymentsModal';
+import { QRCodeSVG } from 'qrcode.react';
 
 interface WithdrawalsModalProps {
   withdrawal: Withdrawal;
@@ -35,6 +38,8 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const [copyTxIdSuccess, setCopyTxIdSuccess] = useState(false);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  // Novo estado para controlar a exibição do QR code
+  const [showQrCode, setShowQrCode] = useState(false);
   
   const queryClient = useQueryClient();
 
@@ -44,6 +49,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     withdrawal?.destinationWalletType || "",
     false
   );
+
+  // Cálculo de satoshis (1 BTC = 100,000,000 satoshis)
+  const satoshiValue = fees.isBitcoinWallet ? 
+    Math.round(parseFloat(fees.expectedAmountBTC) * 100000000) : 0;
 
   // Fetch associated payments
   const { data: payments, isLoading: isLoadingPayments } = useQuery(
@@ -301,6 +310,64 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     );
   };
 
+  // Componente QR Code em overlay
+  const renderQrCodeOverlay = () => {
+    if (!showQrCode) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="bg-card max-w-md w-full p-6 rounded-xl shadow-xl">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-lg font-bold">QR Code da Carteira</h3>
+            <button 
+              onClick={() => setShowQrCode(false)}
+              className="p-1 hover:bg-muted rounded-full"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="flex flex-col items-center">
+            <div className="bg-white p-4 rounded-lg mb-4">
+              {withdrawal.destinationWallet && (
+                <QRCodeSVG 
+                  value={withdrawal.destinationWallet}
+                  size={220}
+                  bgColor={"#ffffff"}
+                  fgColor={"#000000"}
+                  level={"L"}
+                  includeMargin={false}
+                />
+              )}
+            </div>
+            <p className="text-sm text-center text-muted-foreground mb-2">
+              Escaneie este código para acessar a carteira
+            </p>
+            <div className="text-xs bg-muted px-3 py-2 rounded-md max-w-full overflow-hidden text-center">
+              <span className="font-mono break-all">{withdrawal.destinationWallet}</span>
+            </div>
+            <button
+              onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
+              className="mt-3 px-3 py-1.5 flex items-center text-sm border border-border rounded-md hover:bg-muted transition-colors"
+            >
+              {copySuccess ? (
+                <>
+                  <Check className="h-4 w-4 mr-1.5 text-green-600" />
+                  <span>Copiado!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4 mr-1.5" />
+                  <span>Copiar endereço</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <Modal
       title="Detalhes do Saque"
@@ -309,6 +376,36 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       size="lg"
     >
       <div className="space-y-6">
+        {/* Banner de informação do usuário (manter) */}
+        <div className="flex items-center p-3 bg-primary/10 border border-primary/20 rounded-md">
+          <User className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
+          <div className="flex-grow min-w-0">
+            <p className="text-sm font-medium text-foreground truncate">
+              {(() => {
+                const user = (withdrawal as any).User;
+                if (user) {
+                  const firstName = user.firstName || '';
+                  const lastName = user.lastName || '';
+                  return [firstName, lastName].filter(Boolean).join(' ') || 'Usuário não identificado';
+                }
+                return 'Usuário não identificado';
+              })()}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {(withdrawal as any).User?.email || withdrawal.userId}
+            </p>
+          </div>
+          <Link 
+            to={`/users/${withdrawal.userId}`} 
+            target="_blank"
+            rel="noopener noreferrer"
+            className="ml-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md flex items-center hover:bg-primary/90 transition-colors"
+          >
+            <ExternalLink className="h-3 w-3 mr-1" />
+            Ver Perfil
+          </Link>
+        </div>
+
         <div className="flex justify-center mb-4">
           <StatusBadge status={withdrawal.status} />
         </div>
@@ -370,55 +467,76 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 </div>
               </div>
             </div>
+            
+            {/* Manter apenas o ID do usuário, sem duplicar informações */}
             <div className="px-4 py-4 border-b border-border">
-              <div>
-                <p className="text-sm font-medium text-foreground">ID do Usuário</p>
-                <p className="text-sm text-muted-foreground break-all">{withdrawal.userId}</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-foreground">ID do Usuário</p>
+                  <p className="text-sm text-muted-foreground break-all">{withdrawal.userId}</p>
+                </div>
+                <Link 
+                  to={`/users/${withdrawal.userId}`} 
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ml-2 p-2 hover:bg-muted rounded-full transition-colors"
+                  title="Ver detalhes do usuário (nova aba)"
+                >
+                  <ExternalLink className="h-4 w-4 text-primary" />
+                </Link>
               </div>
             </div>
-            <div className="px-4 py-4 border-b border-border">
-              <div>
-                <p className="text-sm font-medium text-foreground">Usuário</p>
-                <p className="text-sm text-muted-foreground">
-                  {(() => {
-                    const user = (withdrawal as any).User;
-                    if (user) {
-                      const firstName = user.firstName || '';
-                      const lastName = user.lastName || '';
-                      const name = [firstName, lastName].filter(Boolean).join(' ');
-                      const email = user.email || '';
-                      return (
-                        <>
-                          <span className="font-medium">{name || 'Não informado'}</span>
-                          {email && <span className="block">{email}</span>}
-                        </>
-                      );
-                    }
-                    return `ID: ${withdrawal.userId}`;
-                  })()}
-                </p>
-              </div>
-            </div>
-            <div className="px-4 py-4 flex items-center justify-between">
-              <div className="flex items-center flex-1 mr-4">
-                <div className="text-xl mr-3">{getWalletInfo(withdrawal.destinationWalletType).icon}</div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-foreground">Carteira de Destino</p>
-                  <p className="text-sm text-muted-foreground">{getWalletInfo(withdrawal.destinationWalletType).name}</p>
-                  <p className="text-sm text-foreground break-all pr-2">{withdrawal.destinationWallet}</p>
+            
+            {/* Corrigir seção de referral para usar o campo correto */}
+            {(withdrawal as any).User?.referral && (
+              <div className="px-4 py-4 border-b border-border">
+                <div className="flex items-start">
+                  <Users className="h-4 w-4 text-primary mt-1 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-foreground">Referral</p>
+                    <p className="text-sm text-muted-foreground font-mono">
+                      {(withdrawal as any).User?.referral}
+                    </p>
+                  </div>
                 </div>
               </div>
-              <button
-                onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
-                className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors"
-                title="Copiar endereço"
-              >
-                {copySuccess ? (
-                  <Check className="h-5 w-5 text-green-600" />
-                ) : (
-                  <Copy className="h-5 w-5 text-muted-foreground" />
-                )}
-              </button>
+            )}
+            
+            <div className="px-4 py-4 flex flex-col">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center flex-1 mr-4">
+                  <div className="text-xl mr-3">{getWalletInfo(withdrawal.destinationWalletType).icon}</div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-foreground">Carteira de Destino</p>
+                    <p className="text-sm text-muted-foreground">{getWalletInfo(withdrawal.destinationWalletType).name}</p>
+                    <p className="text-sm text-foreground break-all pr-2">{withdrawal.destinationWallet}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
+                  className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors"
+                  title="Copiar endereço"
+                >
+                  {copySuccess ? (
+                    <Check className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <Copy className="h-5 w-5 text-muted-foreground" />
+                  )}
+                </button>
+              </div>
+              
+              {/* Botão para exibir QR Code */}
+              <div className="mt-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowQrCode(true)}
+                  leftIcon={<QrCode className="h-4 w-4" />}
+                >
+                  Exibir QR Code
+                </Button>
+              </div>
             </div>
           </div>
         </div>
@@ -490,6 +608,13 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                         ? `${fees.expectedAmountBTC} BTC`
                         : `${fees.expectedAmountUSDT} USDT`}
                     </p>
+                    
+                    {/* Adicionar valor em satoshis para Bitcoin */}
+                    {fees.isBitcoinWallet && (
+                      <p className="text-sm font-mono text-muted-foreground mt-1">
+                        {satoshiValue.toLocaleString()} satoshis
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
@@ -518,6 +643,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">Valor Aproximado em Bitcoin</span>
                           <span className="font-mono font-medium">₿ {fees.expectedAmountBTC}</span>
+                        </div>
+                        <div className="flex justify-between items-center mt-1">
+                          <span className="text-sm font-medium">Valor em Satoshis</span>
+                          <span className="font-mono font-medium">{satoshiValue.toLocaleString()} sats</span>
                         </div>
                       </div>
                     )}
@@ -710,6 +839,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           </div>
         )}
       </div>
+
+      {/* Modal de QR Code */}
+      {renderQrCodeOverlay()}
 
       {/* Adicionar o modal de detalhes do pagamento */}
       {selectedPayment && (
