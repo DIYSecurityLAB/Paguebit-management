@@ -219,6 +219,7 @@ export interface PaymentQueryParams extends PaginationParams {
   email?: string;
   id?: string; // Alterado de paymentId para id para corresponder ao backend
   transactionType?: string; // Novo filtro para tipo da transação
+  noreceipt?: boolean; // Novo filtro para excluir receipts da resposta
 }
 
 export interface UserQueryParams extends PaginationParams {
