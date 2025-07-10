@@ -55,12 +55,12 @@ export default function SummaryStep({
     }
   };
 
-  // CORRIGIDO: verificar usando a propriedade hasFraguismo em vez da presença da string no nome
-  const anyMissingFraguismo = validPayments.some(item => item.hasFraguismo === false);
+  // CORRIGIDO: verificar usando a propriedade hasbbc em vez da presença da string no nome
+  const anyMissingbbc = validPayments.some(item => item.hasbbc === false);
   
-  // CORRIGIDO: lista de ids dos comprovantes sem "fraguismo"
-  const missingFraguismoIds = validPayments
-    .filter(item => item.hasFraguismo === false)
+  // CORRIGIDO: lista de ids dos comprovantes sem "bbc"
+  const missingbbcIds = validPayments
+    .filter(item => item.hasbbc === false)
     .map(item => item.payment.id);
 
   // NOVO: Função para copiar lista para a área de transferência
@@ -166,10 +166,10 @@ export default function SummaryStep({
                 </span>
               )}
             </p>
-            {/* AVISO extra caso algum não tenha "fraguismo" */}
-            {anyMissingFraguismo && (
+            {/* AVISO extra caso algum não tenha "bbc" */}
+            {anyMissingbbc && (
               <div className="text-xs text-red-500 font-semibold mt-2">
-                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "fraguismo" identificado. Verifique se o comprovante corresponde ao destino correto!
+                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "bbc" identificado. Verifique se o comprovante corresponde ao destino correto!
               </div>
             )}
           </div>
@@ -219,8 +219,8 @@ export default function SummaryStep({
                             className={
                               [
                                 item.ignored ? 'line-through' : '',
-                                // CORRIGIDO: vermelho apenas se hasFraguismo é explicitamente false
-                                !item.ignored && item.hasFraguismo === false ? 'text-red-500 font-semibold' : '',
+                                // CORRIGIDO: vermelho apenas se hasbbc é explicitamente false
+                                !item.ignored && item.hasbbc === false ? 'text-red-500 font-semibold' : '',
                                 'cursor-pointer hover:underline'
                               ].join(' ')
                             }
