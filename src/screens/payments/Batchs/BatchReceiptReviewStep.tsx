@@ -33,7 +33,7 @@ export default function ReviewStep({
   const [isEditing, setIsEditing] = useState(false);
   const [isIgnored, setIsIgnored] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
+  const [hasbbc, setHasbbc] = useState<boolean | null>(null);
 
   const currentPayment = payments[currentIndex];
   const isLastPayment = currentIndex === payments.length - 1;
@@ -75,7 +75,7 @@ export default function ReviewStep({
         ...updated[existingIndex],
         name: currentName || 'Nome não identificado',
         ignored: isIgnored,
-        hasFraguismo: hasFraguismo // Salvar o status de fraguismo
+        hasbbc: hasbbc // Salvar o status de bbc
       };
       setReviewedPayments(updated);
     } else {
@@ -86,7 +86,7 @@ export default function ReviewStep({
           payment: currentPayment,
           name: currentName || 'Nome não identificado',
           ignored: isIgnored,
-          hasFraguismo: hasFraguismo // Salvar o status de fraguismo
+          hasbbc: hasbbc // Salvar o status de bbc
         }
       ]);
     }
@@ -222,7 +222,7 @@ export default function ReviewStep({
                           <OcrNameSuggestion 
                             receipt={currentPayment.receipt} 
                             onNameDetected={setCurrentName}
-                            onFraguismoCheck={setHasFraguismo}
+                            onbbcCheck={setHasbbc}
                           />
                         )}
                         {/* Se já editou manualmente, mostra apenas o nome */}
@@ -234,9 +234,9 @@ export default function ReviewStep({
                   )}
                 </div>
                   {/* AVISO global para o comprovante atual */}
-            {hasFraguismo === false && (
+            {hasbbc === false && (
               <div className="text-xs text-red-500 font-semibold mt-2">
-                Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
+                Atenção: o nome "bbc" NÃO foi encontrado no comprovante!
               </div>
             )}
 

@@ -25,7 +25,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedQrId, setCopiedQrId] = useState(false);
-  const [hasFraguismo, setHasFraguismo] = useState<boolean | null>(null);
+  const [hasbbc, setHasbbc] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
   const { user } = useAuth(); // Pega o usuário logado
   const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
@@ -377,14 +377,14 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
                   </div>
                   <OcrNameSuggestion
                     receipt={payment.receipt}
-                    onFraguismoCheck={setHasFraguismo}
+                    onbbcCheck={setHasbbc}
                   />
-                  {/* AVISO extra caso não tenha "fraguismo" - mostrar só aqui */}
+                  {/* AVISO extra caso não tenha "bbc" - mostrar só aqui */}
                 </div>
               </div>
-              {hasFraguismo === false && (
+              {hasbbc === false && (
                 <div className="text-xs text-red-500 font-semibold mb-2">
-                  Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
+                  Atenção: o nome "bbc" NÃO foi encontrado no comprovante!
                 </div>
               )}
               <div 
