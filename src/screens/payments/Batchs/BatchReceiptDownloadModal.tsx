@@ -19,7 +19,7 @@ export type ReviewedPayment = {
   payment: Payment;
   name: string;
   ignored: boolean;
-  hasbbc?: boolean | null; // Nova propriedade para rastrear se o comprovante tem "bbc"
+  hasfraguismo?: boolean | null; // Nova propriedade para rastrear se o comprovante tem "fraguismo"
 };
 
 // Etapas do processo (exportando para uso nos outros arquivos)

@@ -4,13 +4,13 @@ import Tesseract from 'tesseract.js';
 interface OcrNameSuggestionProps {
   receipt: string | undefined;
   onNameDetected?: (name: string) => void;
-  onbbcCheck?: (hasbbc: boolean) => void;
+  onfraguismoCheck?: (hasfraguismo: boolean) => void;
 }
 
-export default function OcrNameSuggestion({ receipt, onNameDetected, onbbcCheck }: OcrNameSuggestionProps) {
+export default function OcrNameSuggestion({ receipt, onNameDetected, onfraguismoCheck }: OcrNameSuggestionProps) {
   const [ocrLoading, setOcrLoading] = useState(false);
   const [suggestedName, setSuggestedName] = useState<string>('');
-  const [hasbbc, setHasbbc] = useState<boolean | null>(null);
+  const [hasfraguismo, setHasfraguismo] = useState<boolean | null>(null);
 
   // Palavras-chave para identificar o pagador - divididas por prioridade
   const HIGH_PRIORITY_KEYWORDS = [
@@ -43,7 +43,7 @@ export default function OcrNameSuggestion({ receipt, onNameDetected, onbbcCheck 
     'recebido por', 'quem recebeu', 'recebedor', 'favorecido', 'beneficiário', 'instituição',
     'cnpj', 'cpf', 'id pix', 'id da transação', 'autenticação', 'identificador', 'conta pagamento',
     'sobre a transação', 'valor', 'data do pagamento', 'horário', 'dados do pagamento',
-    'efí', 'banco inter', 'fitbank', 'cora', 'plebankcombr', 'bbc', 'quem pagou',
+    'efí', 'banco inter', 'fitbank', 'cora', 'plebankcombr', 'fraguismo', 'quem pagou',
     // Palavras genéricas indesejadas
     'estamos aqui para ajudar', 'me ajuda', 'ouvidoria', 'atendimento', 'informações adicionais', 'Estamos aqui para ajudar se você tiver alguma',
     // Adicionados para evitar nomes indesejados:
@@ -77,8 +77,6 @@ const COMMON_NAMES = [
   'gondim', 'lopez', 'guerra', 'da silva', 'leal', 'luciano', 'gonzaga', 'albuquerque',
   'braga', 'nogueira', 'damasceno', 'meireles', 'amigo', 'dos santos', 'peixoto',
   'romero', 'prado', 'parente', 'barroso', 'maria', 'marcos', 'maciel',
-
-  // Novos nomes comuns adicionados:
   'ana', 'beatriz', 'rafael', 'renan', 'gabriel', 'caio', 'heitor', 'enzo',
   'bernardo', 'miguel', 'joao', 'pedro', 'matheus', 'thiago', 'eduardo', 'daniel',
   'gustavo', 'felipe', 'arthur', 'henry', 'lara', 'mariana', 'camila', 'isabela',
@@ -111,7 +109,7 @@ const COMMON_NAMES = [
 
   useEffect(() => {
     setSuggestedName('');
-    setHasbbc(null);
+    setHasfraguismo(null);
     if (!receipt) return;
 
     setOcrLoading(true);
@@ -149,11 +147,11 @@ const COMMON_NAMES = [
         debugLogs.push("TEXTO OCR COMPLETO:");
         lines.forEach((l, i) => debugLogs.push(`${i+1}: "${l}"`));
 
-        // NOVO: verificar se "bbc" aparece em alguma linha
-        const hasbbcLocal = normalizedLines.some(line => line.includes('bbc'));
-        setHasbbc(hasbbcLocal);
-        if (onbbcCheck) onbbcCheck(hasbbcLocal);
-        debugLogs.push(`bbc detectado: ${hasbbcLocal ? "SIM" : "NÃO"}`);
+        // NOVO: verificar se "fraguismo" aparece em alguma linha
+        const hasfraguismoLocal = normalizedLines.some(line => line.includes('fraguismo'));
+        setHasfraguismo(hasfraguismoLocal);
+        if (onfraguismoCheck) onfraguismoCheck(hasfraguismoLocal);
+        debugLogs.push(`fraguismo detectado: ${hasfraguismoLocal ? "SIM" : "NÃO"}`);
 
         // Regex para detectar CNPJ/CPF/números longos
         const cpfCnpjRegex = /\b(\d{3}\.?\d{3}\.?\d{3}-?\d{2}|\d{2}\.?\d{3}\.?\d{3}\/?\d{4}-?\d{2}|\d{11,})\b/;
@@ -177,7 +175,7 @@ const COMMON_NAMES = [
           const isValid = hasCommonName && 
                 line.length > 2 &&
                 // Removida a verificação de caracteres não alfabéticos
-                !lineLower.includes('bbc') &&
+                !lineLower.includes('fraguismo') &&
                 !IGNORE_KEYWORDS.some(key => lineLower.includes(key)) &&
                 !line.match(/\d{5,}/) &&
                 !line.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
@@ -187,8 +185,8 @@ const COMMON_NAMES = [
             debugLogs.push(`- ❌ REJEITADO nome comum "${line}" porque: ${
               IGNORE_KEYWORDS.some(key => lineLower.includes(key))
                 ? 'contém palavra-chave para ignorar'
-                : lineLower.includes('bbc')
-                  ? 'contém bbc'
+                : lineLower.includes('fraguismo')
+                  ? 'contém fraguismo'
                   : line.match(/\d{5,}/) || cpfCnpjRegex.test(line.replace(/[ .\-\/]/g, ''))
                     ? 'contém números longos'
                     : 'outra razão'
@@ -261,7 +259,7 @@ const COMMON_NAMES = [
                   const extractedName = nameMatch[1].trim();
                   if (!IGNORE_KEYWORDS.some(key => extractedName.toLowerCase().includes(key)) &&
                       !extractedName.match(/\d{5,}/) &&
-                      !extractedName.toLowerCase().includes('bbc')) {
+                      !extractedName.toLowerCase().includes('fraguismo')) {
                     foundName = cleanName(extractedName);
                     debugLogs.push(`  - ✅ Nome extraído da mesma linha: "${foundName}"`);
                     break searchLoop;
@@ -277,7 +275,7 @@ const COMMON_NAMES = [
                   if (namePart.length > 2 && 
                       !IGNORE_KEYWORDS.some(key => namePart.toLowerCase().includes(key)) &&
                       !namePart.match(/\d{5,}/) &&
-                      !namePart.toLowerCase().includes('bbc')) {
+                      !namePart.toLowerCase().includes('fraguismo')) {
                     
                     foundName = cleanName(namePart);
                     debugLogs.push(`  - ✅ Nome encontrado na mesma linha após a palavra-chave: "${foundName}"`);
@@ -298,7 +296,7 @@ const COMMON_NAMES = [
                     const extractedName = nextLineNameMatch[1].trim();
                     if (!IGNORE_KEYWORDS.some(key => extractedName.toLowerCase().includes(key)) &&
                         !extractedName.match(/\d{5,}/) &&
-                        !extractedName.toLowerCase().includes('bbc')) {
+                        !extractedName.toLowerCase().includes('fraguismo')) {
                       foundName = cleanName(extractedName);
                       debugLogs.push(`  - ✅ Nome extraído da linha com "Nome:": "${foundName}"`);
                       break searchLoop;
@@ -308,7 +306,7 @@ const COMMON_NAMES = [
                   else if (nextLine.length > 2 && 
                       !IGNORE_KEYWORDS.some(key => nextLineLower.includes(key)) &&
                       !nextLine.match(/\d{5,}/) &&
-                      !nextLineLower.includes('bbc')) {
+                      !nextLineLower.includes('fraguismo')) {
                     
                     foundName = cleanName(nextLine);
                     debugLogs.push(`  - ✅ Nome encontrado na linha seguinte: "${foundName}"`);
@@ -324,7 +322,7 @@ const COMMON_NAMES = [
                     if (lineAfterNext.length > 2 &&
                         !IGNORE_KEYWORDS.some(key => lineAfterNextLower.includes(key)) &&
                         !lineAfterNext.match(/\d{5,}/) &&
-                        !lineAfterNextLower.includes('bbc')) {
+                        !lineAfterNextLower.includes('fraguismo')) {
                       
                       foundName = cleanName(lineAfterNext);
                       debugLogs.push(`  - ✅ Nome encontrado na segunda linha seguinte: "${foundName}"`);
@@ -361,7 +359,7 @@ const COMMON_NAMES = [
                   if (!IGNORE_KEYWORDS.some(key => candidateLower.includes(key)) &&
                       candidate.length > 2 &&
                       /^[A-Za-zÀ-ú\s*]+$/.test(candidate) &&
-                      !candidateLower.includes('bbc') &&
+                      !candidateLower.includes('fraguismo') &&
                       !candidate.match(/\d{5,}/) &&
                       !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, ''))) {
                     foundName = candidate;
@@ -373,8 +371,8 @@ const COMMON_NAMES = [
                         ? 'contém palavra-chave para ignorar'
                         : !(/^[A-Za-zÀ-ú\s*]+$/.test(candidate))
                           ? 'contém caracteres não alfabéticos'
-                          : candidateLower.includes('bbc')
-                            ? 'contém bbc'
+                          : candidateLower.includes('fraguismo')
+                            ? 'contém fraguismo'
                             : candidate.match(/\d{5,}/) || cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, ''))
                               ? 'contém números'
                               : 'outra razão'
@@ -415,7 +413,7 @@ const COMMON_NAMES = [
                     !candidate.match(/\d{5,}/) &&
                     !candidate.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
                     !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, '')) &&
-                    !candidateLower.includes('bbc')
+                    !candidateLower.includes('fraguismo')
                   ) {
                     const processedCandidate = candidate.replace(/^nome[:\s]+/i, '').trim();
                     if (processedCandidate.length >= 3) {
@@ -453,7 +451,7 @@ const COMMON_NAMES = [
                   !candidate.match(/\d{5,}/) &&
                   !candidate.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
                   !cpfCnpjRegex.test(candidate.replace(/[ .\-\/]/g, '')) &&
-                  !candidateLower.includes('bbc')
+                  !candidateLower.includes('fraguismo')
                 ) {
                   foundName = candidate;
                   debugLogs.push(`- ✅ Encontrado como nome: "${foundName}"`);
@@ -476,7 +474,7 @@ const COMMON_NAMES = [
             !line.match(/\d{5,}/) &&
             !line.match(/pix|cpf|cnpj|r\$|\d{2}\/\d{2}\/\d{4}/i) &&
             !cpfCnpjRegex.test(line.replace(/[ .\-\/]/g, '')) &&
-            !line.toLowerCase().includes('bbc')
+            !line.toLowerCase().includes('fraguismo')
           ).map(candidate => candidate.replace(/^nome[:\s]+/i, '').trim());
 
           // Busca o candidato com menor distância de Levenshtein para qualquer nome comum
@@ -522,7 +520,7 @@ const COMMON_NAMES = [
             const lineLower = line.toLowerCase();
             return line.replace(/[^A-Za-zÀ-ú*]/g, '').replace(/\*/g, '').length >= 3 &&
               /^[A-Za-zÀ-ú\s*]+$/.test(line) &&
-              !lineLower.includes('bbc') &&
+              !lineLower.includes('fraguismo') &&
               !IGNORE_KEYWORDS.some(key => lineLower.includes(key))
           });
           
@@ -541,13 +539,13 @@ const COMMON_NAMES = [
           debugLogs.push(`- ❌ REJEITADO: "${foundName}" é uma frase indesejada`);
         }
 
-        // ETAPA EXTRA: se a sugestão final ainda contiver "bbc", buscar a primeira linha que contenha um common name completo
-        if (foundName && foundName.toLowerCase().includes('bbc')) {
-          debugLogs.push(`- bbc detectado em "${foundName}", buscando nome alternativo...`);
-          // Filtra todas as linhas que contenham pelo menos um common name completo e não contenham "bbc"
+        // ETAPA EXTRA: se a sugestão final ainda contiver "fraguismo", buscar a primeira linha que contenha um common name completo
+        if (foundName && foundName.toLowerCase().includes('fraguismo')) {
+          debugLogs.push(`- fraguismo detectado em "${foundName}", buscando nome alternativo...`);
+          // Filtra todas as linhas que contenham pelo menos um common name completo e não contenham "fraguismo"
           const commonCandidates = lines.filter(line => {
             const words = line.toLowerCase().split(/\s+/);
-            return words.some(word => COMMON_NAMES.includes(word)) && !line.toLowerCase().includes('bbc');
+            return words.some(word => COMMON_NAMES.includes(word)) && !line.toLowerCase().includes('fraguismo');
           });
           if (commonCandidates.length > 0) {
             // Escolhe a linha com maior comprimento, presumindo ser mais completa
@@ -585,7 +583,7 @@ const COMMON_NAMES = [
         if (!cancelled) {
           console.error("Erro ao processar OCR:", error);
           setSuggestedName('Nome não identificado');
-          setHasbbc(null);
+          setHasfraguismo(null);
         }
       } finally {
         if (!cancelled) setOcrLoading(false);
@@ -594,7 +592,7 @@ const COMMON_NAMES = [
 
     extractName();
     return () => { cancelled = true; };
-  }, [receipt, onNameDetected, onbbcCheck]);
+  }, [receipt, onNameDetected, onfraguismoCheck]);
 
   return (
     <div className="text-xs text-muted-foreground mt-1 min-h-[18px]">
