@@ -54,6 +54,13 @@ export class ApiClient {
         } else {
           delete config.headers['x-public-api-token'];
         }
+
+        // Sempre adiciona o header x-api-key
+        const apiKey = import.meta.env.VITE_API_KEY;
+        if (apiKey) {
+          config.headers['x-api-key'] = apiKey;
+        }
+
         return config;
       },
       (error) => Promise.reject(error)
@@ -143,39 +150,23 @@ export class ApiClient {
   }
 
   public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response: AxiosResponse<T> = await this.api.get(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response: AxiosResponse<T, any> = await this.api.get(url, config);
+    return response.data;
   }
 
   public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response: AxiosResponse<T> = await this.api.post(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response: AxiosResponse<T, any> = await this.api.post(url, data, config);
+    return response.data;
   }
 
   public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response: AxiosResponse<T> = await this.api.put(url, data, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response: AxiosResponse<T, any> = await this.api.put(url, data, config);
+    return response.data;
   }
 
   public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    try {
-      const response: AxiosResponse<T> = await this.api.delete(url, config);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+    const response: AxiosResponse<T, any> = await this.api.delete(url, config);
+    return response.data;
   }
 }
 
