@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Save, X } from 'lucide-react';
-import { User } from '../../../models/types';
+import { User, UserUpdateInput } from '../../../models/types';
 import Button from '../../../components/Button';
 import { toast } from 'sonner';
 import userRepository from '../../../repository/user-repository';
@@ -26,19 +26,16 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
   // Função para salvar alterações de referral após confirmação
   const handleSaveReferralConfirmed = async () => {
     if (!user) return;
-    
     try {
       setIsSaving(true);
-      // Guardando o usuário anterior para o log de auditoria
       const previousUser = { ...user };
-      // Atualizando apenas o campo referral
+      const update: UserUpdateInput = { referral: referralValue };
       const updatedUser = await userRepository.updateUser(
-        user.id, 
-        { referral: referralValue },
-        user.id,  // usuário atual como responsável pela alteração
+        user.id,
+        update,
+        user.id,
         previousUser
       );
-      
       onUserUpdate(updatedUser);
       setIsEditingReferral(false);
       setShowReferralConfirmation(false);
@@ -71,21 +68,16 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
   // Função para alternar status ativo/inativo após confirmação
   const handleToggleActiveConfirmed = async () => {
     if (!user) return;
-    
     try {
       setIsSaving(true);
-      
-      // Guardando o usuário anterior para o log de auditoria
       const previousUser = { ...user };
-      
-      // Atualizando apenas o campo active
+      const update: UserUpdateInput = { active: pendingActiveValue ? 'true' : 'false' };
       const updatedUser = await userRepository.updateUser(
-        user.id, 
-        { active: pendingActiveValue },
-        user.id,  // usuário atual como responsável pela alteração
+        user.id,
+        update,
+        user.id,
         previousUser
       );
-      
       onUserUpdate(updatedUser);
       setIsActiveValue(pendingActiveValue);
       setShowStatusConfirmation(false);
@@ -224,6 +216,14 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
         onConfirm={handleToggleActiveConfirmed}
         title={`Confirmar ${pendingActiveValue ? 'ativação' : 'desativação'} de usuário`}
         message={`Você está prestes a ${pendingActiveValue ? 'ativar' : 'desativar'} este usuário. ${
+          !pendingActiveValue ? 'Usuários inativos não podem realizar operações na plataforma.' : ''
+        } Deseja continuar?`}
+        confirmButtonText={pendingActiveValue ? 'Ativar usuário' : 'Desativar usuário'}
+        isLoading={isSaving}
+      />
+    </div>
+  );
+}
           !pendingActiveValue ? 'Usuários inativos não podem realizar operações na plataforma.' : ''
         } Deseja continuar?`}
         confirmButtonText={pendingActiveValue ? 'Ativar usuário' : 'Desativar usuário'}

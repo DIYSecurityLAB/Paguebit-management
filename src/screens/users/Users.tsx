@@ -34,19 +34,7 @@ export default function Users() {
         'Função': user.role?.toUpperCase() || 'Não informado',
       };
       
-      // Grupo de carteiras
-      const walletData = {
-        'Carteira BTC': user.wallets?.OnChainAddress || '-',
-        'Carteira Lightning': user.wallets?.LightningAddress || '-',
-        'Carteira Liquid': user.wallets?.LiquidAddress || '-',
-        'Carteira Tron': user.wallets?.TronAddress || '-',
-        'Carteira Polygon': user.wallets?.PolygonAddress || '-',
-      };
-      
-      return {
-        ...mainData,
-        ...walletData
-      };
+      return mainData;
     });
   };
 
@@ -59,11 +47,6 @@ export default function Users() {
     'Documento': 20,
     'Telefone': 20,
     'Função': 12,
-    'Carteira BTC': 50,
-    'Carteira Lightning': 50,
-    'Carteira Liquid': 50,
-    'Carteira Tron': 50,
-    'Carteira Polygon': 50,
   };
 
   // Definir estilo do cabeçalho com cores no formato correto (sem #)

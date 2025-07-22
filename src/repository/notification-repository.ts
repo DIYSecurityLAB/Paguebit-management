@@ -45,15 +45,20 @@ class NotificationRepository {
     return apiClient.put<{ message: string }>('/notifications/general/read', { notificationIds, userId });
   }
 
-  async getAllNotifications(params?: PaginationParams): Promise<{ notifications: NotifyModel[] }> {
+  async getAllNotifications(params?: PaginationParams & { storeId?: string }): Promise<{ notifications: NotifyModel[] }> {
     try {
-      // O backend retorna um array diretamente, não um objeto com propriedade "notifications"
-      const response = await apiClient.get<BackendNotification[]>('/notifications/all', { params });
-      
-      // Mapear cada notificação para o formato esperado pelo frontend
-      const notifications = response.map(this.mapNotificationToModel);
-      
-      return { notifications };
+      // Usar rota de admin
+      const response = await apiClient.get<unknown>('/admin/notifications', { params });
+      // Checagem de tipo segura
+      if (Array.isArray(response)) {
+        return { notifications: response.map(this.mapNotificationToModel) };
+      }
+      if (typeof response === 'object' && response !== null && 'data' in response) {
+        const r = response as { data: BackendNotification[] };
+        return { notifications: r.data.map(this.mapNotificationToModel) };
+      }
+      // fallback
+      return { notifications: [] };
     } catch (error) {
       console.error('Erro ao buscar notificações:', error);
       return { notifications: [] };
@@ -61,22 +66,23 @@ class NotificationRepository {
   }
 
   async createNotification(notification: {
-    userId: string;
+    storeId: string;
     title: string;
     message: string;
     type: ValidNotificationType;  // Usar o tipo literal aqui
     referenceId?: string;
     referenceType?: string;
   }): Promise<NotifyModel> {
-    // Converter message para content conforme esperado pelo backend
+    // Extrair storeId e whitelabelId dos dados
+    const { storeId, ...rest } = notification;
     const backendData = {
-      ...notification,
+      ...rest,
       content: notification.message,
       // Remover o campo message pois o backend não o espera
       message: undefined
     };
     
-    const response = await apiClient.post<BackendNotification>('/notifications', backendData);
+    const response = await apiClient.post<BackendNotification>(`/admin/stores/${storeId}/notifications`, backendData);
     return this.mapNotificationToModel(response);
   }
 

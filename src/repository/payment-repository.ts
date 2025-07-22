@@ -3,7 +3,7 @@ import { PaginatedResponse, PaymentQueryParams, Payment, PaymentStatus, AuditLog
 import auditRepository from './audit-repository';
 
 class PaymentRepository {
-  async getPayments(params?: PaymentQueryParams): Promise<PaginatedResponse<Payment>> {
+  async getPayments(params?: PaymentQueryParams & { storeId?: string }): Promise<PaginatedResponse<Payment>> {
     // Garantir que o parâmetro é um objeto
     const safeParams = params || {};
     
@@ -30,13 +30,38 @@ class PaymentRepository {
       cleanParams.order = 'desc';
     }
     
-    return apiClient.get<PaginatedResponse<Payment>>('/payments', { 
-      params: cleanParams 
-    });
+    try {
+      const { data } = await apiClient.get<any>('/admin/payments', { params: cleanParams });
+      // Adapta o formato do backend para o frontend
+      if (data && Array.isArray(data.data) && typeof data.total === 'number') {
+        return {
+          data: data.data,
+          pagination: {
+            total: data.total,
+            page: data.page || 1,
+            limit: data.limit || 10
+          }
+        };
+      }
+      // fallback para formato antigo
+      if (data && data.data && data.pagination) {
+        return data;
+      }
+      return {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10 }
+      };
+    } catch (err) {
+      return {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10 }
+      };
+    }
   }
 
   async getPaymentById(id: string): Promise<Payment> {
-    return apiClient.get<Payment>(`/payments/${id}`);
+    const { data } = await apiClient.get<Payment>(`/admin/payments/${id}`);
+    return data;
   }
 
   async updatePaymentStatus(
@@ -55,14 +80,8 @@ class PaymentRepository {
       body.notes = notes;
     }
     
-    // Se payerName for fornecido, use o endpoint genérico de atualização
-    if (payerName !== undefined) {
-      return this.updatePayment(id, { ...body, payerName });
-    }
-    
-    // Caso contrário, use o endpoint específico de status
-    console.log('Corpo da requisição (status):', body);
-    const result = await apiClient.put<Payment>(`/payments/${id}/status`, body);
+    // PATCH na nova rota de admin
+    const { data } = await apiClient.patch<Payment>(`/admin/payments/${id}/status`, body);
 
     // Enviar log de auditoria se userId estiver presente
     if (userId) {
@@ -76,7 +95,7 @@ class PaymentRepository {
       auditRepository.createAuditLog(auditLog).catch(() => {});
     }
 
-    return result;
+    return data;
   }
 
   // Novo método para atualização genérica

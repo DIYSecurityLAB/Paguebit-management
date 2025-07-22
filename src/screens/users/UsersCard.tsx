@@ -61,10 +61,28 @@ export default function UsersCard() {
 
   const filterOptions = [
     {
-      key: 'name',
+      key: 'id',
+      label: 'ID',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID',
+    },
+    {
+      key: 'providerId',
+      label: 'Provider ID',
+      type: 'text' as const,
+      placeholder: 'Buscar por Provider ID',
+    },
+    {
+      key: 'firstName',
       label: 'Nome',
       type: 'text' as const,
       placeholder: 'Buscar por nome',
+    },
+    {
+      key: 'lastName',
+      label: 'Sobrenome',
+      type: 'text' as const,
+      placeholder: 'Buscar por sobrenome',
     },
     {
       key: 'email',
@@ -72,41 +90,115 @@ export default function UsersCard() {
       type: 'text' as const,
       placeholder: 'Buscar por email',
     },
+    {
+      key: 'documentId',
+      label: 'Documento',
+      type: 'text' as const,
+      placeholder: 'Buscar por documento',
+    },
+    {
+      key: 'phoneNumber',
+      label: 'Telefone',
+      type: 'text' as const,
+      placeholder: 'Buscar por telefone',
+    },
+    {
+      key: 'documentType',
+      label: 'Tipo de Documento',
+      type: 'text' as const,
+      placeholder: 'Buscar por tipo de documento',
+    },
+    {
+      key: 'referral',
+      label: 'Indicação',
+      type: 'text' as const,
+      placeholder: 'Buscar por indicação',
+    },
+    {
+      key: 'role',
+      label: 'Função',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'USER', label: 'Usuário' },
+        { value: 'MANAGER', label: 'Administrador' },
+        { value: 'SUPER_ADMIN', label: 'Super Admin' },
+      ],
+    },
+    {
+      key: 'active',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'true', label: 'Ativo' },
+        { value: 'false', label: 'Inativo' },
+      ],
+    },
+    {
+      key: 'dateRange',
+      label: 'Período de Criação',
+      type: 'daterange' as const,
+    },
   ];
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
-    // Ativa o indicador de carregamento enquanto os filtros são aplicados
     setIsFiltering(true);
-    
-    // Se o objeto newFilters estiver vazio, resetamos todos os filtros
-    if (Object.keys(newFilters).length === 0) {
-      console.log("Limpando todos os filtros");
+
+    // Se não houver filtros, zera todos os campos (para garantir que a query seja feita sem filtros)
+    if (
+      !newFilters ||
+      Object.keys(newFilters).length === 0 ||
+      Object.values(newFilters).every(v => v === '' || v === undefined)
+    ) {
       setFilters({
-        name: '',
+        id: '',
+        providerId: '',
+        firstName: '',
+        lastName: '',
         email: '',
+        documentId: '',
+        phoneNumber: '',
+        documentType: '',
+        referral: '',
+        role: '',
+        active: '',
+        dateRangeFrom: '',
+        dateRangeTo: ''
       });
-      
-      // Força uma nova consulta ao limpar os filtros
-      setTimeout(() => {
-        queryClient.invalidateQueries(['users']);
-      }, 100);
-    } else {
-      console.log("Aplicando filtros:", newFilters);
-      // Atualizando apenas as propriedades fornecidas
-      const updatedFilters = {
-        name: '',
-        email: '',
-      };
-      
-      if (newFilters.name) updatedFilters.name = newFilters.name;
-      if (newFilters.email) updatedFilters.email = newFilters.email;
-      
-      setFilters(updatedFilters);
+      setCurrentPage(1);
+      return;
     }
-    
+
+    // Sempre monta o objeto de filtros com todos os campos possíveis (vazios se não vierem)
+    const updatedFilters: Record<string, any> = {
+      id: '',
+      providerId: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      documentId: '',
+      phoneNumber: '',
+      documentType: '',
+      referral: '',
+      role: '',
+      active: '',
+      dateRangeFrom: '',
+      dateRangeTo: ''
+    };
+
+    // Preenche apenas os filtros enviados
+    Object.keys(newFilters).forEach((key) => {
+      if (newFilters[key] !== undefined) {
+        updatedFilters[key] = newFilters[key];
+      }
+    });
+
+    setFilters(updatedFilters);
+
     // Resetar para a primeira página quando filtrar
     setCurrentPage(1);
-  }, [queryClient]);
+  }, []);
 
   // Adicionar suporte para mudar ordenação
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {

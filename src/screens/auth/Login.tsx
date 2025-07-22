@@ -46,14 +46,27 @@ export default function Login() {
       const token = await firebaseUser.getIdToken();
       localStorage.setItem('token', token);
 
-      const response = await apiClient.post<{ user: any }>(
-        "/auth/login",
-        { token }
-      );
-      const userData = response.user || response;
+      // Ajuste para pegar o user corretamente da resposta do apiClient
+      const response = await apiClient.post<{ user: any }>("/auth/login", { token });
+      // Pode vir como { data: { user, ... } } ou { user, ... }
+      let userData: any = undefined;
+      if (response && typeof response === 'object') {
+        if ('user' in response) {
+          userData = response.user;
+        } else if ('data' in response && response.data && typeof response.data === 'object' && 'user' in response.data) {
+          userData = response.data.user;
+        }
+      }
+      if (!userData) {
+        setError("Erro ao autenticar: usuário não encontrado na resposta.");
+        await auth.signOut();
+        localStorage.removeItem('token');
+        return;
+      }
 
-      if (userData.role !== "admin") {
+      if (userData.role !== "MANAGER" && userData.role !== "SUPER_ADMIN") {
         setError("Acesso restrito: apenas administradores podem acessar.");
+        console.log("Acesso restrito: apenas administradores podem acessar.", userData.role);
         await auth.signOut();
         localStorage.removeItem('token');
         return;

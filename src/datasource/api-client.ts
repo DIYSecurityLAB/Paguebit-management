@@ -149,24 +149,61 @@ export class ApiClient {
     document.body.removeChild(link);
   }
 
-  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  private logCleanedData(label: string, data: any) {
+    // Remove campos base64 longos do log
+    function clean(obj: any): any {
+      if (Array.isArray(obj)) {
+        return obj.map(clean);
+      }
+      if (obj && typeof obj === 'object') {
+        const copy: any = {};
+        for (const key in obj) {
+          if (
+            (key === 'receipt' || key === 'pictureUrl' || key === 'picture_url') &&
+            typeof obj[key] === 'string' &&
+            obj[key].length > 50
+          ) {
+            copy[key] = `[base64 omitido: ${obj[key].length} chars]`;
+          } else {
+            copy[key] = clean(obj[key]);
+          }
+        }
+        return copy;
+      }
+      return obj;
+    }
+    // Log bonito e fácil de copiar
+    console.log(label, JSON.stringify(clean(data), null, 2));
+  }
+
+  public async get<T>(url: string, config?: AxiosRequestConfig): Promise<{ raw: AxiosResponse<T, any>, data: T }> {
     const response: AxiosResponse<T, any> = await this.api.get(url, config);
-    return response.data;
+    this.logCleanedData('[ApiClient] Raw data:', response.data);
+    return { raw: response, data: response.data };
   }
 
-  public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async post<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<{ raw: AxiosResponse<T, any>, data: T }> {
     const response: AxiosResponse<T, any> = await this.api.post(url, data, config);
-    return response.data;
+    this.logCleanedData('[ApiClient] Raw data:', response.data);
+    return { raw: response, data: response.data };
   }
 
-  public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<T> {
+  public async put<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<{ raw: AxiosResponse<T, any>, data: T }> {
     const response: AxiosResponse<T, any> = await this.api.put(url, data, config);
-    return response.data;
+    this.logCleanedData('[ApiClient] Raw data:', response.data);
+    return { raw: response, data: response.data };
   }
 
-  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+  public async delete<T>(url: string, config?: AxiosRequestConfig): Promise<{ raw: AxiosResponse<T, any>, data: T }> {
     const response: AxiosResponse<T, any> = await this.api.delete(url, config);
-    return response.data;
+    this.logCleanedData('[ApiClient] Raw data:', response.data);
+    return { raw: response, data: response.data };
+  }
+
+  public async patch<T>(url: string, data?: any, config?: AxiosRequestConfig): Promise<{ raw: AxiosResponse<T, any>, data: T }> {
+    const response: AxiosResponse<T, any> = await this.api.patch(url, data, config);
+    this.logCleanedData('[ApiClient] Raw data:', response.data);
+    return { raw: response, data: response.data };
   }
 }
 

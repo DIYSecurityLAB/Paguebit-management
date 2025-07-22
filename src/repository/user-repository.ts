@@ -1,6 +1,5 @@
 import apiClient from '../datasource/api-client';
-import { PaginatedResponse, PaginationParams, User, UserCreateInput, UserStats, AuditLogInput } from '../models/types';
-import auditRepository from './audit-repository';
+import { PaginatedResponse, PaginationParams, User, UserCreateInput, UserStats, UserUpdateInput } from '../models/types';
 
 interface UserQueryParams extends PaginationParams {
   name?: string;
@@ -8,81 +7,75 @@ interface UserQueryParams extends PaginationParams {
 }
 
 class UserRepository {
-  async getUsers(params?: UserQueryParams): Promise<PaginatedResponse<User>> {
-    // Garantir que o parâmetro é um objeto
+  async getUsers(params?: UserQueryParams & { storeId?: string }): Promise<PaginatedResponse<User>> {
     const safeParams = params || {};
-    
-    // Remover propriedades vazias ou indefinidas dos parâmetros
     const cleanParams = Object.fromEntries(
-      Object.entries(safeParams).filter(([_, value]) => 
+      Object.entries(safeParams).filter(([_, value]) =>
         value !== undefined && value !== null && value !== ''
       )
     );
-    
     console.log("Parâmetros da requisição de usuários:", cleanParams);
-    
-    // Garantir que sempre incluímos paginação básica mesmo que os filtros estejam vazios
-    if (!cleanParams.page) {
-      cleanParams.page = 1;
-    }
-    
-    if (!cleanParams.limit) {
-      cleanParams.limit = 10;
-    }
-    
-    // Garantir que o orderBy seja um dos valores permitidos pela API
+
+    if (!cleanParams.page) cleanParams.page = 1;
+    if (!cleanParams.limit) cleanParams.limit = 10;
     if (!cleanParams.orderBy || !['createdAt', 'email', 'firstName'].includes(cleanParams.orderBy)) {
       cleanParams.orderBy = 'createdAt';
       cleanParams.order = 'desc';
     }
-    
-    return apiClient.get<PaginatedResponse<User>>('/users', { params: cleanParams });
+
+    try {
+      const { data } = await apiClient.get<any>('/admin/users', { params: cleanParams });
+      // Adapta o formato do backend para o frontend
+      if (data && Array.isArray(data.data) && typeof data.total === 'number') {
+        return {
+          data: data.data,
+          pagination: {
+            total: data.total,
+            page: data.page || 1,
+            limit: data.limit || 10
+          }
+        };
+      }
+      // fallback para formato antigo
+      if (data && data.data && data.pagination) {
+        return data;
+      }
+      return {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10 }
+      };
+    } catch (err) {
+      return {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10 }
+      };
+    }
   }
 
   async getUserById(id: string): Promise<User> {
-    return apiClient.get<User>(`/users/${id}`);
+    const { data } = await apiClient.get<User>(`/admin/users/${id}`);
+    return data;
   }
 
   async createUser(user: UserCreateInput, currentUserId?: string): Promise<User> {
     const result = await apiClient.post<User>('/users', user);
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Criação de usuário',
-        affectedUserId: result.id,
-        newValue: JSON.stringify(user),
-      };
-      auditRepository.createAuditLog(audit).catch(() => {});
-    }
     return result;
   }
 
-  async updateUser(id: string, userData: Partial<User>, currentUserId?: string, previousUser?: User): Promise<User> {
-    const result = await apiClient.put<User>(`/users/${id}`, userData);
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Atualização de usuário',
-        affectedUserId: id,
-        previousValue: previousUser ? JSON.stringify(previousUser) : undefined,
-        newValue: JSON.stringify(userData),
-      };
-      auditRepository.createAuditLog(audit).catch(() => {});
-    }
-    return result;
+  async updateUser(id: string, userData: UserUpdateInput, currentUserId?: string, previousUser?: User): Promise<User> {
+    // Remove campos undefined do objeto enviado
+    const patchData: Record<string, any> = {};
+    if (userData.active !== undefined) patchData.active = userData.active;
+    if (userData.referral !== undefined) patchData.referral = userData.referral;
+    if (userData.phoneNumber !== undefined) patchData.phoneNumber = userData.phoneNumber;
+
+    // PATCH na rota admin
+    const { data } = await apiClient.patch<User>(`/admin/users/${id}`, patchData);
+    return data;
   }
 
   async deleteUser(id: string, currentUserId?: string, previousUser?: User): Promise<{ message: string }> {
     const result = await apiClient.delete<{ message: string }>(`/users/${id}`);
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Exclusão de usuário',
-        affectedUserId: id,
-        previousValue: previousUser ? JSON.stringify(previousUser) : undefined,
-      };
-      auditRepository.createAuditLog(audit).catch(() => {});
-    }
     return result;
   }
 

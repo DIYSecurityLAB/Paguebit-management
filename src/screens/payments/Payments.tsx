@@ -56,12 +56,12 @@ export default function Payments() {
       // Formatar os dados para o Excel
       return {
         'ID': payment.id || '-',
+        'ID da Loja': payment.storeId || '-',
         'Usuário': userName || 'Não informado',
         'Email': userEmail || 'Não informado',
         'Valor': payment.amount || 0,
         'Status': statusTranslation[payment.status] || payment.status || 'Não informado',
         'Tipo de Transação': payment.transactionType === 'static' ? 'QR Estático' : 'QR Dinâmico',
-        'Modo de Recebimento': payment.receivingMode === 'now' ? 'Imediato' : 'Armazenado',
         'Data de Criação': payment.createdAt ? format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm:ss') : 'Não informado',
         'Última Atualização': payment.updatedAt ? format(new Date(payment.updatedAt), 'dd/MM/yyyy HH:mm:ss') : 'Não informado',
         'Observação': payment.observation || '-'
@@ -72,12 +72,12 @@ export default function Payments() {
   // Definir larguras de colunas personalizadas (em caracteres)
   const columnWidths = {
     'ID': 38,
+    'ID da Loja': 38,
     'Usuário': 30,
     'Email': 35,
     'Valor': 15,
     'Status': 20,
     'Tipo de Transação': 15,
-    'Modo de Recebimento': 15,
     'Data de Criação': 20,
     'Última Atualização': 20,
     'Observação': 50,

@@ -84,7 +84,27 @@ export default function PaymentsCard() {
     }
   );
 
+  // Filtros aceitos pela API de pagamentos
   const filterOptions = useMemo(() => [
+    {
+      key: 'id',
+      label: 'ID do Pagamento',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do pagamento',
+    },
+    {
+      key: 'storeId',
+      label: 'ID da Loja',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID da loja',
+    },
+ 
+    {
+      key: 'userId',
+      label: 'ID do Usuário',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do usuário',
+    },
     {
       key: 'status',
       label: 'Status',
@@ -97,6 +117,8 @@ export default function PaymentsCard() {
         { value: 'not_approved', label: 'Não Aprovado' },
         { value: 'paid', label: 'Pago' },
         { value: 'withdrawal_processing', label: 'Processamento de Saque' },
+        { value: 'completed', label: 'Concluído' },
+        { value: 'rejected', label: 'Rejeitado' },
       ],
     },
     {
@@ -105,37 +127,23 @@ export default function PaymentsCard() {
       type: 'select' as const,
       options: [
         { value: 'static', label: 'QR Estático' },
-        { value: 'dynamic', label: 'QR Dinâmico' },
+        { value: 'dinamic', label: 'QR Dinâmico' },
       ],
     },
     {
-      key: 'id',
-      label: 'ID do Pagamento',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do pagamento',
+      key: 'noreceipt',
+      label: 'Sem Comprovante',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'true', label: 'Apenas sem comprovante' },
+        { value: 'false', label: 'Apenas com comprovante' },
+      ],
     },
     {
       key: 'dateRange',
       label: 'Período',
       type: 'daterange' as const,
-    },
-    {
-      key: 'userId',
-      label: 'ID do Usuário',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do usuário',
-    },
-    {
-      key: 'name',
-      label: 'Nome',
-      type: 'text' as const,
-      placeholder: 'Buscar por nome',
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      type: 'text' as const,
-      placeholder: 'Buscar por email',
     },
   ], []);
 
@@ -267,12 +275,12 @@ export default function PaymentsCard() {
               <div className="h-48 bg-card rounded-lg"></div>
             </div>
           ))
-        ) : data?.data.length === 0 ? (
+        ) : !Array.isArray(data?.data) || data?.data.length === 0 ? (
           <div className="col-span-full flex items-center justify-center p-8 bg-card border border-border rounded-lg">
             <p className="text-muted-foreground">Nenhum pagamento encontrado.</p>
           </div>
         ) : (
-          data?.data.map((payment) => (
+          data.data.map((payment) => (
             <CardItem
               key={payment.id}
               title={`Pagamento #${payment.id}`}
@@ -282,6 +290,13 @@ export default function PaymentsCard() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tipo:</span>
                   <span className="capitalize">{payment.transactionType === 'static' ? 'QR Estático' : 'QR Dinâmico'}</span>
+                </div>
+                {/* Novo: ID da Loja (só o começo) */}
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">ID da Loja:</span>
+                  <span className="font-mono text-xs break-all">
+                    {payment.storeId ? `${payment.storeId.slice(0, 8)}...` : <span className="text-red-500">sem informação</span>}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Nome:</span>

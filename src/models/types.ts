@@ -1,20 +1,36 @@
+export interface Store {
+  id: string;
+  name: string;
+  ownerId: string;
+  whitelabelId: string;
+  createdAt: string;
+  updatedAt: string;
+  wallets: {
+    TronAddress?: string;
+    LiquidAddress?: string;
+    OnChainAddress?: string;
+    PolygonAddress?: string;
+    LightningAddress?: string;
+  };
+}
+
+export interface StoreQueryParams extends PaginationParams {
+  name?: string;
+  ownerId?: string;
+  whitelabelId?: string;
+}
+
 export interface User {
   id: string;
+  whitelabelId: string;
   providerId: string;
   firstName: string;
   lastName: string;
   email: string;
   documentId: string;
   phoneNumber: string;
-  documentType: 'CPF' | 'CNPJ';
-  wallets: {
-    LiquidAddress?: string;
-    OnChainAddress?: string;
-    LightningAddress?: string;
-    TronAddress?: string;
-    PolygonAddress?: string;
-  };
-  address?: {
+  documentType: string;
+  address: {
     postalCode?: string;
     street?: string;
     number?: string;
@@ -27,32 +43,28 @@ export interface User {
   monthlyVolume: number;
   pictureUrl?: string;
   role: string;
-  createdAt?: string;  
-  updatedAt?: string;  
+  createdAt?: string;
+  updatedAt?: string;
   verificationStatus?: {
     email?: string;
     phone?: string;
     document?: string;
   };
-  verificationLevel?: number;  
-  active: boolean; 
+  verificationLevel?: number;
+  active: boolean;
+  stores?: Store[]; // Lojas que participa
+  ownedStores?: Store[]; // Lojas que é dono (opcional, se quiser separar)
 }
 
 export interface UserCreateInput {
+  whitelabelId?: string;
   providerId: string;
   firstName: string;
   lastName: string;
   email: string;
   documentId: string;
   phoneNumber: string;
-  documentType: 'CPF' | 'CNPJ';
-  wallets: {
-    LiquidAddress?: string;
-    OnChainAddress?: string;
-    LightningAddress?: string;
-    TronAddress?: string;
-    PolygonAddress?: string;
-  };
+  documentType: string;
   address?: {
     postalCode?: string;
     street?: string;
@@ -65,6 +77,12 @@ export interface UserCreateInput {
   referral?: string;
   monthlyVolume: number;
   pictureUrl?: string;
+}
+
+export interface UserUpdateInput {
+  active?: 'true' | 'false';
+  referral?: string;
+  phoneNumber?: string;
 }
 
 export interface UserStats {
@@ -88,18 +106,17 @@ export enum PaymentStatus {
 
 export interface Payment {
   id: string;
-  userId: string;
+  storeId: string;
+  whitelabelId: string;
   amount: number;
-  walletType?: string;
-  walletAddress?: string;
   email: string;
-  payerName?: string; 
+  payerName?: string;
   transactionType: 'dinamic' | 'static';
-  receivingMode: string;
+  receivingMode?: string;
   observation?: string;
   qrCodeUrl?: string;
   qrCopyPaste?: string;
-  status: string; 
+  status: string;
   createdAt: string;
   updatedAt: string;
   notes?: string;
@@ -129,14 +146,15 @@ export interface WithdrawalStatus {
 
 export interface Withdrawal {
   id: string;
-  userId: string;
+  storeId: string;
+  whitelabelId: string;
   amount: number;
   paymentIds: string[];
   status: keyof WithdrawalStatus;
   createdAt: string;
   completedAt?: string;
-  destinationWallet: string;
-  destinationWalletType: string;
+  destinationWallet?: string;
+  destinationWalletType?: string;
   failedReason?: string;
   txId?: string;
   notes?: string;
@@ -157,6 +175,8 @@ export interface WithdrawalStatusUpdate {
 
 export interface NotifyModel {
   id: string;
+  storeId?: string;
+  whitelabelId?: string;
   userId?: string;
   title: string;
   message: string;
@@ -201,6 +221,8 @@ export interface PaginationParams {
 }
 
 export interface WithdrawalQueryParams extends PaginationParams {
+  storeId?: string;
+  whitelabelId?: string;
   userId?: string;
   status?: string;
   dateFrom?: string;
@@ -211,15 +233,17 @@ export interface WithdrawalQueryParams extends PaginationParams {
 }
 
 export interface PaymentQueryParams extends PaginationParams {
+  storeId?: string;
+  whitelabelId?: string;
   userId?: string;
   status?: string;
   dateFrom?: string;
   dateTo?: string;
   name?: string;
   email?: string;
-  id?: string; // Alterado de paymentId para id para corresponder ao backend
-  transactionType?: string; // Novo filtro para tipo da transação
-  noreceipt?: boolean; // Novo filtro para excluir receipts da resposta
+  id?: string;
+  transactionType?: string;
+  noreceipt?: boolean;
 }
 
 export interface UserQueryParams extends PaginationParams {

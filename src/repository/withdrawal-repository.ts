@@ -9,17 +9,8 @@ import {
 } from '../models/types';
 import auditRepository from './audit-repository';
 
-interface ApiWithdrawalResponse {
-  withdrawals: Withdrawal[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-  };
-}
-
 class WithdrawalRepository {
-  async getWithdrawals(params?: WithdrawalQueryParams): Promise<PaginatedResponse<Withdrawal>> {
+  async getWithdrawals(params?: WithdrawalQueryParams & { storeId?: string }): Promise<PaginatedResponse<Withdrawal>> {
     console.log('Solicitando saques com parâmetros:', params);
     
     // Remover parâmetros vazios
@@ -28,28 +19,25 @@ class WithdrawalRepository {
     ) : {};
     
     try {
-      const response = await apiClient.get<any>('/withdrawals', { params: cleanParams });
+      const response = await apiClient.get<unknown>('/admin/withdrawals', { params: cleanParams });
       console.log('Resposta bruta da API de saques:', response);
-      
-      // Verifica o formato da resposta e adapta conforme necessário
-      if (response.withdrawals) {
-        // Resposta no formato { withdrawals: [...], pagination: {...} }
-        console.log('Resposta no formato esperado com propriedade withdrawals');
-        return {
-          data: Array.isArray(response.withdrawals) ? response.withdrawals : [],
-          pagination: response.pagination || { total: 0, page: 1, limit: 10 }
-        };
-      } else if (response.data) {
-        // Resposta já no formato { data: [...], pagination: {...} }
-        console.log('Resposta já tem propriedade data');
-        return response;
-      } else if (Array.isArray(response)) {
-        // Resposta é um array diretamente
-        console.log('Resposta é um array diretamente');
-        return {
-          data: response,
-          pagination: { total: response.length, page: 1, limit: response.length }
-        };
+
+      // Checagem de tipo segura
+      if (typeof response === 'object' && response !== null) {
+        if ('withdrawals' in response) {
+          const r = response as { withdrawals: Withdrawal[]; pagination?: any };
+          return {
+            data: Array.isArray(r.withdrawals) ? r.withdrawals : [],
+            pagination: r.pagination || { total: 0, page: 1, limit: 10 }
+          };
+        } else if ('data' in response) {
+          return response as PaginatedResponse<Withdrawal>;
+        } else if (Array.isArray(response)) {
+          return {
+            data: response as Withdrawal[],
+            pagination: { total: response.length, page: 1, limit: response.length }
+          };
+        }
       }
       
       // Caso não consiga identificar o formato, retorna um objeto vazio

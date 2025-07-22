@@ -244,7 +244,14 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
         footer={renderActions()}
       >
         <div className="space-y-4">
-          {/* Adiciona exibição do ID do pagamento */}
+          {/* Adiciona exibição do ID da Loja */}
+          <div>
+            <label className="text-sm text-muted-foreground">ID da Loja</label>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="font-mono text-xs break-all">{payment.storeId || <span className="text-red-500">sem informação</span>}</span>
+            </div>
+          </div>
+          {/* Adiciona exibição do ID do Pagamento */}
           <div>
             <label className="text-sm text-muted-foreground">ID do Pagamento</label>
             <div className="flex items-center gap-2 mt-1">
@@ -308,22 +315,6 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
             <div>
               <label className="text-sm text-muted-foreground">Modo de Recebimento</label>
               <p className="font-medium">{payment.receivingMode === 'now' ? 'Imediato' : 'Armazenado'}</p>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground">Nome</label>
-              <p className="font-medium">{(() => {
-                const user = (payment as any).User;
-                if (user) {
-                  const firstName = user.firstName || '';
-                  const lastName = user.lastName || '';
-                  return [firstName, lastName].filter(Boolean).join(' ') || 'Não informado';
-                }
-                return 'Não informado';
-              })()}</p>
-            </div>
-            <div>
-              <label className="text-sm text-muted-foreground">Email</label>
-              <p className="font-medium truncate">{(payment as any).User?.email || payment.email || 'Não informado'}</p>
             </div>
             <div>
               <label className="text-sm text-muted-foreground">Criado em</label>

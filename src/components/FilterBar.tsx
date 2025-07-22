@@ -68,7 +68,7 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
     // Não definimos shouldUpdate aqui, pois queremos enviar a atualização diretamente
   }, [onFilterChange]);
 
-  // Atualizar o componente pai apenas quando houver uma mudança real e explícita
+  // Atualizar o componente pai sempre que filtros mudam, inclusive quando todos são apagados
   useEffect(() => {
     // Pular a execução na renderização inicial
     if (isInitialMount.current) {
@@ -76,8 +76,8 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
       return;
     }
 
-    // Só notificar mudanças quando o sinalizador shouldUpdate for verdadeiro
-    if (shouldUpdate) {
+    // Sempre notifica o pai quando filtros mudam, mesmo se todos forem apagados
+    if (shouldUpdate || (!shouldUpdate && Object.keys(filterValues).length === 0 && !dateRangeFrom && !dateRangeTo)) {
       const dateFilters: Record<string, string> = {};
       if (dateRangeFrom) {
         dateFilters['dateRangeFrom'] = dateRangeFrom;
@@ -85,7 +85,6 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
       if (dateRangeTo) {
         dateFilters['dateRangeTo'] = dateRangeTo;
       }
-      
       onFilterChange({ ...filterValues, ...dateFilters });
       setShouldUpdate(false);
     }
@@ -153,13 +152,22 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
 
           if (filter.type === 'select') {
             // Transformar as opções para incluir ícones
+            // Garante que não haja duplicidade de valores (ex: dois 'Todos')
+            const seen = new Set<string>();
             const selectOptions = [
               { value: '', label: 'Todos', icon: <Filter className="h-4 w-4 text-gray-500" /> },
-              ...filter.options!.map(option => ({
-                value: option.value,
-                label: option.label,
-                icon: getStatusIcon(option.value)
-              }))
+              ...filter.options!
+                .filter(option => {
+                  if (option.value === '') return false; // já adicionamos 'Todos' acima
+                  if (seen.has(option.value)) return false;
+                  seen.add(option.value);
+                  return true;
+                })
+                .map(option => ({
+                  value: option.value,
+                  label: option.label,
+                  icon: getStatusIcon(option.value)
+                }))
             ];
             
             return (

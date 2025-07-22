@@ -48,7 +48,7 @@ export default function BatchReceiptDownloadModal({ isOpen, onClose }: BatchRece
     { enabled: isOpen }
   );
 
-  const payments = paymentsData || [];
+  const payments = Array.isArray(paymentsData) ? paymentsData : [];
   
   // Função para gerar o PDF final
   const handleGeneratePdf = async () => {
