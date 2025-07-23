@@ -76,6 +76,42 @@ export default function AuditLogsTable() {
       placeholder: 'ID do usuário afetado',
     },
     {
+      key: 'notificationId',
+      label: 'ID da Notificação',
+      type: 'text' as const,
+      placeholder: 'ID da notificação',
+    },
+    {
+      key: 'storeId',
+      label: 'ID da Loja',
+      type: 'text' as const,
+      placeholder: 'ID da loja',
+    },
+    {
+      key: 'performedBy',
+      label: 'Realizado por',
+      type: 'text' as const,
+      placeholder: 'ID do usuário que realizou',
+    },
+    {
+      key: 'id',
+      label: 'ID do Log',
+      type: 'text' as const,
+      placeholder: 'ID do log',
+    },
+    {
+      key: 'previousValue',
+      label: 'Valor Anterior',
+      type: 'text' as const,
+      placeholder: 'Valor anterior (JSON)',
+    },
+    {
+      key: 'newValue',
+      label: 'Novo Valor',
+      type: 'text' as const,
+      placeholder: 'Novo valor (JSON)',
+    },
+    {
       key: 'dateRange',
       label: 'Período',
       type: 'daterange' as const,
@@ -84,43 +120,27 @@ export default function AuditLogsTable() {
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-    
-    // Se o objeto newFilters estiver vazio, resetamos todos os filtros
-    if (Object.keys(newFilters).length === 0) {
-      setFilters({
-        userId: '',
-        paymentId: '',
-        affectedUserId: '',
-        withdrawalId: '',
-        notificationId: '',
-        action: '',
-        dateFrom: '',
-        dateTo: '',
-      });
-    } else {
-      const updatedFilters: AuditLogQueryParams = {
-        userId: '',
-        paymentId: '',
-        affectedUserId: '',
-        withdrawalId: '',
-        notificationId: '',
-        action: '',
-        dateFrom: '',
-        dateTo: '',
-      };
-      
-      if (newFilters.userId) updatedFilters.userId = newFilters.userId;
-      if (newFilters.paymentId) updatedFilters.paymentId = newFilters.paymentId;
-      if (newFilters.affectedUserId) updatedFilters.affectedUserId = newFilters.affectedUserId;
-      if (newFilters.withdrawalId) updatedFilters.withdrawalId = newFilters.withdrawalId;
-      if (newFilters.notificationId) updatedFilters.notificationId = newFilters.notificationId;
-      if (newFilters.action) updatedFilters.action = newFilters.action;
-      if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
-      if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
-      
-      setFilters(updatedFilters);
-    }
-    
+
+    // Mapeia os filtros para os nomes esperados pelo backend
+    const updatedFilters: AuditLogQueryParams = {
+      userId: newFilters.userId || '',
+      paymentId: newFilters.paymentId || '',
+      affectedUserId: newFilters.affectedUserId || '',
+      withdrawalId: newFilters.withdrawalId || '',
+      notificationId: newFilters.notificationId || '',
+      storeId: newFilters.storeId || '',
+      action: newFilters.action || '',
+      performedBy: newFilters.performedBy || '',
+      id: newFilters.id || '',
+      previousValue: newFilters.previousValue || '',
+      newValue: newFilters.newValue || '',
+      createdAtFrom: newFilters.dateRangeFrom || '',
+      createdAtTo: newFilters.dateRangeTo || '',
+      dateFrom: '',
+      dateTo: '',
+    };
+
+    setFilters(updatedFilters);
     setCurrentPage(1);
   }, []);
 
@@ -144,7 +164,20 @@ export default function AuditLogsTable() {
     },
     {
       header: 'Data/Hora',
-      accessor: (log) => format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm:ss'),
+      accessor: (log) => {
+        // Aceita Date, string ou null
+        if (log.createdAt instanceof Date) {
+          return format(log.createdAt, 'dd/MM/yyyy HH:mm:ss');
+        }
+        if (typeof log.createdAt === 'string' && log.createdAt.length > 0) {
+          try {
+            return format(new Date(log.createdAt), 'dd/MM/yyyy HH:mm:ss');
+          } catch {
+            return '-';
+          }
+        }
+        return '-';
+      },
     },
     {
       header: 'Usuário',
@@ -235,7 +268,8 @@ export default function AuditLogsTable() {
         isLoading={isLoading || isFiltering}
       />
 
-      {data && (
+      {/* Corrige erro de leitura de total quando não há dados */}
+      {data && data.pagination && typeof data.pagination.total === 'number' ? (
         <Pagination
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
@@ -243,6 +277,10 @@ export default function AuditLogsTable() {
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
         />
+      ) : (
+        <div className="text-center text-muted-foreground py-4">
+          Nenhum log encontrado.
+        </div>
       )}
 
       {selectedLog && (

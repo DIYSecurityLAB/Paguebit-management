@@ -3,11 +3,9 @@ import {
   PaginatedResponse, 
   WithdrawalQueryParams, 
   Withdrawal, 
-  WithdrawalCompleteInput, 
   WithdrawalStatusUpdate,
-  AuditLogInput
+  AdminUpdateWithdrawalStatusDto
 } from '../models/types';
-import auditRepository from './audit-repository';
 
 class WithdrawalRepository {
   async getWithdrawals(params?: WithdrawalQueryParams & { storeId?: string }): Promise<PaginatedResponse<Withdrawal>> {
@@ -19,100 +17,70 @@ class WithdrawalRepository {
     ) : {};
     
     try {
-      const response = await apiClient.get<unknown>('/admin/withdrawals', { params: cleanParams });
-      console.log('Resposta bruta da API de saques:', response);
-
-      // Checagem de tipo segura
-      if (typeof response === 'object' && response !== null) {
-        if ('withdrawals' in response) {
-          const r = response as { withdrawals: Withdrawal[]; pagination?: any };
-          return {
-            data: Array.isArray(r.withdrawals) ? r.withdrawals : [],
-            pagination: r.pagination || { total: 0, page: 1, limit: 10 }
-          };
-        } else if ('data' in response) {
-          return response as PaginatedResponse<Withdrawal>;
-        } else if (Array.isArray(response)) {
-          return {
-            data: response as Withdrawal[],
-            pagination: { total: response.length, page: 1, limit: response.length }
-          };
-        }
+      const { data } = await apiClient.get<any>('/admin/withdrawals', { params: cleanParams });
+      console.log('Resposta da API de saques (data):', data);
+      
+      // Adapta o formato do backend para o frontend (igual aos outros repositórios)
+      if (data && Array.isArray(data.data) && typeof data.total === 'number') {
+        return {
+          data: data.data,
+          pagination: {
+            total: data.total,
+            page: data.page || 1,
+            limit: data.limit || 10,
+            pages: data.pages || Math.ceil(data.total / (data.limit || 10))
+          }
+        };
       }
       
-      // Caso não consiga identificar o formato, retorna um objeto vazio
-      console.warn('Formato de resposta não reconhecido:', response);
+      // Fallback para formato antigo
+      if (data && data.data && data.pagination) {
+        return data;
+      }
+      
+      console.warn('Formato inesperado de resposta da API de saques:', data);
       return {
         data: [],
-        pagination: { total: 0, page: 1, limit: 10 }
+        pagination: { total: 0, page: 1, limit: 10, pages: 1 }
       };
     } catch (error) {
       console.error('Erro ao buscar saques:', error);
-      throw error;
-    }
-  }
-
-  async getWithdrawalById(id: string): Promise<Withdrawal> {
-    return apiClient.get<Withdrawal>(`/withdrawals/${id}`);
-  }
-
-  async createWithdrawal(withdrawalData: {
-    userId: string;
-    amount: number;
-    paymentIds: string[];
-    destinationWallet: string;
-    destinationWalletType: string;
-  }, currentUserId?: string): Promise<Withdrawal> {
-    const result = await apiClient.post<Withdrawal>('/withdrawals', withdrawalData);
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Criação de saque',
-        withdrawalId: result.id,
-        newValue: JSON.stringify(withdrawalData),
+      return {
+        data: [],
+        pagination: { total: 0, page: 1, limit: 10, pages: 1 }
       };
-      auditRepository.createAuditLog(audit).catch(() => {});
     }
-    return result;
   }
 
-  async completeWithdrawal(data: WithdrawalCompleteInput, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
-    const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/complete`, {
+  async getWithdrawalById(id: string): Promise<Withdrawal & { payments?: any[]; store?: any }> {
+    // Usa a rota admin e retorna o modelo completo, incluindo arrays e campos extras
+    const { data } = await apiClient.get<Withdrawal & { payments?: any[]; store?: any }>(`/admin/withdrawals/${id}`);
+    return data;
+  }
+
+  async updateWithdrawalStatus(data: WithdrawalStatusUpdate): Promise<Withdrawal> {
+    // PATCH na rota admin
+    const patchData: AdminUpdateWithdrawalStatusDto = {
+      status: data.status,
+      // Só inclui txId se existir
+      ...(data.txId ? { txId: data.txId } : {}),
+      // Só inclui failedReason se existir
+      ...(data.failedReason ? { failedReason: data.failedReason } : {}),
+    };
+    const { data: updated } = await apiClient.patch<Withdrawal>(`/admin/withdrawals/${data.id}/status`, patchData);
+    return updated;
+  }
+
+  async completeWithdrawal(data: { id: string; txId: string; notes?: string }): Promise<Withdrawal> {
+    // PATCH na rota admin, status = 'completed'
+    const patchData: AdminUpdateWithdrawalStatusDto = {
+      status: 'completed',
       txId: data.txId,
-      notes: data.notes
-    });
-    if (currentUserId) {
-      const audit: AuditLogInput = {
-        userId: currentUserId,
-        action: 'Conclusão de saque',
-        withdrawalId: data.id,
-        previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
-        newValue: JSON.stringify(data),
-      };
-      auditRepository.createAuditLog(audit).catch(() => {});
-    }
-    return result;
+    };
+    const { data: updated } = await apiClient.patch<Withdrawal>(`/admin/withdrawals/${data.id}/status`, patchData);
+    return updated;
   }
 
-    async updateWithdrawalStatus(data: WithdrawalStatusUpdate, currentUserId?: string, previousWithdrawal?: Withdrawal): Promise<Withdrawal> {
-      const result = await apiClient.put<Withdrawal>(`/withdrawals/${data.id}/status`, {
-        status: data.status,
-        failedReason: data.failedReason,
-        // Envia o hash da transação ao atualizar status para completed
-        txId: data.status === 'completed' ? data.txId : undefined
-      });
-      if (currentUserId) {
-        const audit: AuditLogInput = {
-          userId: currentUserId,
-          action: 'Atualização de status de saque',
-          withdrawalId: data.id,
-          previousValue: previousWithdrawal ? JSON.stringify(previousWithdrawal) : undefined,
-          newValue: JSON.stringify(data),
-        };
-        auditRepository.createAuditLog(audit).catch(() => {});
-      }
-      return result;
-    }
 }
 
 export default new WithdrawalRepository();

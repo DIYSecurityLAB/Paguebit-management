@@ -14,6 +14,14 @@ import withdrawalRepository from '../../repository/withdrawal-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
 
+function formatDateSafe(date: any, formatStr: string) {
+  if (!date) return '-';
+  if (typeof date === 'object' && Object.keys(date).length === 0) return '-';
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '-';
+  return format(d, formatStr);
+}
+
 export default function WithdrawalsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -34,6 +42,7 @@ export default function WithdrawalsTable() {
   
   const queryClient = useQueryClient();
 
+  // Chamada única ao withdrawalRepository (não buscar User)
   const { data, isLoading, error } = useQuery(
     ['withdrawals', currentPage, itemsPerPage, filters, orderBy, orderDirection],
     () => withdrawalRepository.getWithdrawals({
@@ -51,11 +60,15 @@ export default function WithdrawalsTable() {
         toast.error('Não foi possível carregar os saques. Tente novamente.');
       },
       onSettled: () => {
-        // Finaliza o estado de filtragem quando a consulta é concluída
         setIsFiltering(false);
       }
     }
   );
+
+  // Debug log para verificar os dados recebidos
+  useEffect(() => {
+    console.log('Dados de saques recebidos:', data);
+  }, [data]);
 
   // Garantir que o estado de filtragem seja limpo após a conclusão de qualquer operação
   useEffect(() => {
@@ -139,25 +152,18 @@ export default function WithdrawalsTable() {
 
   const columns = useMemo<TableColumn<Withdrawal>[]>(() => [
     {
-      header: 'Nome',
+      header: 'Loja',
       accessor: (withdrawal: Withdrawal) => {
-        // Verificar se o withdrawal tem uma relação User
-        const user = (withdrawal as any).User;
-        if (user) {
-          const firstName = user.firstName || '';
-          const lastName = user.lastName || '';
-          return [firstName, lastName].filter(Boolean).join(' ') || 'Não informado';
+        // Mostra nome da loja se vier no objeto
+        if (withdrawal.store && withdrawal.store.name) {
+          return withdrawal.store.name;
         }
-        return 'Não informado';
+        return withdrawal.storeId ? withdrawal.storeId.slice(0, 8) + '...' : 'Não informado';
       },
     },
     {
-      header: 'Email',
-      accessor: (withdrawal: Withdrawal) => {
-        // Tenta pegar o email do usuário relacionado
-        const userEmail = (withdrawal as any).User?.email;
-        return userEmail || 'Não informado';
-      },
+      header: 'ID da Loja',
+      accessor: (withdrawal: Withdrawal) => withdrawal.storeId || 'Não informado',
     },
     {
       header: 'Valor',
@@ -183,16 +189,15 @@ export default function WithdrawalsTable() {
     },
     {
       header: 'Criado em',
-      accessor: (withdrawal: Withdrawal) => format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm'),
+      accessor: (withdrawal: Withdrawal) =>
+        formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss'),
       sortKey: 'createdAt',
       sortable: true,
     },
     {
       header: 'Concluído em',
-      accessor: (withdrawal: Withdrawal) => 
-        withdrawal.completedAt 
-          ? format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm')
-          : '-',
+      accessor: (withdrawal: Withdrawal) =>
+        formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss'),
       sortKey: 'completedAt',
       sortable: true,
     },
@@ -260,6 +265,26 @@ export default function WithdrawalsTable() {
     // Resetar para a primeira página quando filtrar
     setCurrentPage(1);
   }, [queryClient]);
+
+  // Adicione um bloco para mostrar erro 500 ou erro de carregamento
+  if (error) {
+    return (
+      <div className="p-6 text-center">
+        <div className="bg-card border border-border rounded-lg p-8">
+          <h2 className="text-xl font-bold mb-2 text-status-rejected">Erro ao carregar saques</h2>
+          <p className="text-muted-foreground mb-4">
+            Ocorreu um erro ao tentar carregar os dados de saques. Tente novamente mais tarde.
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+          >
+            Recarregar página
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

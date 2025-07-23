@@ -35,6 +35,72 @@ export default function WithdrawalsCard() {
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
+  // Função utilitária para validar datas
+  function formatDateSafe(date: any, formatStr: string) {
+    // Aceita string ISO, timestamp ou Date
+    if (!date) return '-';
+    if (typeof date === 'object' && Object.keys(date).length === 0) return '-';
+    const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+    if (isNaN(d.getTime())) return '-';
+    return format(d, formatStr);
+  }
+
+  const columns = [
+    {
+      header: 'Loja',
+      accessor: (withdrawal: Withdrawal) => {
+        if (withdrawal.store && withdrawal.store.name) {
+          return withdrawal.store.name;
+        }
+        return withdrawal.storeId ? withdrawal.storeId.slice(0, 8) + '...' : 'Não informado';
+      },
+    },
+    {
+      header: 'ID da Loja',
+      accessor: (withdrawal: Withdrawal) => withdrawal.storeId || 'Não informado',
+    },
+    {
+      header: 'Valor',
+      accessor: (withdrawal: Withdrawal) => formatCurrency(withdrawal.amount),
+    },
+    {
+      header: 'Status',
+      accessor: (withdrawal: Withdrawal) => (
+        <StatusBadge status={withdrawal.status} />
+      ),
+    },
+    {
+      header: 'Tipo de Carteira',
+      accessor: (withdrawal: Withdrawal) => (
+        <span className="capitalize">{withdrawal.destinationWalletType}</span>
+      ),
+    },
+    {
+      header: 'Criado em',
+      accessor: (withdrawal: Withdrawal) =>
+        formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss'),
+    },
+    {
+      header: 'Concluído em',
+      accessor: (withdrawal: Withdrawal) =>
+        formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss'),
+    },
+    {
+      header: 'Ações',
+      accessor: (withdrawal: Withdrawal) => (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSelectedWithdrawal(withdrawal)}
+          leftIcon={<Eye className="h-4 w-4" />}
+        >
+          Ver
+        </Button>
+      ),
+    },
+  ];
+
+  // Chamada única ao withdrawalRepository (não buscar User)
   const { data, isLoading, error } = useQuery(
     ['withdrawals', currentPage, itemsPerPage, filters, orderBy, orderDirection],
     () => withdrawalRepository.getWithdrawals({
@@ -52,7 +118,6 @@ export default function WithdrawalsCard() {
         toast.error('Não foi possível carregar os saques. Tente novamente.');
       },
       onSettled: () => {
-        // Finaliza o estado de filtragem quando a consulta é concluída
         setIsFiltering(false);
       }
     }
@@ -67,8 +132,11 @@ export default function WithdrawalsCard() {
 
   // Adiciona log para depuração
   useEffect(() => {
-    console.log('Estado atual dos dados:', data);
-  }, [data]);
+    console.log('Estado atual dos dados no Card:', data);
+    console.log('Data array:', data?.data);
+    console.log('Is loading:', isLoading);
+    console.log('Error:', error);
+  }, [data, isLoading, error]);
 
   const filterOptions = [
     {
@@ -285,31 +353,31 @@ export default function WithdrawalsCard() {
               Tentar novamente
             </button>
           </div>
-        ) : data?.data?.length ? (
+        ) : !data?.data || !Array.isArray(data.data) || data.data.length === 0 ? (
+          <div className="col-span-1 text-center p-6 bg-card rounded-lg border border-border">
+            <p className="text-muted-foreground">Nenhum saque encontrado</p>
+            <button 
+              onClick={() => {
+                console.log('Tentando recarregar saques...');
+                setIsFiltering(true);
+                queryClient.invalidateQueries(['withdrawals']);
+              }}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
+        ) : (
           data.data.map((withdrawal) => (
             <CardItem
               key={withdrawal.id}
-              title={`Saque #${withdrawal.id.slice(0, 8)}`}
+              title={withdrawal.store?.name || withdrawal.storeId?.slice(0, 8) || 'Saque'}
               onClick={() => setSelectedWithdrawal(withdrawal)}
             >
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Nome:</span>
-                  <span>{(() => {
-                    const user = (withdrawal as any).User;
-                    if (user) {
-                      const firstName = user.firstName || '';
-                      const lastName = user.lastName || '';
-                      return [firstName, lastName].filter(Boolean).join(' ') || 'Não informado';
-                    }
-                    return 'Não informado';
-                  })()}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Email:</span>
-                  <span className="truncate max-w-[150px]">
-                    {(withdrawal as any).User?.email || 'Não informado'}
-                  </span>
+                  <span className="text-muted-foreground">ID da Loja:</span>
+                  <span className="font-mono text-xs break-all">{withdrawal.storeId || 'Não informado'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Valor:</span>
@@ -321,12 +389,16 @@ export default function WithdrawalsCard() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Criado em:</span>
-                  <span>{format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm')}</span>
+                  <span>
+                    {formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')}
+                  </span>
                 </div>
                 {withdrawal.completedAt && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Concluído em:</span>
-                    <span>{format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm')}</span>
+                    <span>
+                      {formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')}
+                    </span>
                   </div>
                 )}
                 <div className="flex justify-between items-center">
@@ -346,20 +418,6 @@ export default function WithdrawalsCard() {
               </div>
             </CardItem>
           ))
-        ) : (
-          <div className="col-span-1 text-center p-6 bg-card rounded-lg border border-border">
-            <p className="text-muted-foreground">Nenhum saque encontrado</p>
-            <button 
-              onClick={() => {
-                console.log('Tentando recarregar saques...');
-                setIsFiltering(true);
-                queryClient.invalidateQueries(['withdrawals']);
-              }}
-              className="mt-2 text-sm text-primary hover:underline"
-            >
-              Tentar novamente
-            </button>
-          </div>
         )}
       </div>
 

@@ -34,17 +34,6 @@ class NotificationRepository {
     return apiClient.put<{ message: string }>(`/notifications/users/${userId}/read-all`, {});
   }
 
-  async getGeneralNotifications(): Promise<{ notifications: NotifyModel[] }> {
-    const response = await apiClient.get<BackendNotification[]>('/notifications/general');
-    // Mapear os dados para o formato esperado pelo frontend
-    const notifications = response.map(this.mapNotificationToModel);
-    return { notifications };
-  }
-
-  async markGeneralNotificationsAsRead(notificationIds: string[], userId: string): Promise<{ message: string }> {
-    return apiClient.put<{ message: string }>('/notifications/general/read', { notificationIds, userId });
-  }
-
   async getAllNotifications(params?: PaginationParams & { storeId?: string }): Promise<{ notifications: NotifyModel[] }> {
     try {
       // Usar rota de admin
@@ -54,8 +43,15 @@ class NotificationRepository {
         return { notifications: response.map(this.mapNotificationToModel) };
       }
       if (typeof response === 'object' && response !== null && 'data' in response) {
-        const r = response as { data: BackendNotification[] };
-        return { notifications: r.data.map(this.mapNotificationToModel) };
+        // Corrigir para aceitar array diretamente
+        const r = response as { data: any };
+        if (Array.isArray(r.data)) {
+          return { notifications: r.data.map(this.mapNotificationToModel) };
+        }
+        // Caso venha como objeto paginado
+        if (typeof r.data === 'object' && r.data !== null && Array.isArray((r.data as any).data)) {
+          return { notifications: (r.data as any).data.map(this.mapNotificationToModel) };
+        }
       }
       // fallback
       return { notifications: [] };
@@ -73,7 +69,6 @@ class NotificationRepository {
     referenceId?: string;
     referenceType?: string;
   }): Promise<NotifyModel> {
-    // Extrair storeId e whitelabelId dos dados
     const { storeId, ...rest } = notification;
     const backendData = {
       ...rest,
@@ -83,25 +78,6 @@ class NotificationRepository {
     };
     
     const response = await apiClient.post<BackendNotification>(`/admin/stores/${storeId}/notifications`, backendData);
-    return this.mapNotificationToModel(response);
-  }
-
-  async createGeneralNotification(notification: {
-    title: string;
-    message: string;
-    type: ValidNotificationType;  // Usar o tipo literal aqui
-    referenceId?: string;
-    referenceType?: string;
-  }): Promise<NotifyModel> {
-    // Converter message para content conforme esperado pelo backend
-    const backendData = {
-      ...notification,
-      content: notification.message,
-      // Remover o campo message pois o backend não o espera
-      message: undefined
-    };
-    
-    const response = await apiClient.post<BackendNotification>('/notifications/general', backendData);
     return this.mapNotificationToModel(response);
   }
 
@@ -128,10 +104,9 @@ class NotificationRepository {
       read: backendNotification.read || false,
       readAt: backendNotification.readAt,
       createdAt: backendNotification.createdAt,
-      // Adicionar campos necessários do modelo
-      isGeneral: backendNotification.userId === undefined,
-      updatedAt: backendNotification.createdAt, // Se não houver updatedAt, usamos createdAt
-      generalId: undefined // Definir se necessário pelo contexto
+      // Remover campos relacionados a general notification
+      // isGeneral, generalId
+      updatedAt: backendNotification.createdAt
     };
   }
 }

@@ -39,6 +39,7 @@ export default function Notifications() {
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
+    storeId: undefined as string | undefined,
     type: undefined as string | undefined,
     read: undefined as boolean | undefined,
     search: undefined as string | undefined
@@ -71,6 +72,7 @@ export default function Notifications() {
     setFilters({
       page: 1,
       limit: 10,
+      storeId: undefined,
       type: undefined,
       read: undefined,
       search: undefined

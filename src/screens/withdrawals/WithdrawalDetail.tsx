@@ -13,6 +13,13 @@ import withdrawalRepository from '../../repository/withdrawal-repository';
 import paymentRepository from '../../repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 
+function formatDateSafe(date: any, formatStr: string) {
+  if (!date || (typeof date !== 'string' && typeof date !== 'number')) return '-';
+  const d = new Date(date);
+  if (isNaN(d.getTime())) return '-';
+  return format(d, formatStr);
+}
+
 export default function WithdrawalDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -97,7 +104,10 @@ export default function WithdrawalDetail() {
     },
     {
       header: 'Data de Criação',
-      accessor: (payment: Payment) => format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm'),
+      accessor: (payment: Payment) =>
+        payment.createdAt
+          ? formatDateSafe(payment.createdAt, 'dd/MM/yyyy HH:mm:ss')
+          : '-',
     },
   ] as TableColumn<Payment>[];
 
@@ -177,14 +187,18 @@ export default function WithdrawalDetail() {
               <div>
                 <label className="text-sm text-muted-foreground">Criado em</label>
                 <p className="font-medium">
-                  {withdrawal?.createdAt ? format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm:ss') : '-'}
+                  {withdrawal?.createdAt
+                    ? formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')
+                    : '-'}
                 </p>
               </div>
               {withdrawal?.completedAt && (
                 <div>
                   <label className="text-sm text-muted-foreground">Concluído em</label>
                   <p className="font-medium">
-                    {format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm:ss')}
+                    {withdrawal.completedAt
+                      ? formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')
+                      : '-'}
                   </p>
                 </div>
               )}

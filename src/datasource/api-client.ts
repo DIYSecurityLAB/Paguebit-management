@@ -99,9 +99,15 @@ export class ApiClient {
     for (const key in obj) {
       if (obj[key] === null) continue;
 
+      // Se for objeto vazio, troca para null
+      if (typeof obj[key] === 'object' && Object.keys(obj[key]).length === 0) {
+        obj[key] = null;
+        continue;
+      }
+
       if (typeof obj[key] === 'string') {
-        // Check if string is a valid ISO date
-        const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/;
+        // Regex mais flexível para datas ISO
+        const isoDateRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/;
         if (isoDateRegex.test(obj[key])) {
           obj[key] = new Date(obj[key]);
         }

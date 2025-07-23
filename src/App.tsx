@@ -17,7 +17,7 @@ const Login = lazy(() => import('./screens/auth/Login'));
 const NotFound = lazy(() => import('./screens/NotFound'));
 const Dashboard = lazy(() => import('./screens/dashboard/Dashboard'));
 const Doacoes = lazy(() => import('./screens/doacoes/Doacoes'));
-const AuditLogs = lazy(() => import('./screens/audit/AuditLogs')); // Nova página de logs
+const AuditLogs = lazy(() => import('./screens/audit/AuditLogs'));  
 
 function App() {
   return (

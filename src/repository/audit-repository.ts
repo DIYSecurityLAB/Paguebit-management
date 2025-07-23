@@ -1,5 +1,5 @@
 import apiClient from '../datasource/api-client';
-import { AuditLog, AuditLogInput } from '../models/types';
+import { AuditLog } from '../models/types';
 
 export interface AuditLogQueryParams {
   userId?: string;
@@ -7,9 +7,14 @@ export interface AuditLogQueryParams {
   affectedUserId?: string;
   withdrawalId?: string;
   notificationId?: string;
+  storeId?: string;
   action?: string;
-  dateFrom?: string;
-  dateTo?: string;
+  performedBy?: string;
+  id?: string;
+  previousValue?: string;
+  newValue?: string;
+  createdAtFrom?: string;
+  createdAtTo?: string;
   page?: number;
   limit?: number;
   orderBy?: 'createdAt';
@@ -17,16 +22,24 @@ export interface AuditLogQueryParams {
 }
 
 class AuditRepository {
-  async createAuditLog(data: AuditLogInput): Promise<any> {
-    return apiClient.post('/audit', data);
+  async listAuditLogs(params?: AuditLogQueryParams): Promise<{ data: AuditLog[]; pagination: { total: number; page: number; limit: number } }> {
+    // Remove filtros vazios ou string vazia
+    const cleanParams = params
+      ? Object.fromEntries(
+          Object.entries(params).filter(([_, v]) =>
+            v !== undefined && v !== null && v !== ''
+          )
+        )
+      : {};
+    // GET na rota /admin/audit-logs
+    const { data } = await apiClient.get<{ data: AuditLog[]; pagination: { total: number; page: number; limit: number } }>('/admin/audit-logs', { params: cleanParams });
+    return data;
   }
 
-  async listAuditLogs(params?: AuditLogQueryParams): Promise<{ data: AuditLog[]; pagination: { total: number; page: number; limit: number } }> {
-    // Remove filtros vazios
-    const cleanParams = params
-      ? Object.fromEntries(Object.entries(params).filter(([_, v]) => v !== '' && v !== undefined && v !== null))
-      : {};
-    return apiClient.get('/audit', { params: cleanParams });
+  async getAuditLogById(id: string): Promise<AuditLog> {
+    // GET na rota /admin/audit-logs/:id
+    const { data } = await apiClient.get<AuditLog>(`/admin/audit-logs/${id}`);
+    return data;
   }
 }
 

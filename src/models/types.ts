@@ -158,6 +158,13 @@ export interface Withdrawal {
   failedReason?: string;
   txId?: string;
   notes?: string;
+  // Adiciona os campos para resposta completa
+  payments?: Payment[];
+  store?: {
+    id: string;
+    name: string;
+    ownerId: string;
+  };
 }
 
 export interface WithdrawalCompleteInput {
@@ -168,9 +175,15 @@ export interface WithdrawalCompleteInput {
 
 export interface WithdrawalStatusUpdate {
   id: string;
-  status: keyof WithdrawalStatus;
+  status: keyof WithdrawalStatus | string;
   failedReason?: string;
   txId?: string;
+}
+// DTO para PATCH /admin/withdrawals/:id/status
+export interface AdminUpdateWithdrawalStatusDto {
+  status: string;
+  txId?: string;
+  failedReason?: string;
 }
 
 export interface NotifyModel {
@@ -287,6 +300,10 @@ export interface AuditLog {
   notificationId?: string;
   previousValue?: string;
   newValue?: string;
+  // Adiciona os campos que agora existem
+  storeId?: string;
+  whitelabelId?: string;
+  performedBy?: string;
 }
 
 // Para criação de log (input)

@@ -4,42 +4,36 @@ import { useMutation, useQuery } from "react-query";
 import { 
   ArrowLeft, 
   Bell, 
-  Users, 
-  User as UserIcon, 
+  Store as StoreIcon, 
   AlignLeft,
   Search,
   X,
   Send,
   Loader,
-  CheckCircle,
-  Radio
+  CheckCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "../../components/Button";
 import notificationRepository from "../../repository/notification-repository";
-import userRepository from "../../repository/user-repository";
-import { User } from "../../models/types";
+import storeRepository from "../../repository/store-repository";
+import { Store } from "../../models/types";
 
-// Tipo para usuário a ser usado na notificação
-type UserModel = User;
+// Tipo para loja a ser usado na notificação
+type StoreModel = Store;
 
-type NotificationType = "general" | "specific";
+type NotificationType = "specific"; // Remover "general"
 
 export default function SendNotification() {
   const navigate = useNavigate();
- 
-  // Estados para o formulário
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [type, setType] = useState<NotificationType>("general");
-  const [selectedUser, setSelectedUser] = useState<UserModel | null>(null);
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
 
-  // Busca de usuários - com debounce para melhor performance
+  // Busca de lojas - com debounce
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
-  
   useEffect(() => {
     const timer = setTimeout(() => {
       if (searchQuery.length >= 2) {
@@ -48,15 +42,14 @@ export default function SendNotification() {
         setDebouncedSearchQuery("");
       }
     }, 300); // 300ms de delay para evitar muitas requisições
-
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Consulta para buscar usuários usando o método getUsers com filtro de email
-  const { data: usersData, isLoading: searchLoading } = useQuery(
-    ['users', debouncedSearchQuery],
-    () => userRepository.getUsers({
-      email: debouncedSearchQuery,
+  // Consulta para buscar lojas
+  const { data: storesData, isLoading: searchLoading } = useQuery(
+    ['stores', debouncedSearchQuery],
+    () => storeRepository.getStores({
+      name: debouncedSearchQuery,
       limit: 5 // Limitar a 5 resultados para não sobrecarregar a UI
     }),
     {
@@ -67,36 +60,25 @@ export default function SendNotification() {
   );
 
   // Extrair os resultados da busca do formato paginado
-  const searchResults = usersData?.data || [];
+  const searchResults = Array.isArray(storesData?.data) ? storesData.data : [];
 
   // Mutation para enviar notificação
   const createNotificationMutation = useMutation(
     () => {
-      if (type === "general") {
-        return notificationRepository.createGeneralNotification({
-          title,
-          message: content,
-          type: "info",
-        });
-      } else {
-        if (!selectedUser) throw new Error("Usuário não selecionado");
-        
-        return notificationRepository.createNotification({
-          userId: selectedUser.id,
-          title,
-          message: content,
-          type: "info",
-        });
-      }
+      if (!selectedStore) throw new Error("Loja não selecionada");
+      return notificationRepository.createNotification({
+        storeId: selectedStore.id,
+        title,
+        message: content,
+        type: "info",
+      });
     },
     {
       onSuccess: () => {
         setShowSuccess(true);
         setTitle("");
         setContent("");
-        setType("general");
-        setSelectedUser(null);
-        
+        setSelectedStore(null);
         setTimeout(() => {
           setShowSuccess(false);
         }, 3000);
@@ -108,27 +90,18 @@ export default function SendNotification() {
     }
   );
 
-  // Efeito para limpar seleção quando o tipo muda
-  useEffect(() => {
-    if (type === "general") {
-      setSelectedUser(null);
-      setSearchQuery("");
-    }
-  }, [type]);
-
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setSearchQuery(value);
-    
-    // Limpar o usuário selecionado quando a pesquisa muda
-    if (selectedUser) {
-      setSelectedUser(null);
+    // Limpar a loja selecionada quando a pesquisa muda
+    if (selectedStore) {
+      setSelectedStore(null);
     }
   };
 
   // Função com tipagem corrigida
-  const handleUserSelect = (user: UserModel) => {
-    setSelectedUser(user);
+  const handleStoreSelect = (store: Store) => {
+    setSelectedStore(store);
     setSearchQuery(""); // Limpar a busca após seleção
   };
 
@@ -145,8 +118,8 @@ export default function SendNotification() {
       return;
     }
     
-    if (type === "specific" && !selectedUser) {
-      toast.error("Selecione um usuário para enviar a notificação");
+    if (!selectedStore) {
+      toast.error("Selecione uma loja para enviar a notificação");
       return;
     }
     
@@ -171,7 +144,7 @@ export default function SendNotification() {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-foreground">Enviar Notificação</h1>
-          <p className="text-muted-foreground">Envie notificações para usuários específicos ou para todos os usuários.</p>
+          <p className="text-muted-foreground">Envie notificações para uma loja específica.</p>
         </div>
       </div>
 
@@ -181,141 +154,88 @@ export default function SendNotification() {
         <div className="lg:col-span-2">
           <div className="bg-card dark:bg-card rounded-xl shadow-sm border border-border p-6">
             <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Seleção de tipo de notificação */}
+              {/* Campo de busca de loja */}
               <div>
-                <label className="block text-sm font-medium text-foreground dark:text-card-foreground mb-3">Tipo de Notificação</label>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setType("general")}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors ${
-                      type === "general"
-                        ? "border-primary bg-primary/5 dark:bg-primary/10 text-primary"
-                        : "border-border hover:border-primary/30 text-foreground dark:text-card-foreground"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-full ${type === "general" ? "bg-primary text-primary-foreground" : "bg-muted dark:bg-muted-foreground"}`}>
-                      <Users className="w-5 h-5" />
+                <label className="block text-sm font-medium text-foreground dark:text-card-foreground mb-2">
+                  Selecionar Loja
+                </label>
+                <div className="relative">
+                  {selectedStore ? (
+                    <div className="flex items-center justify-between p-3 border-2 border-primary rounded-lg bg-primary/5 dark:bg-primary/10">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-medium">
+                          {selectedStore.name?.[0]?.toUpperCase() || "L"}
+                        </div>
+                        <div>
+                          <p className="font-medium">{selectedStore.name}</p>
+                          <p className="text-xs text-muted-foreground">{selectedStore.id}</p>
+                        </div>
+                      </div>
+                      <button 
+                        type="button"
+                        onClick={() => setSelectedStore(null)}
+                        className="p-1 text-muted-foreground hover:text-destructive rounded-full hover:bg-destructive/10"
+                      >
+                        <X className="w-5 h-5" />
+                      </button>
                     </div>
-                    <div className="text-left">
-                      <p className="font-medium">Notificação Geral</p>
-                      <p className="text-xs text-muted-foreground dark:text-muted-foreground">Enviar para todos os usuários</p>
-                    </div>
-                    <Radio className={`ml-auto w-5 h-5 ${type === "general" ? "text-primary" : "text-muted-foreground"}`} />
-                  </button>
-                  
-                  <button
-                    type="button"
-                    onClick={() => setType("specific")}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg border-2 transition-colors ${
-                      type === "specific"
-                        ? "border-primary bg-primary/5 text-primary"
-                        : "border-border hover:border-primary/30 text-foreground"
-                    }`}
-                  >
-                    <div className={`p-2 rounded-full ${type === "specific" ? "bg-primary text-primary-foreground" : "bg-muted"}`}>
-                      <UserIcon className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <p className="font-medium">Notificação Específica</p>
-                      <p className="text-xs text-muted-foreground">Enviar para um usuário específico</p>
-                    </div>
-                    <Radio className={`ml-auto w-5 h-5 ${type === "specific" ? "text-primary" : "text-muted-foreground"}`} />
-                  </button>
+                  ) : (
+                    <>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
+                        <input
+                          type="text"
+                          placeholder="Buscar loja por nome..."
+                          value={searchQuery}
+                          onChange={handleSearchChange}
+                          className="w-full pl-12 pr-4 py-3 border-2 border-border rounded-lg focus:ring-primary focus:border-primary bg-background dark:bg-card text-foreground dark:text-card-foreground"
+                        />
+                      </div>
+                      
+                      {/* Resultado da busca com novo estilo */}
+                      {debouncedSearchQuery.length >= 2 && (
+                        <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                          {searchLoading ? (
+                            <div className="p-4 text-center">
+                              <Loader className="animate-spin h-5 w-5 text-primary mx-auto mb-2" />
+                              <p className="text-sm text-muted-foreground">Buscando lojas...</p>
+                            </div>
+                          ) : searchResults.length > 0 ? (
+                            <div className="divide-y divide-border">
+                              {searchResults.map((store: Store) => (
+                                <button
+                                  key={store.id}
+                                  type="button"
+                                  className="w-full px-4 py-3 hover:bg-muted text-left flex items-center gap-3"
+                                  onClick={() => handleStoreSelect(store)}
+                                >
+                                  <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
+                                    {typeof store.name === "string" && store.name.length > 0
+                                      ? store.name[0].toUpperCase()
+                                      : "L"}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-medium truncate">
+                                      {typeof store.name === "string" && store.name.length > 0
+                                        ? store.name
+                                        : store.id}
+                                    </p>
+                                    <p className="text-xs text-muted-foreground truncate">{store.id}</p>
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="p-4 text-center">
+                              <p className="text-sm text-muted-foreground">Nenhuma loja encontrada com este nome</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
               </div>
-
-              {/* Campo de busca de usuário (apenas visível para notificações específicas) */}
-              {type === "specific" && (
-                <div>
-                  <label className="block text-sm font-medium text-foreground dark:text-card-foreground mb-2">
-                    Selecionar Usuário
-                  </label>
-                  <div className="relative">
-                    {selectedUser ? (
-                      <div className="flex items-center justify-between p-3 border-2 border-primary rounded-lg bg-primary/5 dark:bg-primary/10">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-lg font-medium">
-                            {selectedUser.firstName?.[0] || selectedUser.email?.[0]?.toUpperCase() || "U"}
-                          </div>
-                          <div>
-                            <p className="font-medium">
-                              {selectedUser.firstName && selectedUser.lastName 
-                                ? `${selectedUser.firstName} ${selectedUser.lastName}` 
-                                : selectedUser.email}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{selectedUser.email}</p>
-                          </div>
-                        </div>
-                        <button 
-                          type="button"
-                          onClick={() => setSelectedUser(null)}
-                          className="p-1 text-muted-foreground hover:text-destructive rounded-full hover:bg-destructive/10"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="relative">
-                          <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
-                          <input
-                            type="text"
-                            placeholder="Buscar usuário por email..."
-                            value={searchQuery}
-                            onChange={handleSearchChange}
-                            className="w-full pl-12 pr-4 py-3 border-2 border-border rounded-lg focus:ring-primary focus:border-primary bg-background dark:bg-card text-foreground dark:text-card-foreground"
-                          />
-                        </div>
-                        
-                        {/* Resultado da busca com novo estilo */}
-                        {debouncedSearchQuery.length >= 2 && (
-                          <div className="absolute z-10 w-full mt-1 bg-card border border-border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                            {searchLoading ? (
-                              <div className="p-4 text-center">
-                                <Loader className="animate-spin h-5 w-5 text-primary mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">Buscando usuários...</p>
-                              </div>
-                            ) : searchResults.length === 0 ? (
-                              <div className="p-4 text-center">
-                                <p className="text-sm text-muted-foreground">Nenhum usuário encontrado com este email</p>
-                              </div>
-                            ) : (
-                              <div className="divide-y divide-border">
-                                {searchResults.map((user: UserModel) => (
-                                  <button
-                                    key={user.id}
-                                    type="button"
-                                    className="w-full px-4 py-3 hover:bg-muted text-left flex items-center gap-3"
-                                    onClick={() => handleUserSelect(user)}
-                                  >
-                                    <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-medium">
-                                      {user.firstName?.[0] || user.email?.[0]?.toUpperCase() || "U"}
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                      <p className="font-medium truncate">
-                                        {user.firstName && user.lastName 
-                                          ? `${user.firstName} ${user.lastName}` 
-                                          : user.email}
-                                      </p>
-                                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-                                      {user.documentId && (
-                                        <p className="text-xs text-muted-foreground">
-                                          {user.documentType}: {user.documentId}
-                                        </p>
-                                      )}
-                                    </div>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
 
               {/* Título da notificação */}
               <div>
@@ -368,9 +288,7 @@ export default function SendNotification() {
               >
                 {isSubmitting 
                   ? "Enviando..."
-                  : type === "general" 
-                    ? "Enviar para Todos os Usuários" 
-                    : "Enviar Notificação"
+                  : "Enviar Notificação"
                 }
               </Button>
             </form>
@@ -465,9 +383,7 @@ export default function SendNotification() {
               Notificação Enviada!
             </h3>
             <p className="text-foreground mb-6 text-center">
-              {type === "general" 
-                ? "A notificação foi enviada com sucesso para todos os usuários."
-                : `A notificação foi enviada com sucesso para ${selectedUser?.firstName || 'o usuário'}.`}
+              A notificação foi enviada com sucesso para {selectedStore?.name || 'a loja'}.
             </p>
             <Button
               onClick={() => setShowSuccess(false)}
@@ -481,3 +397,4 @@ export default function SendNotification() {
     </div>
   );
 }
+ 

@@ -7,8 +7,9 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import NotificationModal from './NotificationModal';
-import { NotifyModel } from '../../models/types';
+import { NotifyModel, Store } from '../../models/types';
 import notificationRepository from '../../repository/notification-repository';
+import storeRepository from '../../repository/store-repository';
 
 export default function NotificationsTable() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -28,6 +29,18 @@ export default function NotificationsTable() {
     }
   );
 
+  // Buscar todas as lojas para montar o mapa id->nome
+  const { data: storesData } = useQuery(
+    ['stores', 'all'],
+    () => storeRepository.getStores({ limit: 100 }),
+    { staleTime: 60000 }
+  );
+  const stores = Array.isArray(storesData?.data) ? storesData.data : [];
+  const storeMap = stores.reduce<Record<string, string>>((acc, store: Store) => {
+    acc[store.id] = store.name || store.id;
+    return acc;
+  }, {});
+
   const notifications = data?.notifications || [];
   const totalItems = notifications.length || 0;
 
@@ -41,6 +54,11 @@ export default function NotificationsTable() {
       accessor: (notification: NotifyModel) => (
         <span className="capitalize">{notification.type}</span>
       ),
+    },
+    {
+      header: 'Store',
+      accessor: (notification: NotifyModel) =>
+        storeMap[notification.storeId ?? ''] || notification.storeId || 'N/A',
     },
     {
       header: 'Read',

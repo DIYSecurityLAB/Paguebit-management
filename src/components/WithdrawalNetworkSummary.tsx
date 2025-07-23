@@ -23,7 +23,14 @@ export default function WithdrawalNetworkSummary() {
         status: 'pending',
         limit: 1000 // Limite alto para pegar todos os pendentes
       });
-      return response.data || [];
+      // Garante que sempre retorna array
+      if (response && Array.isArray(response.data)) {
+        return response.data;
+      }
+      if (response && response.data && typeof response.data === 'object' && 'length' in response.data) {
+        return Array.from(response.data);
+      }
+      return [];
     },
     {
       refetchInterval: 60000, // Atualiza a cada 1 minuto
@@ -42,10 +49,15 @@ export default function WithdrawalNetworkSummary() {
 
   // Calcula o resumo sempre que os dados mudam
   useEffect(() => {
-    if (!data) return;
+    // Garante que data é sempre array
+    const withdrawals = Array.isArray(data) ? data : [];
+    if (!withdrawals || withdrawals.length === 0) {
+      setNetworkSummaries([]);
+      return;
+    }
 
     // Agrupar saques por tipo de rede e somar valores
-    const summary = data.reduce((acc: Record<string, number>, withdrawal) => {
+    const summary = withdrawals.reduce((acc: Record<string, number>, withdrawal) => {
       const networkType = withdrawal.destinationWalletType;
       if (!acc[networkType]) {
         acc[networkType] = 0;
@@ -75,7 +87,11 @@ export default function WithdrawalNetworkSummary() {
 
   // Se não há dados ou está carregando, não exibe nada
   if (isLoading || networkSummaries.length === 0) {
-    return null;
+    return (
+      <div className="mb-4 bg-card border border-border rounded-lg p-4 shadow-sm text-center text-muted-foreground">
+        Nenhum saque pendente disponível para resumo por rede.
+      </div>
+    );
   }
 
   return (
