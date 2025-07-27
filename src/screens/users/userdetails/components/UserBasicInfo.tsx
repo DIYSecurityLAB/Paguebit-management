@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Save, X } from 'lucide-react';
-import { User, UserUpdateInput } from '../../../../models/types';
+import { User, UserUpdateInput } from '../../../../data/models/types';
 import Button from '../../../../components/Button';
 import { toast } from 'sonner';
-import userRepository from '../../../../repository/user-repository';
+import userRepository from '../../../../data/repository/user-repository';
 import ConfirmationModal from '../../../../components/ConfirmationModal';
 
 interface UserBasicInfoProps {

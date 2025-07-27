@@ -1,9 +1,9 @@
 import React, { useMemo } from 'react';
 import { useQuery } from 'react-query';
 import { Users, CreditCard, Wallet, BarChart3, ChevronUp, TrendingUp, DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import userRepository from '../../repository/user-repository';
-import paymentRepository from '../../repository/payment-repository';
-import withdrawalRepository from '../../repository/withdrawal-repository';
+import userRepository from '../../data/repository/user-repository';
+import paymentRepository from '../../data/repository/payment-repository';
+import withdrawalRepository from '../../data/repository/withdrawal-repository';
 import { formatCurrency } from '../../utils/format';
 import { Link } from 'react-router-dom';
 
@@ -24,7 +24,7 @@ import ReferralsChart from '../charts/ReferralsChart';
 // ADICIONAR:
 import ActiveUsersChart from '../charts/ActiveUsersChart';
 
-import { User, Payment, Withdrawal } from '../../models/types';
+import { User, Payment, Withdrawal } from '../../data/models/types';
 
 export default function Dashboard() {
   // Buscar todos os dados necessários

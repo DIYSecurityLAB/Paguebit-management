@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Payment, Withdrawal } from '../../models/types';
+import { Payment, Withdrawal } from '../../data/models/types';
 
 interface Props {
   payments: Payment[];

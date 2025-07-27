@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import { Copy } from 'lucide-react';
-import { AuditLog } from '../../models/types';
+import { AuditLog } from '../../data/models/types';
 
 interface AuditLogDetailModalProps {
   log: AuditLog;

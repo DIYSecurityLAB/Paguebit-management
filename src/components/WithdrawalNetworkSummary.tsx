@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import withdrawalRepository from '../repository/withdrawal-repository';
+import withdrawalRepository from '../data/repository/withdrawal-repository';
 import { formatCurrency } from '../utils/format';
 import { Coins } from 'lucide-react';
 

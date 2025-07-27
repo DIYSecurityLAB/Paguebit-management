@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { User } from '../../models/types';
+import { User } from '../../data/models/types';
 
 interface Props {
   users: User[];

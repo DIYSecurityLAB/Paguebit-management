@@ -9,8 +9,8 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
-import { AuditLog } from '../../models/types';
-import auditRepository, { AuditLogQueryParams } from '../../repository/audit-repository';
+import { AuditLog } from '../../data/models/types';
+import auditRepository, { AuditLogQueryParams } from '../../data/repository/audit-repository';
 import AuditLogDetailModal from './AuditLogDetailModal';
 
 export default function AuditLogsCard() {

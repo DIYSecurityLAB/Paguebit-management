@@ -10,8 +10,8 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import UsersModal from './UsersModal';
-import { User } from '../../models/types';
-import userRepository from '../../repository/user-repository';
+import { User } from '../../data/models/types';
+import userRepository from '../../data/repository/user-repository';
 import { toast } from 'sonner';
 import Select from '../../components/Select';
 

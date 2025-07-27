@@ -14,9 +14,9 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Button from "../../components/Button";
-import notificationRepository from "../../repository/notification-repository";
-import storeRepository from "../../repository/store-repository";
-import { Store } from "../../models/types";
+import notificationRepository from "../../data/repository/notification-repository";
+import storeRepository from "../../data/repository/store-repository";
+import { Store } from "../../data/models/types";
 
 // Tipo para loja a ser usado na notificação
 type StoreModel = Store;

@@ -1,5 +1,5 @@
 import Modal from '../../components/Modal';
-import { User } from '../../models/types';
+import { User } from '../../data/models/types';
 
 interface UsersModalProps {
   user: User;

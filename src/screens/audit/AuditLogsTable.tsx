@@ -6,8 +6,8 @@ import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
-import { AuditLog } from '../../models/types';
-import auditRepository, { AuditLogQueryParams } from '../../repository/audit-repository';
+import { AuditLog } from '../../data/models/types';
+import auditRepository, { AuditLogQueryParams } from '../../data/repository/audit-repository';
 import AuditLogDetailModal from './AuditLogDetailModal';
 
 export default function AuditLogsTable() {

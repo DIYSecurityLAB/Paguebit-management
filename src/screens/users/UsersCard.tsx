@@ -11,8 +11,8 @@ import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import UsersModal from './UsersModal';
 import Select from '../../components/Select';
-import { User } from '../../models/types';
-import userRepository from '../../repository/user-repository';
+import { User } from '../../data/models/types';
+import userRepository from '../../data/repository/user-repository';
 import { toast } from 'sonner';
 
 export default function UsersCard() {

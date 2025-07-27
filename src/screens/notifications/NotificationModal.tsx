@@ -1,6 +1,6 @@
 import { format } from 'date-fns';
 import Modal from '../../components/Modal';
-import { NotifyModel } from '../../models/types';
+import { NotifyModel } from '../../data/models/types';
 
 interface NotificationModalProps {
   notification: NotifyModel;

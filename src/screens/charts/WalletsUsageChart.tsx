@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Payment, Withdrawal } from '../../models/types';
+import { Payment, Withdrawal } from '../../data/models/types';
 import { formatCurrency } from '../../utils/format';
 
 interface Props {

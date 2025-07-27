@@ -2,8 +2,8 @@ import ViewToggle from '../../components/ViewToggle';
 import WithdrawalsTable from './WithdrawalsTable';
 import WithdrawalsCard from './WithdrawalsCard';
 import ExcelExport from '../../components/ExcelExport';
-import withdrawalRepository from '../../repository/withdrawal-repository';
-import { Withdrawal } from '../../models/types';
+import withdrawalRepository from '../../data/repository/withdrawal-repository';
+import { Withdrawal } from '../../data/models/types';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 

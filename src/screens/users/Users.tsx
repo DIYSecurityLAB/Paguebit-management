@@ -2,8 +2,8 @@ import ExcelExport from '../../components/ExcelExport';
 import UsersTable from './UsersTable';
 import UsersCard from './UsersCard';
 import ViewToggle from '../../components/ViewToggle';
-import userRepository from '../../repository/user-repository';
-import { User } from '../../models/types';
+import userRepository from '../../data/repository/user-repository';
+import { User } from '../../data/models/types';
 import { toast } from 'sonner';
 
 export default function Users() {

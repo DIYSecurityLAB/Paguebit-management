@@ -3,8 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Loading from '../../../components/Loading';
 import Button from '../../../components/Button';
-import { User } from '../../../models/types';
-import userRepository from '../../../repository/user-repository';
+import { User } from '../../../data/models/types';
+import userRepository from '../../../data/repository/user-repository';
 
 // Importar componentes
 import UserBasicInfo from './components/UserBasicInfo';

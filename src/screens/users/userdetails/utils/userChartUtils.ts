@@ -1,5 +1,5 @@
 import { subMonths } from 'date-fns';
-import { Payment } from '../../../../models/types';
+import { Payment } from '../../../../data/models/types';
 
 export interface HeatmapDataItem {
   day: number;

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from 'react-query';
-import paymentRepository from '../../repository/payment-repository';
-import { Payment, PaymentStatus } from '../../models/types';
+import paymentRepository from '../../data/repository/payment-repository';
+import { Payment, PaymentStatus } from '../../data/models/types';
 import ImageViewer from '../../components/ImageViewer';
 import { toast } from 'sonner';
 import Button from '../../components/Button'; // Adicionando importação do Button

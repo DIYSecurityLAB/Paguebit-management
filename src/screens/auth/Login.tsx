@@ -1,18 +1,15 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { signInWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase/firebaseConfig";
 import { useAuth } from "../../contexts/AuthContext";
 import { Loader2, Mail, Lock, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import Button from "../../components/Button";
-import apiClient from "../../datasource/api-client";
 import logo from '../../assets/PagueBit_black.svg';
 import logoDark from '../../assets/PagueBit_white.svg';
 import { useTheme } from '../../hooks/useTheme';
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -40,40 +37,9 @@ export default function Login() {
     }
 
     try {
-      await signInWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
-      const firebaseUser = auth.currentUser;
-      if (!firebaseUser) throw new Error("Usuário não autenticado no Firebase");
-      const token = await firebaseUser.getIdToken();
-      localStorage.setItem('token', token);
-
-      // Ajuste para pegar o user corretamente da resposta do apiClient
-      const response = await apiClient.post<{ user: any }>("/auth/login", { token });
-      // Pode vir como { data: { user, ... } } ou { user, ... }
-      let userData: any = undefined;
-      if (response && typeof response === 'object') {
-        if ('user' in response) {
-          userData = response.user;
-        } else if ('data' in response && response.data && typeof response.data === 'object' && 'user' in response.data) {
-          userData = response.data.user;
-        }
-      }
-      if (!userData) {
-        setError("Erro ao autenticar: usuário não encontrado na resposta.");
-        await auth.signOut();
-        localStorage.removeItem('token');
-        return;
-      }
-
-      if (userData.role !== "MANAGER" && userData.role !== "SUPER_ADMIN") {
-        setError("Acesso restrito: apenas administradores podem acessar.");
-        console.log("Acesso restrito: apenas administradores podem acessar.", userData.role);
-        await auth.signOut();
-        localStorage.removeItem('token');
-        return;
-      }
-
+      await login(sanitizedEmail, sanitizedPassword);
       setLoginAttempts(0); // resetar tentativas em caso de sucesso
-      navigate("/");
+      // O próprio contexto já faz navigate("/")
     } catch (err: any) {
       setLoginAttempts((prev) => prev + 1);
       setError("Credenciais inválidas. Tente novamente.");

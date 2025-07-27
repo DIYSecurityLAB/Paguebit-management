@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FunnelChart, Funnel, LabelList, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Payment } from '../../models/types';
+import { Payment } from '../../data/models/types';
 import { formatCurrency } from '../../utils/format';
 
 interface Props {

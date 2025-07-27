@@ -6,11 +6,11 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import ImageViewer from '../../components/ImageViewer';
-import { Payment, PaymentStatus } from '../../models/types';
-import paymentRepository from '../../repository/payment-repository';
+import { Payment, PaymentStatus } from '../../data/models/types';
+import paymentRepository from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
-import apiClient from '../../datasource/api-client';
+import apiClient from '../../data/datasource/api.datasource';
 import OcrNameSuggestion from '../../components/OcrNameSuggestion';
 import { useAuth } from '../../contexts/AuthContext';
 

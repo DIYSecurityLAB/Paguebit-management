@@ -16,10 +16,10 @@ import {
   History,
   Send
 } from 'lucide-react';
-import { NotifyModel } from '../../models/types';
+import { NotifyModel } from '../../data/models/types';
 import NotificationsTable from './NotificationsTable';
 import NotificationModal from './NotificationModal';
-import notificationRepository from '../../repository/notification-repository';
+import notificationRepository from '../../data/repository/notification-repository';
 import Button from '../../components/Button';
 import SendNotification from './SendNotification';
 

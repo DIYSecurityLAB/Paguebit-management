@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Payment } from '../../models/types';
+import { Payment } from '../../data/models/types';
 import { formatCurrency } from '../../utils/format';
 
 interface Props {

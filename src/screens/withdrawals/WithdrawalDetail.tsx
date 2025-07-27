@@ -8,9 +8,9 @@ import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import Table, { TableColumn } from '../../components/Table';
 import PaymentsModal from '../payments/PaymentsModal';
-import { Withdrawal, Payment } from '../../models/types';
-import withdrawalRepository from '../../repository/withdrawal-repository';
-import paymentRepository from '../../repository/payment-repository';
+import { Withdrawal, Payment } from '../../data/models/types';
+import withdrawalRepository from '../../data/repository/withdrawal-repository';
+import paymentRepository from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 
 function formatDateSafe(date: any, formatStr: string) {

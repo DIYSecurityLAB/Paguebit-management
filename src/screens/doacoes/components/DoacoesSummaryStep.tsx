@@ -1,5 +1,5 @@
 import React from 'react';
-import { Payment } from '../../../models/types';
+import { Payment } from '../../../data/models/types';
 import Button from '../../../components/Button';
 
 interface DoacoesSummaryStepProps {

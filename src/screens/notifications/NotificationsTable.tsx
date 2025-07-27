@@ -7,9 +7,9 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import NotificationModal from './NotificationModal';
-import { NotifyModel, Store } from '../../models/types';
-import notificationRepository from '../../repository/notification-repository';
-import storeRepository from '../../repository/store-repository';
+import { NotifyModel, Store } from '../../data/models/types';
+import notificationRepository from '../../data/repository/notification-repository';
+import storeRepository from '../../data/repository/store-repository';
 
 export default function NotificationsTable() {
   const [currentPage, setCurrentPage] = useState(1);

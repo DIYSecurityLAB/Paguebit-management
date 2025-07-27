@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { User } from '../../models/types';
+import { User } from '../../data/models/types';
 import Modal from '../../components/Modal';
 import { ArrowUpRight } from 'lucide-react';
 
