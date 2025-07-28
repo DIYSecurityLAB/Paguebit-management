@@ -1,9 +1,9 @@
 import { format } from 'date-fns';
 import Modal from '../../components/Modal';
-import { NotifyModel } from '../../data/models/types';
+import { NotificationModel } from '../../data/model/notification.model';
 
 interface NotificationModalProps {
-  notification: NotifyModel;
+  notification: NotificationModel;
   isOpen: boolean;
   onClose: () => void;
 }
@@ -37,7 +37,7 @@ export default function NotificationModal({
 
         <div>
           <label className="text-sm text-muted-foreground">Message</label>
-          <p className="mt-1 text-foreground whitespace-pre-wrap">{notification.message}</p>
+          <p className="mt-1 text-foreground whitespace-pre-wrap">{notification.content}</p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">

@@ -1,55 +1,64 @@
 import React, { useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { Users, CreditCard, Wallet, BarChart3, ChevronUp, TrendingUp, DollarSign, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
-import userRepository from '../../data/repository/user-repository';
-import paymentRepository from '../../data/repository/payment-repository';
-import withdrawalRepository from '../../data/repository/withdrawal-repository';
+import { Users, CreditCard, BarChart3, DollarSign, AlertCircle, CheckCircle, Loader2, Store as StoreIcon } from 'lucide-react';
+import { UserRepository } from '../../data/repository/user-repository';
+import { PaymentRepository } from '../../data/repository/payment-repository';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { StoreRepository } from '../../data/repository/store-repository';
 import { formatCurrency } from '../../utils/format';
 import { Link } from 'react-router-dom';
 
 // Importar componentes de gráficos existentes
-import UsersGrowthChart from '../charts/UsersGrowthChart';
-import PaymentsStatusChart from '../charts/PaymentsStatusChart';
-import PaymentsMonthlyChart from '../charts/PaymentsMonthlyChart';
-import WithdrawalsStatusChart from '../charts/WithdrawalsStatusChart';
-import TopUsersChart from '../charts/TopUsersChart';
+import UsersGrowthChart from './charts/UsersGrowthChart';
+import PaymentsStatusChart from './charts/PaymentsStatusChart';
+import PaymentsMonthlyChart from './charts/PaymentsMonthlyChart';
+import WithdrawalsStatusChart from './charts/WithdrawalsStatusChart';
+import TopUsersChart from './charts/TopUsersChart';
+import PaymentsDistributionChart from './charts/PaymentsDistributionChart';
+import PaymentTypeChart from './charts/PaymentTypeChart';
+import ReferralsChart from './charts/ReferralsChart';
+import ActiveUsersChart from './charts/ActiveUsersChart';
 
-// Importar novos componentes de gráficos
-// import PaymentsFunnelChart from '../charts/PaymentsFunnelChart';
-import PaymentsDistributionChart from '../charts/PaymentsDistributionChart';
-// import ProcessingTimeChart from '../charts/ProcessingTimeChart';
-// import WalletsUsageChart from '../charts/WalletsUsageChart';
-import PaymentTypeChart from '../charts/PaymentTypeChart';
-import ReferralsChart from '../charts/ReferralsChart';
-// ADICIONAR:
-import ActiveUsersChart from '../charts/ActiveUsersChart';
+// IMPORTAR TIPOS EXPLICITAMENTE
+import type { User } from '../../domain/entities/User.entity';
+import type { Payment } from '../../domain/entities/Payment.entity';
+import type { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import type { Store } from '../../domain/entities/Store.entity';
 
-import { User, Payment, Withdrawal } from '../../data/models/types';
-
+// Buscar todos os dados necessários (agora incluindo stores)
 export default function Dashboard() {
-  // Buscar todos os dados necessários
+  const userRepository = new UserRepository();
+  const paymentRepository = new PaymentRepository();
+  const withdrawalRepository = new WithdrawalRepository();
+  const storeRepository = new StoreRepository();
+
   const { data: usersData, isLoading: loadingUsers } = useQuery(
     'allUsers',
-    () => userRepository.getUsers({ page: 1, limit: 10000 })
+    () => userRepository.listAllUsers({ page: '1', limit: '10000' })
   );
   const { data: paymentsData, isLoading: loadingPayments } = useQuery(
     'allPayments',
-    () => paymentRepository.getPayments({ page: 1, limit: 100000, noreceipt: true })
+    () => paymentRepository.listPayments({ page: '1', limit: '100000', noreceipt: 'true' })
   );
   const { data: withdrawalsData, isLoading: loadingWithdrawals } = useQuery(
     'allWithdrawals',
-    () => withdrawalRepository.getWithdrawals({ page: 1, limit: 10000 })
+    () => withdrawalRepository.listWithdrawals({ page: '1', limit: '10000' })
+  );
+  const { data: storesData, isLoading: loadingStores } = useQuery(
+    'allStores',
+    () => storeRepository.listStores({ page: '1', limit: '10000' })
   );
 
-  // Dados agregados
+  // Dados agregados (agora por loja)
   const stats = useMemo(() => {
     const users = usersData?.data || [];
     const payments = paymentsData?.data || [];
     const withdrawals = withdrawalsData?.data || [];
+    const stores = storesData?.data || [];
 
     // Contagem de pagamentos com comprovantes enviados
     const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
-    
+
     // Contagem de saques em processamento ou pendentes
     const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;
     const withdrawalsProcessingCount = withdrawals.filter(w => w.status === 'processing').length;
@@ -59,7 +68,10 @@ export default function Dashboard() {
     const totalUsers = users.length;
     const usersByMonth = processUsersByMonth(users);
 
-    // Pagamentos
+    // Lojas
+    const totalStores = stores.length;
+
+    // Pagamentos por loja
     const totalPayments = payments.length;
     const paymentsPaid = payments.filter(p => p.status === 'paid');
     const totalPaid = paymentsPaid.reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -67,11 +79,12 @@ export default function Dashboard() {
     const paymentsRetidos = payments.filter(p => ['approved', 'withdrawal_processing'].includes(p.status));
     const totalRetido = paymentsRetidos.reduce((sum, p) => sum + (p.amount || 0), 0);
     const retidoCount = paymentsRetidos.length;
+    // Total transacionado por loja (pagamentos + saques)
     const totalTransacted = payments.reduce((sum, p) => sum + (p.amount || 0), 0) +
       withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
     const totalPaymentsAndWithdrawalsCount = payments.length + withdrawals.length;
 
-    // Valor total de saques concluídos
+    // Valor total de saques concluídos por loja
     const withdrawalsCompleted = withdrawals.filter(w => w.status === 'completed');
     const totalWithdrawalsCompleted = withdrawalsCompleted.reduce((sum, w) => sum + (w.amount || 0), 0);
     const withdrawalsCompletedCount = withdrawalsCompleted.length;
@@ -82,8 +95,8 @@ export default function Dashboard() {
     // Saques por status
     const withdrawalsByStatus = processWithdrawalsByStatus(withdrawals);
 
-    // Top usuários
-    const topUsersByAmount = processTopUsersByAmount(payments, users);
+    // Top lojas por volume de pagamentos
+    const topStoresByAmount = processTopStoresByAmount(payments, stores);
 
     return {
       totalUsers,
@@ -95,7 +108,7 @@ export default function Dashboard() {
       totalTransacted,
       paymentsByStatus,
       withdrawalsByStatus,
-      topUsersByAmount,
+      topStoresByAmount,
       receiptsCount,
       withdrawalsProcessingCount,
       withdrawalsPendingCount,
@@ -105,9 +118,10 @@ export default function Dashboard() {
       totalPaymentsCount: payments.length,
       totalWithdrawalsCount: withdrawals.length,
       totalPaymentsAndWithdrawalsCount,
-      retidoCount
+      retidoCount,
+      totalStores
     };
-  }, [usersData, paymentsData, withdrawalsData]);
+  }, [usersData, paymentsData, withdrawalsData, storesData]);
 
   // Verificar se há alguma tarefa pendente
   const hasReceiptPendingTasks = stats.receiptsCount > 0;
@@ -228,13 +242,20 @@ export default function Dashboard() {
       </div>
 
       {/* Cards de estatísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <StatCard 
           title="Usuários" 
           value={stats.totalUsers} 
           icon={<Users className="h-5 w-5 text-primary" />}
           linkTo="/users"
           loading={loadingUsers}
+        />
+        <StatCard 
+          title="Lojas" 
+          value={stats.totalStores} 
+          icon={<StoreIcon className="h-5 w-5 text-blue-500" />}
+          linkTo="/stores"
+          loading={loadingStores}
         />
         <StatCard 
           title="Total Movimentado" 
@@ -290,13 +311,13 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Top Usuários e Pagamentos por Status */}
+      {/* Top Lojas e Pagamentos por Status */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <ChartCard 
-          title="Top Usuários" 
+          title="Top Lojas" 
           content={
             <TopUsersChart 
-              data={stats.topUsersByAmount} 
+              data={stats.topStoresByAmount} 
               loading={loadingPayments} 
               valueFormatter={formatCurrency} 
               height={420}
@@ -325,7 +346,7 @@ export default function Dashboard() {
           title="Crescimento de Usuários" 
           content={<UsersGrowthChart users={usersData?.data || []} loading={loadingUsers} height={220} />} 
         />
-        {/* NOVO GRÁFICO DE USUÁRIOS ATIVOS */}
+        {/* Usuários Ativos pode ser mantido, mas agora não depende de pagamentos/saques diretamente */}
         <ChartCard 
           title="Usuários Ativos (pagamento retido ou pago)" 
           content={
@@ -435,28 +456,29 @@ function processWithdrawalsByStatus(withdrawals: Withdrawal[]): Record<string, n
   return withdrawalsByStatus;
 }
 
-function processTopUsersByAmount(payments: Payment[], users: User[]) {
+// Novo: Top lojas por volume de pagamentos
+function processTopStoresByAmount(payments: Payment[], stores: Store[]) {
   const validStatuses = ['paid', 'approved', 'withdrawal_processing'];
-  const userAmounts: Record<string, { userId: string; amount: number; count: number }> = {};
-  
+  const storeAmounts: Record<string, { storeId: string; amount: number; count: number }> = {};
+
   payments.forEach((p) => {
     if (!validStatuses.includes(p.status)) return;
-    if (!userAmounts[p.userId]) {
-      userAmounts[p.userId] = { userId: p.userId, amount: 0, count: 0 };
+    if (!storeAmounts[p.storeId]) {
+      storeAmounts[p.storeId] = { storeId: p.storeId, amount: 0, count: 0 };
     }
-    userAmounts[p.userId].amount += p.amount || 0;
-    userAmounts[p.userId].count += 1;
+    storeAmounts[p.storeId].amount += p.amount || 0;
+    storeAmounts[p.storeId].count += 1;
   });
 
-  const userMap: Record<string, string> = users.reduce((map, user) => {
-    map[user.id] = `${user.firstName} ${user.lastName}`;
+  const storeMap: Record<string, string> = stores.reduce((map, store) => {
+    map[store.id] = store.name;
     return map;
   }, {} as Record<string, string>);
 
-  return Object.values(userAmounts)
+  return Object.values(storeAmounts)
     .map((item) => ({
       ...item,
-      name: userMap[item.userId] || `Usuário ${item.userId.slice(0, 5)}...`,
+      name: storeMap[item.storeId] || `Loja ${item.storeId.slice(0, 5)}...`,
     }))
-    .sort((a, b) => b.amount - a.amount); // Remover o .slice(0, 5) aqui
+    .sort((a, b) => b.amount - a.amount);
 }

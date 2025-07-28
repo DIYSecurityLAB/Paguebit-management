@@ -1,7 +1,8 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Payment } from '../../data/models/types';
-import { formatCurrency } from '../../utils/format';
+import { formatCurrency } from '../../../utils/format';
+
+import { Payment } from '../../../domain/entities/Payment.entity';
 
 interface Props {
   payments: Payment[];

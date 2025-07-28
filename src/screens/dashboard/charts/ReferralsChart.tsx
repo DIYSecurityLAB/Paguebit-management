@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { User } from '../../data/models/types';
-import Modal from '../../components/Modal';
+import Modal from '../../../components/Modal';
 import { ArrowUpRight } from 'lucide-react';
+
+import { User } from '../../../domain/entities/User.entity';
 
 interface Props {
   users: User[];

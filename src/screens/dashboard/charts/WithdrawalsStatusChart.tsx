@@ -1,6 +1,7 @@
 
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell } from 'recharts';
 
+// Não precisa de import de Withdrawal, pois só recebe o objeto já processado
 interface Props {
   withdrawalsByStatus: Record<string, number>;
   loading?: boolean;

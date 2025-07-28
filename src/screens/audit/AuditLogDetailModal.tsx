@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import Modal from '../../components/Modal';
-import Button from '../../components/Button';
-import { Copy } from 'lucide-react';
-import { AuditLog } from '../../data/models/types';
+ import { Copy } from 'lucide-react';
+import { AuditLog } from '../../domain/entities/AuditLog.entity';
 
 interface AuditLogDetailModalProps {
   log: AuditLog;

@@ -1,5 +1,7 @@
 import { z } from "zod";
 import { WithdrawalModel, WithdrawalStatus, WalletType } from "../../data/model/withdrawal.model";
+import { PaymentModel } from "../../data/model/payment.model";
+import { StoreModel } from "../../data/model/store.model";
 
 export const WithdrawalStatusSchema = z.enum(['pending', 'completed', 'failed']);
 
@@ -11,12 +13,14 @@ export const WithdrawalSchema = z.object({
   paymentIds: z.array(z.string().min(1, "ID do pagamento não pode ser vazio")).min(1, "Selecione pelo menos um pagamento"),
   status: WithdrawalStatusSchema,
   createdAt: z.string().min(1, "Data de criação não pode ser vazia"),
-  completedAt: z.string().optional(),
-  destinationWallet: z.string().min(1, "Carteira de destino não pode ser vazia"),
-  destinationWalletType: z.string().min(1, "Tipo de carteira não pode ser vazio"),
-  failedReason: z.string().optional(),
-  txId: z.string().optional(),
-  notes: z.string().optional(),
+  completedAt: z.string().nullable().optional(),
+  destinationWallet: z.string().min(1, "Carteira de destino não pode ser vazia").nullable().optional(),
+  destinationWalletType: z.string().min(1, "Tipo de carteira não pode ser vazio").nullable().optional(),
+  failedReason: z.string().nullable().optional(),
+  txId: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  payments: z.array(z.any()).optional(),
+  store: z.any().optional(),
 });
 
 export type WithdrawalType = z.infer<typeof WithdrawalSchema>;
@@ -29,12 +33,14 @@ export class Withdrawal {
   paymentIds!: string[];
   status!: WithdrawalStatus;
   createdAt!: string;
-  completedAt?: string;
-  destinationWallet!: string;
-  destinationWalletType!: WalletType | string;
-  failedReason?: string;
-  txId?: string;
-  notes?: string;
+  completedAt?: string | null;
+  destinationWallet?: string | null;
+  destinationWalletType?: WalletType | string | null;
+  failedReason?: string | null;
+  txId?: string | null;
+  notes?: string | null;
+  payments?: PaymentModel[];
+  store?: StoreModel;
 
   constructor(data: WithdrawalType) {
     const parsed = WithdrawalSchema.safeParse(data);
@@ -63,7 +69,8 @@ export class Withdrawal {
       failedReason: this.failedReason,
       txId: this.txId,
       notes: this.notes,
+      payments: this.payments,
+      store: this.store,
     };
   }
 }
-  

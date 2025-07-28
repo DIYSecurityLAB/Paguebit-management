@@ -3,13 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import Loading from '../../../components/Loading';
 import Button from '../../../components/Button';
-import { User } from '../../../data/models/types';
-import userRepository from '../../../data/repository/user-repository';
+import { User } from '../../../domain/entities/User.entity';
+import { UserRepository } from '../../../data/repository/user-repository';
 
 // Importar componentes
 import UserBasicInfo from './components/UserBasicInfo';
-
- 
 
 export default function UserDetail() {
   const { id } = useParams();
@@ -23,8 +21,9 @@ export default function UserDetail() {
       try {
         if (!id) return;
         setLoading(true);
+        const userRepository = new UserRepository();
         const userData = await userRepository.getUserById(id);
-        setUser(userData);
+        setUser(User.fromModel(userData));
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
       } finally {

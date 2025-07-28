@@ -2,22 +2,25 @@ import ViewToggle from '../../components/ViewToggle';
 import WithdrawalsTable from './WithdrawalsTable';
 import WithdrawalsCard from './WithdrawalsCard';
 import ExcelExport from '../../components/ExcelExport';
-import withdrawalRepository from '../../data/repository/withdrawal-repository';
-import { Withdrawal } from '../../data/models/types';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import { WithdrawalModel } from '../../data/model/withdrawal.model';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 
 export default function Withdrawals() {
+  const withdrawalRepository = new WithdrawalRepository();
+
   // Função para exportar todos os saques
   const exportWithdrawals = async () => {
     try {
       // Buscar todos os saques para exportação
-      const response = await withdrawalRepository.getWithdrawals({
-        limit: 1000, // Limite alto para exportar o máximo possível
+      const response = await withdrawalRepository.listWithdrawals({
+        limit: '1000', // string, conforme tipagem do repo
         orderBy: 'createdAt',
         order: 'desc'
       });
-      
+      // Retorna WithdrawalModel[]
       return response.data || [];
     } catch (error) {
       console.error('Erro ao exportar saques:', error);
@@ -27,34 +30,28 @@ export default function Withdrawals() {
   };
 
   // Função para transformar os dados de saques para o formato Excel
-  const transformWithdrawalData = (withdrawals: Withdrawal[]) => {
-    return withdrawals.map(withdrawal => {
-      // Extrair informações do usuário
-      const user = (withdrawal as any).User;
-      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-      const userEmail = user?.email || '';
-      
+  const transformWithdrawalData = (withdrawals: WithdrawalModel[]) => {
+    return withdrawals.map(model => {
+      const withdrawal = Withdrawal.fromModel(model);
+
       // Tradução dos status para o relatório
       const statusTranslation: Record<string, string> = {
         'pending': 'Pendente',
-        'processing': 'Processando',
         'completed': 'Concluído',
         'failed': 'Falha'
       };
 
-      // Formatar os dados para o Excel
       return {
         'ID': withdrawal.id || '-',
-        'Usuário': userName || 'Não informado',
-        'Email': userEmail || 'Não informado',
-        'ID do Usuário': withdrawal.userId || 'Não informado',
-        'Valor': withdrawal.amount || 0,
+        'ID da Loja': withdrawal.storeId || 'Não informado',
+        'ID do Whitelabel': withdrawal.whitelabelId || 'Não informado',
+        'Valor': formatCurrency(withdrawal.amount),
         'Status': statusTranslation[withdrawal.status] || withdrawal.status || 'Não informado',
         'Tipo de Carteira': withdrawal.destinationWalletType || 'Não informado',
         'Carteira de Destino': withdrawal.destinationWallet || 'Não informado',
         'ID da Transação': withdrawal.txId || '-',
-        'Data de Criação': withdrawal.createdAt ? format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm:ss') : 'Não informado',
-        'Data de Conclusão': withdrawal.completedAt ? format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm:ss') : '-',
+        'Data de Criação': withdrawal.createdAt ? formatDateTime(withdrawal.createdAt) : 'Não informado',
+        'Data de Conclusão': withdrawal.completedAt ? formatDateTime(withdrawal.completedAt) : '-',
         'Motivo da Falha': withdrawal.failedReason || '-',
         'Observações': withdrawal.notes || '-'
       };
@@ -64,9 +61,8 @@ export default function Withdrawals() {
   // Definir larguras de colunas personalizadas (em caracteres)
   const columnWidths = {
     'ID': 38,
-    'Usuário': 30,
-    'Email': 35,
-    'ID do Usuário': 38,
+    'ID da Loja': 30,
+    'ID do Whitelabel': 35,
     'Valor': 15,
     'Status': 15,
     'Tipo de Carteira': 20,

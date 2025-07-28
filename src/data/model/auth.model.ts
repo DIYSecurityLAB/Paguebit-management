@@ -2,7 +2,7 @@ export interface AuthStoreModel {
   id: string;
   name: string;
   whitelabelId: string;
-  permissions: string[]; // ex: ["VIEW_PAYMENTS", "CREATE_PAYMENT"]
+  permissions: string[];
 }
 
 export interface AuthUserModel {
@@ -22,11 +22,14 @@ export interface AuthUserModel {
   role: string;
   active: boolean;
   monthlyVolume: string;
+  storeId?: string | null; // novo campo
+  stores?: AuthStoreModel[]; // novo campo
 }
 
 export interface AuthResponse {
   message: string;
   user: AuthUserModel;
   tokenExpiresAt: string;
+  accessToken?: string;
+  refreshToken?: string;
 }
- 

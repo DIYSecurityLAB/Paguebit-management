@@ -2,17 +2,24 @@ import ExcelExport from '../../components/ExcelExport';
 import UsersTable from './UsersTable';
 import UsersCard from './UsersCard';
 import ViewToggle from '../../components/ViewToggle';
-import userRepository from '../../data/repository/user-repository';
-import { User } from '../../data/models/types';
+import { UserRepository } from '../../data/repository/user-repository';
+import { User } from '../../domain/entities/User.entity';
 import { toast } from 'sonner';
 
 export default function Users() {
   // Função simplificada para exportar todos os usuários
+  const userRepository = new UserRepository();
+
   const exportUsers = async () => {
     try {
-      // Agora retorna diretamente um array de usuários
-      const users = await userRepository.exportUsers();
-      return users;
+      // Busca todos os usuários (até 1000)
+      const res = await userRepository.listAllUsers({
+        limit: '1000',
+        orderBy: 'createdAt',
+        order: 'desc'
+      });
+      // Retorna UserModel[], converter para User entity
+      return (res.data || []).map((model: any) => User.fromModel(model));
     } catch (error) {
       console.error('Erro ao exportar usuários:', error);
       toast.error('Erro ao exportar relatório de usuários');
@@ -33,7 +40,6 @@ export default function Users() {
         'Telefone': user.phoneNumber || 'Não informado',
         'Função': user.role?.toUpperCase() || 'Não informado',
       };
-      
       return mainData;
     });
   };

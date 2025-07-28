@@ -1,3 +1,6 @@
+import type { PaymentModel } from "./payment.model";
+import type { StoreModel } from "./store.model";
+
 export type WithdrawalStatus = 'pending' | 'completed' | 'failed';
 
 export enum WalletType {
@@ -22,6 +25,8 @@ export interface WithdrawalModel {
   failedReason?: string;
   txId?: string;
   notes?: string;
+  payments?: PaymentModel[];
+  store?: StoreModel;
 }
 
 export interface WithdrawalCreateRequest {

@@ -1,8 +1,10 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { User, Payment } from '../../data/models/types';
 import { useNavigate } from 'react-router-dom';
 import { ArrowUpRight } from 'lucide-react';
+
+import { Payment } from '../../../domain/entities/Payment.entity';
+import { User } from '../../../domain/entities/User.entity';
 
 interface Props {
   users: User[];
@@ -70,18 +72,20 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
     payments.filter(p => ['paid', 'approved', 'withdrawal_processing'].includes(p.status)), [payments]
   );
 
-  // Mapear pagamentos por usuário e data
+  // Mapear pagamentos por loja e data, depois cruzar com usuários da loja
   const userPaymentsByPeriod = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     relevantPayments.forEach(p => {
-      if (!p.userId || !p.createdAt) return;
+      if (!p.storeId || !p.createdAt) return;
       const date = new Date(p.createdAt);
       const key = getPeriodKey(date, period);
       if (!map[key]) map[key] = new Set();
-      map[key].add(p.userId);
+      // Adiciona todos os usuários da loja correspondente
+      const storeUsers = users.filter(u => u.storeId === p.storeId || (u.stores && u.stores.some(s => s.id === p.storeId)));
+      storeUsers.forEach(u => map[key].add(u.id));
     });
     return map;
-  }, [relevantPayments, period]);
+  }, [relevantPayments, period, users]);
 
   // Mapear usuários por período
   const usersByPeriod = useMemo(() => {

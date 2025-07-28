@@ -3,67 +3,50 @@
 @tailwind utilities;
 
 :root {
-  --primary: 25 100% 55%;        /* Laranja vibrante */
+  --primary: 24 100% 55%;        /* Laranja vibrante (PagueBit) */
   --primary-foreground: 0 0% 100%;
-  
-  --secondary: 20 100% 60%;      /* Laranja mais avermelhado */
+  --secondary: 217 28% 18%;      /* Azul escuro (PagueBit) */
   --secondary-foreground: 0 0% 100%;
-  
-  --accent: 15 100% 50%;         /* Laranja intenso */
+  --accent: 28 100% 60%;         /* Laranja claro (PagueBit) */
   --accent-foreground: 0 0% 100%;
-  
-  --background: 0 0% 100%;       /* Branco puro */
-  --foreground: 0 0% 10%;        /* Quase preto puro */
-  
+  --background: 0 0% 100%;       /* Branco */
+  --foreground: 222 47% 11%;     /* Azul quase preto */
   --card: 0 0% 100%;
-  --card-foreground: 0 0% 10%;
-  
+  --card-foreground: 222 47% 11%;
   --popover: 0 0% 100%;
-  --popover-foreground: 0 0% 10%;
-  
-  --muted: 25 10% 96%;           /* Muito claro com sutil tom laranja */
-  --muted-foreground: 25 30% 30%;
-  
-  --border: 25 30% 90%;
-  --input: 25 30% 90%;
-  
-  --pending: 40 100% 50%;        /* Amarelo mais vibrante */
-  --receipt-sent: 25 100% 60%;   /* Laranja vibrante */
-  --under-review: 25 90% 65%;    /* Laranja amarelado */
-  --completed: 142 76% 36%;      /* Verde - mantido para status */
-  --rejected: 0 90% 60%;         /* Vermelho - mantido para status */
-  --paid: 142 76% 36%;           /* Verde - mantido para status */
-  --processing: 25 100% 60%;     /* Laranja vibrante */
-  --failed: 0 90% 60%;           /* Vermelho - mantido para status */
-  
+  --popover-foreground: 222 47% 11%;
+  --muted: 24 10% 96%;
+  --muted-foreground: 24 30% 30%;
+  --border: 24 30% 90%;
+  --input: 24 30% 90%;
+  --pending: 40 100% 50%;
+  --receipt-sent: 24 100% 60%;
+  --under-review: 24 90% 65%;
+  --completed: 142 76% 36%;
+  --rejected: 0 90% 60%;
+  --paid: 142 76% 36%;
+  --processing: 24 100% 60%;
+  --failed: 0 90% 60%;
   --radius: 0.5rem;
 }
 
 .dark {
-  --primary: 25 100% 55%;        /* Laranja vibrante igual no modo claro */
+  --primary: 24 100% 55%;        /* Laranja vibrante (PagueBit) */
   --primary-foreground: 0 0% 100%;
-  
-  --secondary: 20 100% 60%;      /* Laranja mais avermelhado */
+  --secondary: 215 19% 30%;      /* Azul escuro (PagueBit) */
   --secondary-foreground: 0 0% 100%;
-  
-  --accent: 15 100% 50%;         /* Laranja intenso */
+  --accent: 28 100% 60%;         /* Laranja claro (PagueBit) */
   --accent-foreground: 0 0% 100%;
-  
-  --background: 0 0% 5%;         /* Preto puro */
-  --foreground: 0 0% 95%;        /* Branco com alto contraste */
-  
-  --card: 0 0% 8%;               /* Preto levemente mais claro que o fundo */
-  --card-foreground: 0 0% 95%;
-  
-  --popover: 0 0% 8%; 
-  --popover-foreground: 0 0% 95%;
-  
-  --muted: 25 15% 15%;           /* Preto acinzentado com tom laranja */
-  --muted-foreground: 25 10% 80%;
-  
-  --border: 25 15% 20%; 
-  --input: 25 15% 20%;
-  
+  --background: 222 47% 11%;     /* Azul quase preto */
+  --foreground: 210 40% 98%;     /* Branco quase puro */
+  --card: 222 47% 13%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 13%;
+  --popover-foreground: 210 40% 98%;
+  --muted: 24 15% 15%;
+  --muted-foreground: 24 10% 80%;
+  --border: 24 15% 20%;
+  --input: 24 15% 20%;
   --radius: 0.5rem;
 }
 

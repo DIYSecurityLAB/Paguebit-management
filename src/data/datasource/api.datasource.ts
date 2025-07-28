@@ -1,5 +1,34 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
 
+// Função utilitária para mascarar campos base64
+function maskBase64(obj: any): any {
+  if (!obj || typeof obj !== "object") return obj;
+  const masked: any = Array.isArray(obj) ? [] : {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      // Adiciona "receipt" para ser mascarado também
+      if (
+        key.toLowerCase().includes("base64") ||
+        key.toLowerCase() === "receipt"
+      ) {
+        masked[key] = "base64";
+      } else if (typeof obj[key] === "object" && obj[key] !== null) {
+        masked[key] = maskBase64(obj[key]);
+      } else if (
+        typeof obj[key] === "string" &&
+        key.toLowerCase().includes("picture") &&
+        obj[key].startsWith("data:image/") &&
+        obj[key].includes("base64,")
+      ) {
+        masked[key] = "base64";
+      } else {
+        masked[key] = obj[key];
+      }
+    }
+  }
+  return masked;
+}
+
 class ApiDataSource {
   private api: AxiosInstance;
 
@@ -36,26 +65,27 @@ class ApiDataSource {
       ) {
         config.headers["Authorization"] = `Bearer ${token}`;
       }
-      // Log do corpo enviado
+      // Log do corpo enviado (mascarando base64)
       let dataString = "";
       if (config.data) {
         try {
-          dataString = typeof config.data === "string" ? config.data : JSON.stringify(config.data, null, 2);
+          const dataObj = typeof config.data === "string" ? JSON.parse(config.data) : config.data;
+          dataString = JSON.stringify(maskBase64(dataObj), null, 2);
         } catch {
           dataString = String(config.data);
         }
       }
-      // Log dos headers enviados
+      // Log dos headers enviados (mascarando base64)
       let headersString = "";
       try {
-        headersString = JSON.stringify(config.headers, null, 2);
+        headersString = JSON.stringify(maskBase64(config.headers), null, 2);
       } catch {
         headersString = String(config.headers);
       }
-      // Log do objeto completo da requisição
+      // Log do objeto completo da requisição (mascarando base64)
       let configString = "";
       try {
-        configString = JSON.stringify(config, null, 2);
+        configString = JSON.stringify(maskBase64(config), null, 2);
       } catch {
         configString = String(config);
       }
@@ -71,25 +101,35 @@ class ApiDataSource {
     // Log global para respostas
     this.api.interceptors.response.use(
       (response) => {
+        // Log do corpo recebido (mascarando base64)
         let responseString = "";
         if (response.data) {
           try {
-            responseString = typeof response.data === "string" ? response.data : JSON.stringify(response.data, null, 2);
+            const maskedData = maskBase64(response.data);
+            responseString = JSON.stringify(maskedData, null, 2);
           } catch {
             responseString = String(response.data);
           }
         }
-        // Log dos headers recebidos
+        // Log dos headers recebidos (mascarando base64)
         let headersString = "";
         try {
-          headersString = JSON.stringify(response.headers, null, 2);
+          headersString = JSON.stringify(maskBase64(response.headers), null, 2);
         } catch {
           headersString = String(response.headers);
         }
-        // Log do objeto completo da resposta
+        // Log do objeto completo da resposta (mascarando base64)
         let responseObjString = "";
         try {
-          responseObjString = JSON.stringify(response, null, 2);
+          const maskedResponse = {
+            ...response,
+            data: maskBase64(response.data),
+            headers: maskBase64(response.headers),
+            config: response.config,
+            status: response.status,
+            statusText: response.statusText,
+          };
+          responseObjString = JSON.stringify(maskedResponse, null, 2);
         } catch {
           responseObjString = String(response);
         }
@@ -102,27 +142,36 @@ class ApiDataSource {
         return response;
       },
       (error) => {
-        // Log de erro também
+        // Log de erro também (mascarando base64)
         if (error.response) {
           let responseString = "";
           if (error.response.data) {
             try {
-              responseString = typeof error.response.data === "string" ? error.response.data : JSON.stringify(error.response.data, null, 2);
+              const maskedData = maskBase64(error.response.data);
+              responseString = JSON.stringify(maskedData, null, 2);
             } catch {
               responseString = String(error.response.data);
             }
           }
-          // Log dos headers recebidos no erro
+          // Log dos headers recebidos no erro (mascarando base64)
           let headersString = "";
           try {
-            headersString = JSON.stringify(error.response.headers, null, 2);
+            headersString = JSON.stringify(maskBase64(error.response.headers), null, 2);
           } catch {
             headersString = String(error.response.headers);
           }
-          // Log do objeto completo da resposta de erro
+          // Log do objeto completo da resposta de erro (mascarando base64)
           let responseObjString = "";
           try {
-            responseObjString = JSON.stringify(error.response, null, 2);
+            const maskedResponse = {
+              ...error.response,
+              data: maskBase64(error.response.data),
+              headers: maskBase64(error.response.headers),
+              config: error.response.config,
+              status: error.response.status,
+              statusText: error.response.statusText,
+            };
+            responseObjString = JSON.stringify(maskedResponse, null, 2);
           } catch {
             responseObjString = String(error.response);
           }

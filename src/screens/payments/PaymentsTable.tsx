@@ -8,12 +8,12 @@ import Pagination from '../../components/Pagination';
 import StatusBadge from '../../components/StatusBadge';
 import Button from '../../components/Button';
 import PaymentsModal from './PaymentsModal';
-import { Payment, PaymentStatus } from '../../data/models/types';
-import paymentRepository from '../../data/repository/payment-repository';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { PaymentStatus } from '../../data/model/payment.model';
+import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
-import { useAuth } from '../../contexts/AuthContext';
-
+ 
 export default function PaymentsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
@@ -24,8 +24,8 @@ export default function PaymentsTable() {
     userId: '',
     name: '',
     email: '',
-    id: '', // Alterado de paymentId para id
-    transactionType: '', // Novo filtro adicionado
+    id: '',
+    transactionType: '',
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
@@ -33,17 +33,14 @@ export default function PaymentsTable() {
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const { user } = useAuth(); // Adicione para pegar o usuário logado
-  
+ 
+  const paymentRepository = useMemo(() => new PaymentRepository(), []);
+
   const updateStatusMutation = useMutation(
     (params: { id: string; status: PaymentStatus }) => 
       paymentRepository.updatePaymentStatus(
         params.id,
-        params.status,
-        undefined,
-        undefined,
-        user?.uid, // userId para auditoria
-        data?.data.find(p => p.id === params.id)?.status // status anterior para auditoria
+        { status: params.status }
       ),
     {
       onSuccess: () => {
@@ -58,33 +55,31 @@ export default function PaymentsTable() {
 
   const { data, isLoading } = useQuery(
     ['payments', currentPage, itemsPerPage, filters, orderBy, orderDirection],
-    () => {
-      // Remover propriedades com valores vazios do objeto filters
+    async () => {
+      // Remove propriedades com valores vazios do objeto filters
       const cleanFilters = Object.entries(filters).reduce((acc, [key, value]) => {
         if (value !== '') {
           acc[key] = value;
         }
         return acc;
       }, {} as Record<string, string>);
-      
-      return paymentRepository.getPayments({
-        page: currentPage,
-        limit: itemsPerPage,
+      const res = await paymentRepository.listPayments({
+        page: String(currentPage),
+        limit: String(itemsPerPage),
         ...cleanFilters,
         orderBy,
         order: orderDirection,
       });
+      return res;
     },
     {
       keepPreviousData: true,
       onSettled: () => {
-        // Finaliza o estado de filtragem quando a consulta é concluída
         setIsFiltering(false);
       }
     }
   );
 
-  // Filtros aceitos pela API de pagamentos
   const filterOptions = useMemo(() => [
     {
       key: 'id',
@@ -146,17 +141,13 @@ export default function PaymentsTable() {
     },
   ], []);
 
-  // Handler para ordenação
   const handleSort = useCallback((column: string) => {
     if (orderBy === column) {
-      // Se já está ordenando por essa coluna, inverte a direção
       setOrderDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
-      // Se não, define a nova coluna e começa por ordem descendente
       setOrderBy(column);
       setOrderDirection('desc');
     }
-    // Volta para a primeira página ao ordenar
     setCurrentPage(1);
   }, [orderBy]);
 
@@ -200,23 +191,16 @@ export default function PaymentsTable() {
     {
       header: 'Nome',
       accessor: (payment: Payment) => {
-        // Verificar se o pagamento tem uma relação User
-        const user = (payment as any).User;
-        if (user) {
-          const firstName = user.firstName || '';
-          const lastName = user.lastName || '';
-          return <span>{[firstName, lastName].filter(Boolean).join(' ') || 'Não informado'}</span>;
+        // Se houver store, mostra o nome da loja
+        if (payment.store && payment.store.name) {
+          return <span>{payment.store.name}</span>;
         }
         return <span>Não informado</span>;
       },
     },
     {
       header: 'Email',
-      accessor: (payment: Payment) => {
-        // Primeiro tenta pegar o email do usuário relacionado, depois do payment
-        const userEmail = (payment as any).User?.email;
-        return userEmail || payment.email || 'Não informado';
-      },
+      accessor: (payment: Payment) => payment.email || 'Não informado',
     },
     {
       header: 'Valor',
@@ -255,7 +239,6 @@ export default function PaymentsTable() {
               <Button
                 variant="success"
                 size="sm"
-                // Corrigido para APPROVED e auditoria
                 onClick={() => updateStatusMutation.mutate({ id: payment.id, status: PaymentStatus.APPROVED })}
                 isLoading={updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
@@ -276,16 +259,11 @@ export default function PaymentsTable() {
         </div>
       ),
     },
-  ], [handleSort, orderBy, orderDirection, sortableColumns, updateStatusMutation]);
+  ], [updateStatusMutation]);
 
-  // Usar useCallback para evitar recriar a função a cada renderização
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
-    // Ativa o indicador de carregamento enquanto os filtros são aplicados
     setIsFiltering(true);
-    
-    // Se o objeto newFilters estiver vazio, resetamos todos os filtros
     if (Object.keys(newFilters).length === 0) {
-      console.log("Limpando todos os filtros");
       setFilters({
         status: '',
         dateFrom: '',
@@ -296,15 +274,10 @@ export default function PaymentsTable() {
         id: '',
         transactionType: '',
       });
-      
-      // Força uma nova consulta ao limpar os filtros
-      // Isso garante que a consulta seja refeita como se fosse a carga inicial
       setTimeout(() => {
         queryClient.invalidateQueries(['payments']);
       }, 100);
     } else {
-      console.log("Aplicando filtros:", newFilters);
-      // Inicializando com o estado padrão de filtros vazios
       const updatedFilters = {
         status: '',
         dateFrom: '',
@@ -315,8 +288,6 @@ export default function PaymentsTable() {
         id: '',
         transactionType: '',
       };
-      
-      // Atualizando apenas as propriedades fornecidas
       if (newFilters.status) updatedFilters.status = newFilters.status;
       if (newFilters.userId) updatedFilters.userId = newFilters.userId;
       if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
@@ -325,15 +296,11 @@ export default function PaymentsTable() {
       if (newFilters.email) updatedFilters.email = newFilters.email;
       if (newFilters.id) updatedFilters.id = newFilters.id;
       if (newFilters.transactionType) updatedFilters.transactionType = newFilters.transactionType;
-      
       setFilters(updatedFilters);
     }
-    
-    // Resetar para a primeira página quando filtrar
     setCurrentPage(1);
   }, [queryClient]);
 
-  // Usar useCallback para outras funções de manipulação de estado
   const handlePageChange = useCallback((page: number) => {
     setCurrentPage(page);
   }, []);
@@ -347,12 +314,16 @@ export default function PaymentsTable() {
     setSelectedPayment(null);
   }, []);
 
-  // Garantir que o estado de filtragem seja limpo após a conclusão de qualquer operação
   useEffect(() => {
     if (!isLoading) {
       setIsFiltering(false);
     }
   }, [isLoading]);
+
+  // Converte PaymentModel para Payment entity
+  const payments: Payment[] = Array.isArray(data?.data)
+    ? data!.data.map((model: any) => Payment.fromModel(model))
+    : [];
 
   return (
     <div className="space-y-4">
@@ -383,7 +354,7 @@ export default function PaymentsTable() {
       
       {/* Conteúdo existente da tabela */}
       <Table
-        data={Array.isArray(data?.data) ? data.data : []}
+        data={payments}
         columns={columns}
         isLoading={isLoading || isFiltering}
         sortColumn={orderBy}
@@ -391,11 +362,11 @@ export default function PaymentsTable() {
         onSort={handleSort}
       />
 
-      {data && data.pagination && (
+      {data && typeof data.total === 'number' && (
         <Pagination
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
-          totalItems={data.pagination.total}
+          totalItems={data.total}
           onPageChange={handlePageChange}
           onItemsPerPageChange={handleItemsPerPageChange}
         />

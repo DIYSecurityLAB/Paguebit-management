@@ -1,15 +1,22 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../contexts/AuthContext";
-import { Loader2, Mail, Lock, Eye, EyeOff, Sun, Moon } from "lucide-react";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useUserContext } from "../../context/user.context";
+import {   Mail, Lock, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import Button from "../../components/Button";
 import logo from '../../assets/PagueBit_black.svg';
 import logoDark from '../../assets/PagueBit_white.svg';
 import { useTheme } from '../../hooks/useTheme';
+import { auth } from "../../data/datasource/firebase.datasource";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { AuthRepository } from "../../data/repository/auth-repository";
+import { AuthUser } from "../../domain/entities/auth.entity";
+import { mapAuthUserToUser } from "../../utils/authusertouserMapping";
+import { toast } from "sonner";
 
 export default function Login() {
   const navigate = useNavigate();
-  const { user, login } = useAuth();
+  const location = useLocation();
+  const { setUser } = useUserContext();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -37,12 +44,54 @@ export default function Login() {
     }
 
     try {
-      await login(sanitizedEmail, sanitizedPassword);
+      // Login com Firebase Auth
+      const userCredential = await signInWithEmailAndPassword(auth, sanitizedEmail, sanitizedPassword);
+      const user = userCredential.user;
+
+      // Salvar a senha temporariamente para caso o usuário precise verificar email em outro dispositivo
+      localStorage.setItem('tempPasswordForSignIn', sanitizedPassword);
+
+      // Obter token do Firebase
+      const firebaseToken = await user.getIdToken();
+      localStorage.setItem("FIREBASE_TOKEN", firebaseToken);
+      localStorage.setItem("TOKEN_TIMESTAMP", Date.now().toString());
+
+      // Login na API usando AuthRepository
+      try {
+        const authRepo = new AuthRepository();
+        const response = await authRepo.login(sanitizedEmail, firebaseToken);
+
+        // Salve os tokens do backend corretamente
+        if (response.accessToken) localStorage.setItem("ACCESS_TOKEN", response.accessToken);
+        if (response.refreshToken) localStorage.setItem("REFRESH_TOKEN", response.refreshToken);
+        if (response.tokenExpiresAt) localStorage.setItem("TOKEN_EXPIRES_AT", response.tokenExpiresAt);
+
+        // Salvar usuário no contexto (usando User)
+        if (response.user) {
+          const authUser = AuthUser.fromModel(response.user);
+          setUser(mapAuthUserToUser(authUser));
+        }
+
+        toast.success("Login realizado com sucesso!");
+        navigate("/", { state: location.state });
+      } catch (apiErr) {
+        // apiErr pode ser um erro Axios ou fetch, tipar como desconhecido e tratar
+        const errorResponse = apiErr as { response?: { data?: { code?: string; message?: string }; status?: number } };
+        console.error("Erro na API:", errorResponse?.response?.data);
+
+        setError("Erro ao autenticar. Por favor, tente novamente.");
+        localStorage.removeItem("FIREBASE_TOKEN");
+      }
       setLoginAttempts(0); // resetar tentativas em caso de sucesso
-      // O próprio contexto já faz navigate("/")
     } catch (err: any) {
       setLoginAttempts((prev) => prev + 1);
-      setError("Credenciais inválidas. Tente novamente.");
+      let errorMessage = "Credenciais inválidas. Tente novamente.";
+      if (err?.code === "auth/user-not-found" || err?.code === "auth/wrong-password") {
+        errorMessage = "Email ou senha incorretos";
+      } else if (err?.code === "auth/too-many-requests") {
+        errorMessage = "Muitas tentativas. Tente novamente mais tarde";
+      }
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }
@@ -130,7 +179,6 @@ export default function Login() {
           </div>
           <div className="flex items-center justify-between">
             <div />
-            {/* <a href="/forgot-password" className="text-sm text-primary hover:underline">Esqueci minha senha</a> */}
           </div>
           <Button
             type="submit"
@@ -143,7 +191,6 @@ export default function Login() {
         <div className="mt-8 text-center text-sm text-muted-foreground">
           © {new Date().getFullYear()} PagueBit. Todos os direitos reservados.
         </div>
-        {/* NOVO: Link para jogos */}
         <div className="mt-4 text-center text-xs text-muted-foreground">
           <span>
             Quer se distrair? <a href="/notfound" className="text-primary hover:underline">Jogue alguns jogos enquanto espera seu acesso de admin</a>

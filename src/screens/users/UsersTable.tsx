@@ -2,7 +2,7 @@ import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { 
-  Eye, ExternalLink, ArrowUp, ArrowDown, ChevronUp, ChevronDown,
+  Eye, ExternalLink, ChevronUp, ChevronDown,
   ArrowUpDown, CalendarDays, Mail, User as UserIcon
 } from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
@@ -10,8 +10,8 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import UsersModal from './UsersModal';
-import { User } from '../../data/models/types';
-import userRepository from '../../data/repository/user-repository';
+import { User } from '../../domain/entities/User.entity';
+import { UserRepository } from '../../data/repository/user-repository';
 import { toast } from 'sonner';
 import Select from '../../components/Select';
 
@@ -20,26 +20,50 @@ export default function UsersTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState({
-    name: '',
+    id: '',
+    providerId: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    documentId: '',
+    phoneNumber: '',
+    documentType: '',
+    referral: '',
+    role: '',
+    active: '',
+    dateRangeFrom: '',
+    dateRangeTo: ''
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  
+
   const queryClient = useQueryClient();
+  const userRepository = useMemo(() => new UserRepository(), []);
 
   const { data, isLoading, error } = useQuery(
     ['users', currentPage, itemsPerPage, filters, orderBy, orderDirection],
-    () => userRepository.getUsers({
-      page: currentPage,
-      limit: itemsPerPage,
-      ...filters,
-      orderBy,
-      order: orderDirection,
-    }),
+    async () => {
+      // Monta o objeto de request conforme o model
+      const req: any = {
+        ...filters,
+        page: String(currentPage),
+        limit: String(itemsPerPage),
+        orderBy,
+        order: orderDirection,
+      };
+      // Ajusta range de datas se necessário
+      if (filters.dateRangeFrom) req.createdAtFrom = filters.dateRangeFrom;
+      if (filters.dateRangeTo) req.createdAtTo = filters.dateRangeTo;
+      delete req.dateRangeFrom;
+      delete req.dateRangeTo;
+      // Remove campos vazios
+      Object.keys(req).forEach(k => req[k] === '' && delete req[k]);
+      const res = await userRepository.listAllUsers(req);
+      return res;
+    },
     {
       keepPreviousData: true,
       onError: (err) => {
@@ -52,11 +76,8 @@ export default function UsersTable() {
     }
   );
 
-  // Garantir que o estado de filtragem seja limpo após a conclusão de qualquer operação
   useEffect(() => {
-    if (!isLoading) {
-      setIsFiltering(false);
-    }
+    if (!isLoading) setIsFiltering(false);
   }, [isLoading]);
 
   const filterOptions = useMemo(() => [
@@ -142,26 +163,15 @@ export default function UsersTable() {
     },
   ], []);
 
-  // Handler para ordenação
   const handleSort = useCallback((column: string) => {
     if (orderBy === column) {
-      // Se já está ordenando por essa coluna, inverte a direção
       setOrderDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     } else {
-      // Se não, define a nova coluna e começa por ordem descendente
       setOrderBy(column);
       setOrderDirection('desc');
     }
-    // Volta para a primeira página ao ordenar
     setCurrentPage(1);
   }, [orderBy]);
-
-  // Mapeia as colunas disponíveis na UI para os campos da API
-  const sortableColumns: Record<string, string> = {
-    'createdAt': 'createdAt',
-    'email': 'email',
-    'firstName': 'firstName',
-  };
 
   const columns = useMemo<TableColumn<User>[]>(() => [
     {
@@ -237,9 +247,22 @@ export default function UsersTable() {
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-
     // Sempre monta o objeto de filtros com todos os campos possíveis (vazios se não vierem)
-    const updatedFilters: Record<string, any> = {
+    const updatedFilters: {
+      id: string;
+      providerId: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      documentId: string;
+      phoneNumber: string;
+      documentType: string;
+      referral: string;
+      role: string;
+      active: string;
+      dateRangeFrom: string;
+      dateRangeTo: string;
+    } = {
       id: '',
       providerId: '',
       firstName: '',
@@ -254,21 +277,16 @@ export default function UsersTable() {
       dateRangeFrom: '',
       dateRangeTo: ''
     };
-
-    // Preenche apenas os filtros enviados
     Object.keys(newFilters).forEach((key) => {
       if (newFilters[key] !== undefined) {
+        // @ts-expect-error: pode haver chaves extras, mas só as conhecidas serão usadas
         updatedFilters[key] = newFilters[key];
       }
     });
-
     setFilters(updatedFilters);
-
-    // Resetar para a primeira página quando filtrar
     setCurrentPage(1);
   }, []);
 
-  // Opções para o Select de ordenação com ícones
   const sortOptions = [
     { 
       value: 'createdAt-desc', 
@@ -302,11 +320,14 @@ export default function UsersTable() {
     },
   ];
 
+  // Converte UserModel para User entity
+  const users: User[] = Array.isArray(data?.data)
+    ? data!.data.map((model: any) => User.fromModel(model))
+    : [];
+
   return (
     <div className="space-y-4">
-      {/* Cabeçalho e filtros */}
       <div className="space-y-3">
-        {/* Botão para expandir/contrair filtros em dispositivos móveis */}
         <div className="sm:hidden">
           <button
             onClick={() => setFiltersExpanded(!filtersExpanded)}
@@ -320,8 +341,6 @@ export default function UsersTable() {
             )}
           </button>
         </div>
-
-        {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
         <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
           <FilterBar
             filters={filterOptions}
@@ -330,8 +349,6 @@ export default function UsersTable() {
             isLoading={isFiltering && isLoading}
           />
         </div>
-
-        {/* Ordenação em um card separado com design aprimorado */}
         <div className="p-4 bg-card border border-border rounded-lg shadow-sm">
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
             <label className="text-sm font-medium flex items-center whitespace-nowrap">
@@ -344,7 +361,9 @@ export default function UsersTable() {
                 value={`${orderBy}-${orderDirection}`}
                 onChange={(value) => {
                   const [field, direction] = value.split('-');
-                  handleSort(field);
+                  setOrderBy(field);
+                  setOrderDirection(direction as 'asc' | 'desc');
+                  setCurrentPage(1);
                 }}
               />
             </div>
@@ -367,7 +386,7 @@ export default function UsersTable() {
         </div>
       ) : (
         <Table
-          data={data?.data || []}
+          data={users}
           columns={columns}
           isLoading={isLoading || isFiltering}
           sortColumn={orderBy}
@@ -376,11 +395,11 @@ export default function UsersTable() {
         />
       )}
 
-      {data && data.pagination && (
+      {data && typeof data.total === 'number' && (
         <Pagination
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
-          totalItems={data.pagination.total}
+          totalItems={data.total}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
         />

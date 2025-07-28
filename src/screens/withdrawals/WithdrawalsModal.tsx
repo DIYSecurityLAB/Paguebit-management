@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useState, useEffect, useMemo } from 'react';
+import { useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { 
@@ -11,14 +11,16 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import Table from '../../components/Table';
-import { Withdrawal, Payment } from '../../data/models/types';
-import withdrawalRepository from '../../data/repository/withdrawal-repository';
-import paymentRepository from '../../data/repository/payment-repository';
-import { formatCurrency } from '../../utils/format';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { PaymentRepository } from '../../data/repository/payment-repository';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 import { toast } from 'sonner';
 import { useWithdrawalFees } from '../../hooks/useWithdrawalFees';
 import PaymentsModal from '../payments/PaymentsModal';
 import { QRCodeSVG } from 'qrcode.react';
+import { AdminUpdateWithdrawalStatusReq } from '../../data/model/withdrawal.model';
 
 interface WithdrawalsModalProps {
   withdrawal: Withdrawal;
@@ -26,14 +28,14 @@ interface WithdrawalsModalProps {
   onClose: () => void;
 }
 
-function formatDateSafe(date: any, formatStr: string) {
-  if (!date || (typeof date !== 'string' && typeof date !== 'number')) return '-';
-  const d = new Date(date);
+function formatDateSafe(date: string | number | Date | undefined, formatStr: string): string {
+  if (!date || (typeof date !== 'string' && typeof date !== 'number' && !(date instanceof Date))) return '-';
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
   if (isNaN(d.getTime())) return '-';
   return format(d, formatStr);
 }
 
-function getSafeValue(val: any, fallback: string = '-') {
+function getSafeValue<T>(val: T | null | undefined, fallback: string = '-'): T | string {
   if (val === null || val === undefined) return fallback;
   if (typeof val === 'object' && Object.keys(val).length === 0) return fallback;
   if (typeof val === 'string' && val.trim() === '') return fallback;
@@ -41,21 +43,22 @@ function getSafeValue(val: any, fallback: string = '-') {
 }
 
 export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: WithdrawalsModalProps) {
-  const [txId, setTxId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [txId, setTxId] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [showStatusForm, setShowStatusForm] = useState(false);
   const [showDetailedFees, setShowDetailedFees] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | null>(null);
-  const [failedReason, setFailedReason] = useState('');
+  const [failedReason, setFailedReason] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyTxIdSuccess, setCopyTxIdSuccess] = useState(false);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  // Novo estado para controlar a exibição do QR code
   const [showQrCode, setShowQrCode] = useState(false);
-  
+
   const queryClient = useQueryClient();
+  const withdrawalRepository = useMemo(() => new WithdrawalRepository(), []);
+  const paymentRepository = useMemo(() => new PaymentRepository(), []);
 
   // Calculador de taxas
   const fees = useWithdrawalFees(
@@ -68,24 +71,47 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const satoshiValue = fees.isBitcoinWallet ? 
     Math.round(parseFloat(fees.expectedAmountBTC) * 100000000) : 0;
 
-  // Debug log para verificar os dados do withdrawal
-  useEffect(() => {
-    if (withdrawal) {
-      console.log('Withdrawal recebido no modal:', withdrawal);
-    }
-  }, [withdrawal]);
+  // Buscar pagamentos se necessário (caso não venha em withdrawal.payments)
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
 
-  // Remover busca de pagamentos pelo paymentRepository, pois agora já vem em withdrawal.payments
-  const payments = withdrawal?.payments || [];
+  useEffect(() => {
+    let ignore = false;
+    async function fetchPayments() {
+      if (!isOpen) return; // Só busca se o modal estiver aberto
+      if (withdrawal?.payments && withdrawal.payments.length > 0) {
+        setPayments(withdrawal.payments.map(p => Payment.fromModel(p)));
+      } else if (withdrawal?.paymentIds && withdrawal.paymentIds.length > 0) {
+        setPaymentsLoading(true);
+        try {
+          const paymentModels = await Promise.all(
+            withdrawal.paymentIds.map((id: string) => paymentRepository.getPaymentById(id))
+          );
+          if (!ignore) {
+            setPayments(paymentModels.map(p => Payment.fromModel(p)));
+          }
+        } catch {
+          if (!ignore) setPayments([]);
+        } finally {
+          if (!ignore) setPaymentsLoading(false);
+        }
+      } else {
+        setPayments([]);
+      }
+    }
+    fetchPayments();
+    return () => { ignore = true; };
+  }, [withdrawal, paymentRepository, isOpen]);
 
   const updateStatusMutation = useMutation(
-    (status: 'pending' | 'processing' | 'completed' | 'failed') =>
-      withdrawalRepository.updateWithdrawalStatus({
-        id: withdrawal.id,
+    (status: 'pending' | 'processing' | 'completed' | 'failed') => {
+      const data: AdminUpdateWithdrawalStatusReq = {
         status,
         failedReason: status === 'failed' ? failedReason : undefined,
         txId: status === 'completed' ? txId : undefined
-      }),
+      };
+      return withdrawalRepository.updateWithdrawalStatus(withdrawal.id, data);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('withdrawals');
@@ -93,7 +119,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         setShowStatusForm(false);
         setSelectedStatus(null);
         setFailedReason('');
-        setTxId(''); // Limpar txId ao concluir
+        setTxId('');
         onClose();
       },
       onError: () => {
@@ -101,32 +127,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       },
     }
   );
-
-  const completeWithdrawalMutation = useMutation(
-    () =>
-      withdrawalRepository.completeWithdrawal({
-        id: withdrawal.id,
-        txId,
-        notes,
-      }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('withdrawals');
-        toast.success('Saque concluído com sucesso');
-        setShowCompleteForm(false);
-        setTxId('');
-        setNotes('');
-        onClose();
-      },
-      onError: () => {
-        toast.error('Falha ao concluir o saque');
-      },
-    }
-  );
-
-  const togglePaymentExpansion = (paymentId: string) => {
-    setExpandedPaymentId(expandedPaymentId === paymentId ? null : paymentId);
-  };
 
   const handleStatusUpdate = async () => {
     if (!selectedStatus) return;
@@ -138,7 +138,12 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       toast.error('ID da transação é obrigatório');
       return;
     }
-    await completeWithdrawalMutation.mutateAsync();
+    // O endpoint correto para concluir saque é updateWithdrawalStatus para 'completed'
+    await updateStatusMutation.mutateAsync('completed');
+  };
+
+  const togglePaymentExpansion = (paymentId: string) => {
+    setExpandedPaymentId(expandedPaymentId === paymentId ? null : paymentId);
   };
 
   const handleCopyWallet = async (text: string) => {
@@ -196,7 +201,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       header: 'Criado em',
       accessor: (payment: Payment) =>
         payment.createdAt
-          ? formatDateSafe(payment.createdAt, 'dd/MM/yyyy HH:mm:ss')
+          ? formatDateTime(payment.createdAt)
           : '-',
     },
     {
@@ -230,10 +235,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           <div>
             <p className="text-sm text-muted-foreground">Email</p>
             <p className="font-medium text-foreground">{payment.email || 'Não informado'}</p>
-          </div>
-          <div>
-            <p className="text-sm text-muted-foreground">Modo de Recebimento</p>
-            <p className="font-medium text-foreground">{payment.receivingMode === 'now' ? 'Imediato' : 'Armazenado'}</p>
           </div>
           <div>
             <p className="text-sm text-muted-foreground">Criado em</p>
@@ -708,7 +709,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <Table
               data={payments}
               columns={paymentColumns}
-              isLoading={false}
+              isLoading={paymentsLoading}
             />
             {expandedPaymentId && renderExpandedPaymentDetails(expandedPaymentId)}
           </div>
@@ -845,11 +846,11 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               <Button
                 variant="success"
                 onClick={handleComplete}
-                isLoading={completeWithdrawalMutation.isLoading}
-                disabled={!txId.trim() || completeWithdrawalMutation.isLoading}
+                isLoading={updateStatusMutation.isLoading}
+                disabled={!txId.trim() || updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
               >
-                {completeWithdrawalMutation.isLoading 
+                {updateStatusMutation.isLoading 
                   ? 'Processando...' 
                   : 'Confirmar Conclusão'}
               </Button>

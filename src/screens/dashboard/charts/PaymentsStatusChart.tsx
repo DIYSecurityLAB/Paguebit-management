@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer, Sector } from 'recharts';
-import { formatCurrency } from '../../utils/format';
+import { PieChart, Pie, Cell, Tooltip,  ResponsiveContainer, Sector } from 'recharts';
+import { formatCurrency } from '../../../utils/format';
 
+// Não precisa de import de Payment, pois só recebe o objeto já processado
 interface Props {
   paymentsByStatus: Record<string, { count: number; amount: number }>;
   loading?: boolean;
@@ -64,40 +65,10 @@ export default function PaymentsStatusChart({ paymentsByStatus, loading, height 
   }));
 
   // Determinar o título com base na métrica ativa
-  const metricTitle = activeMetric === 'amount' ? 'Valor' : 'Quantidade';
+ 
 
-  // Função para manipular o clique na legenda
-  const handleLegendClick = (data: any, index: number) => {
-    setActiveIndex(activeIndex === index ? undefined : index);
-  };
+// Tipos para dados do gráfico
 
-  // Renderizador personalizado para a legenda
-  const renderCustomizedLegend = (props: any) => {
-    const { payload } = props;
-    
-    return (
-      <ul className="pl-0 flex flex-col gap-1 text-xs">
-        {payload.map((entry: any, index: number) => (
-          <li 
-            key={`item-${index}`}
-            className={`flex items-center cursor-pointer hover:opacity-80 transition-opacity ${activeIndex === index ? 'font-semibold' : ''}`}
-            onClick={() => handleLegendClick(entry, index)}
-          >
-            <div 
-              className="h-3 w-3 mr-2 rounded-sm"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span>{entry.value}</span>
-            {activeIndex === index && (
-              <span className="ml-2 text-xs text-muted-foreground">
-                ({paymentsByStatus[data[index].status].count})
-              </span>
-            )}
-          </li>
-        ))}
-      </ul>
-    );
-  };
 
   return (
     <div className="h-full flex flex-col">

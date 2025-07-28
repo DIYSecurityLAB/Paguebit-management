@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-import { Payment, Withdrawal } from '../../data/models/types';
-
+import { Payment as PaymentEntity } from '../../../domain/entities/Payment.entity';
+import { Withdrawal as WithdrawalEntity } from '../../../domain/entities/Withdrawal.entity';
+ 
 interface Props {
-  payments: Payment[];
-  withdrawals: Withdrawal[];
+  payments: PaymentEntity[];
+  withdrawals: WithdrawalEntity[];
   loading?: boolean;
   height?: number;
 }
@@ -27,12 +28,16 @@ export default function ProcessingTimeChart({ payments, withdrawals, loading, he
     // 2. Tempo médio entre approved e paid
     let approvalToPaymentTimes: number[] = [];
     
-    // 3. Tempo médio de processamento de saques
-    let withdrawalProcessingTimes: number[] = [];
+    const withdrawalProcessingTimes: number[] = [];
     
-    // Para cálculos mais precisos, precisaríamos de logs de alteração de status
-    // Vamos simular com valores hipotéticos baseados em datas de criação/atualização
-    payments.forEach(payment => {
+    // Use entidades para validação e acesso seguro
+    payments.forEach(paymentModel => {
+      let payment: PaymentEntity;
+      try {
+        payment = PaymentEntity.fromModel(paymentModel);
+      } catch {
+        return; // ignora pagamentos inválidos
+      }
       if (payment.status === 'approved' && payment.createdAt && payment.updatedAt) {
         const created = new Date(payment.createdAt).getTime();
         const updated = new Date(payment.updatedAt).getTime();
@@ -48,7 +53,13 @@ export default function ProcessingTimeChart({ payments, withdrawals, loading, he
       }
     });
     
-    withdrawals.forEach(withdrawal => {
+    withdrawals.forEach(withdrawalModel => {
+      let withdrawal: WithdrawalEntity;
+      try {
+        withdrawal = WithdrawalEntity.fromModel(withdrawalModel);
+      } catch {
+        return; // ignora saques inválidos
+      }
       if (withdrawal.status === 'completed' && withdrawal.createdAt && withdrawal.completedAt) {
         const created = new Date(withdrawal.createdAt).getTime();
         const completed = new Date(withdrawal.completedAt).getTime();

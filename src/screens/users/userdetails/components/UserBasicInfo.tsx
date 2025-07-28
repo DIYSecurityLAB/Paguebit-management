@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { Edit, Save, X } from 'lucide-react';
-import { User, UserUpdateInput } from '../../../../data/models/types';
+import { User } from '../../../../domain/entities/User.entity';
+import { UpdateUser } from '../../../../domain/entities/User.entity';
 import Button from '../../../../components/Button';
 import { toast } from 'sonner';
-import userRepository from '../../../../data/repository/user-repository';
+import { UserRepository } from '../../../../data/repository/user-repository';
 import ConfirmationModal from '../../../../components/ConfirmationModal';
 
 interface UserBasicInfoProps {
@@ -26,6 +27,8 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
   const [showPhoneConfirmation, setShowPhoneConfirmation] = useState(false);
   const [pendingActiveValue, setPendingActiveValue] = useState(user.active);
 
+  const userRepository = new UserRepository();
+
   // Função para iniciar processo de salvamento do referral (mostra o modal)
   const handleSaveReferral = () => setShowReferralConfirmation(true);
 
@@ -34,14 +37,9 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
     if (!user) return;
     try {
       setIsSaving(true);
-      const previousUser = { ...user };
-      const update: UserUpdateInput = { referral: referralValue };
-      const updatedUser = await userRepository.updateUser(
-        user.id,
-        update,
-        user.id,
-        previousUser
-      );
+      const update: Partial<UpdateUser> = { referral: referralValue };
+      const updatedUserModel = await userRepository.updateUser(user.id, update);
+      const updatedUser = User.fromModel(updatedUserModel);
       onUserUpdate(updatedUser);
       setIsEditingReferral(false);
       setShowReferralConfirmation(false);
@@ -71,14 +69,9 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
     if (!user) return;
     try {
       setIsSaving(true);
-      const previousUser = { ...user };
-      const update: UserUpdateInput = { active: pendingActiveValue ? 'true' : 'false' };
-      const updatedUser = await userRepository.updateUser(
-        user.id,
-        update,
-        user.id,
-        previousUser
-      );
+      const update: Partial<UpdateUser> = { active: pendingActiveValue ? 'true' : 'false' };
+      const updatedUserModel = await userRepository.updateUser(user.id, update);
+      const updatedUser = User.fromModel(updatedUserModel);
       onUserUpdate(updatedUser);
       setIsActiveValue(pendingActiveValue);
       setShowStatusConfirmation(false);
@@ -108,14 +101,9 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
     if (!user) return;
     try {
       setIsSaving(true);
-      const previousUser = { ...user };
-      const update: UserUpdateInput = { phoneNumber: phoneValue };
-      const updatedUser = await userRepository.updateUser(
-        user.id,
-        update,
-        user.id,
-        previousUser
-      );
+      const update: Partial<UpdateUser> = { phoneNumber: phoneValue };
+      const updatedUserModel = await userRepository.updateUser(user.id, update);
+      const updatedUser = User.fromModel(updatedUserModel);
       onUserUpdate(updatedUser);
       setIsEditingPhone(false);
       setShowPhoneConfirmation(false);
@@ -331,3 +319,4 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
     </div>
   );
 }
+ 

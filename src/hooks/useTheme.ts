@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { getCurrentConfig, applyWhiteLabelTheme } from '../config/whiteLabel.config';
 
 type Theme = 'light' | 'dark';
 
@@ -26,6 +27,10 @@ export const useTheme = () => {
     
     // Salva no localStorage
     localStorage.setItem('theme', theme);
+    
+    // Aplica as cores do whitelabel de acordo com o tema atual
+    const config = getCurrentConfig();
+    applyWhiteLabelTheme(config);
   }, [theme]);
 
   return { theme, setTheme };

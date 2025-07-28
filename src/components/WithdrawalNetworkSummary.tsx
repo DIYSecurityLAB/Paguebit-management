@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import withdrawalRepository from '../data/repository/withdrawal-repository';
+import { WithdrawalRepository } from '../data/repository/withdrawal-repository';
+import { Withdrawal } from '../domain/entities/Withdrawal.entity';
+import { WithdrawalModel } from '../data/model/withdrawal.model';
 import { formatCurrency } from '../utils/format';
 import { Coins } from 'lucide-react';
 
@@ -13,22 +15,23 @@ interface NetworkSummary {
 
 export default function WithdrawalNetworkSummary() {
   const [networkSummaries, setNetworkSummaries] = useState<NetworkSummary[]>([]);
-  
+  const withdrawalRepository = new WithdrawalRepository();
+
   // Buscar todos os saques pendentes para calcular o resumo por rede
   const { data, isLoading } = useQuery(
     ['pending-withdrawals-summary'],
     async () => {
       // Busca apenas saques pendentes para o resumo
-      const response = await withdrawalRepository.getWithdrawals({
+      const response = await withdrawalRepository.listWithdrawals({
         status: 'pending',
-        limit: 1000 // Limite alto para pegar todos os pendentes
+        limit: '1000' // Limite alto para pegar todos os pendentes (string pois o tipo espera string)
       });
-      // Garante que sempre retorna array
+      // Garante que sempre retorna array de WithdrawalModel
       if (response && Array.isArray(response.data)) {
         return response.data;
       }
       if (response && response.data && typeof response.data === 'object' && 'length' in response.data) {
-        return Array.from(response.data);
+        return Array.from(response.data) as WithdrawalModel[];
       }
       return [];
     },
@@ -49,15 +52,18 @@ export default function WithdrawalNetworkSummary() {
 
   // Calcula o resumo sempre que os dados mudam
   useEffect(() => {
-    // Garante que data é sempre array
-    const withdrawals = Array.isArray(data) ? data : [];
+    // Garante que data é sempre array de WithdrawalModel
+    const withdrawals: WithdrawalModel[] = Array.isArray(data) ? data : [];
     if (!withdrawals || withdrawals.length === 0) {
       setNetworkSummaries([]);
       return;
     }
 
+    // Converte WithdrawalModel para Withdrawal entity para garantir validação e métodos
+    const withdrawalEntities = withdrawals.map(w => Withdrawal.fromModel(w));
+
     // Agrupar saques por tipo de rede e somar valores
-    const summary = withdrawals.reduce((acc: Record<string, number>, withdrawal) => {
+    const summary = withdrawalEntities.reduce((acc: Record<string, number>, withdrawal) => {
       const networkType = withdrawal.destinationWalletType;
       if (!acc[networkType]) {
         acc[networkType] = 0;

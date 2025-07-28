@@ -3,7 +3,7 @@ import type {
   ListNotificationsReq,
   ListNotificationsRes,
   CreateNotificationReq,
-  CreateNotificationRes
+  CreateNotificationRes,
 } from '../model/notification.model';
 
 class NotificationRepository {

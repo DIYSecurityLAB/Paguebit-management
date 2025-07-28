@@ -2,12 +2,13 @@ import { useState } from 'react';
 import { useQuery } from 'react-query';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
-import paymentRepository from '../../../data/repository/payment-repository';
-import { Payment, PaymentStatus } from '../../../data/models/types';
+import { Payment as PaymentEntity } from '../../../domain/entities/Payment.entity';
+import { PaymentStatus } from '../../../data/model/payment.model';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
 import ReviewStep from './BatchReceiptReviewStep';
 import SummaryStep from './BatchReceiptSummaryStep';
+import { PaymentRepository } from '../../../data/repository/payment-repository';
 
 export interface BatchReceiptDownloadModalProps {
   isOpen: boolean;
@@ -16,7 +17,7 @@ export interface BatchReceiptDownloadModalProps {
 
 // Tipo para os comprovantes revisados (exportando para uso nos outros arquivos)
 export type ReviewedPayment = {
-  payment: Payment;
+  payment: PaymentEntity;
   name: string;
   ignored: boolean;
   hasfraguismo?: boolean | null; // Nova propriedade para rastrear se o comprovante tem "fraguismo"
@@ -34,16 +35,22 @@ export default function BatchReceiptDownloadModal({ isOpen, onClose }: BatchRece
   const [reviewedPayments, setReviewedPayments] = useState<ReviewedPayment[]>([]);
   const [currentStep, setCurrentStep] = useState<Step>(Step.REVIEW);
   const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
-  
+
+  // Instanciar o repositório
+  const paymentRepository = new PaymentRepository();
+
   // Buscar pagamentos com status "comprovante enviado"
   const { data: paymentsData, isLoading } = useQuery(
     'payments-with-receipts',
     async () => {
-      const response = await paymentRepository.getPayments({
+      const response = await paymentRepository.listPayments({
         status: PaymentStatus.RECEIPT_SENT,
-        limit: 100 // Limite razoável para processar em lote
+        limit: '100'
       });
-      return response.data.filter(payment => payment.receipt);
+      // Converter para entidades Payment
+      return response.data
+        .filter(payment => payment.receipt)
+        .map(payment => PaymentEntity.fromModel(payment));
     },
     { enabled: isOpen }
   );

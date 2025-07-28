@@ -1,4 +1,4 @@
-import { UpdateUser, User as UserEntity } from "@/domain/entities/User.entity";
+import { UpdateUser, User as UserEntity } from "../domain/entities/User.entity";
 import { createContext, useContext } from "react";
 
 export type UserContextProps = {
@@ -20,4 +20,4 @@ export const useUserContext = () => {
   }
   return context;
 };
-};
+ 

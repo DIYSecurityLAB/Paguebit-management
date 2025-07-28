@@ -1,7 +1,9 @@
 import React, { useMemo } from 'react';
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Payment, Withdrawal } from '../../data/models/types';
-import { formatCurrency } from '../../utils/format';
+ import { formatCurrency } from '../../../utils/format';
+
+import { Payment } from '../../../domain/entities/Payment.entity';
+import { Withdrawal } from '../../../domain/entities/Withdrawal.entity';
 
 interface Props {
   payments: Payment[];
@@ -25,31 +27,40 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#FF6666'
 
 export default function WalletsUsageChart({ payments, withdrawals, type, loading, height = 250 }: Props) {
   const data = useMemo(() => {
-    let walletCounts: Record<string, { count: number; amount: number }> = {};
-    
+    const walletCounts: Record<string, { count: number; amount: number }> = {};
+
     if (type === 'payment') {
-      // Analisar pagamentos
-      payments.forEach(payment => {
-        if (!payment.walletType) return;
-        
-        const walletType = payment.walletType;
+      // Analisar pagamentos usando a entidade Payment
+      payments.forEach(paymentModel => {
+        let payment: Payment;
+        try {
+          payment = Payment.fromModel(paymentModel as any);
+        } catch {
+          return;
+        }
+        // Considera walletType se existir
+        const walletType = (payment as any).walletType || '';
+        if (!walletType) return;
         if (!walletCounts[walletType]) {
           walletCounts[walletType] = { count: 0, amount: 0 };
         }
-        
         walletCounts[walletType].count += 1;
         walletCounts[walletType].amount += payment.amount || 0;
       });
     } else {
-      // Analisar saques
-      withdrawals.forEach(withdrawal => {
-        if (!withdrawal.destinationWalletType) return;
-        
-        const walletType = withdrawal.destinationWalletType;
+      // Analisar saques usando a entidade Withdrawal
+      withdrawals.forEach(withdrawalModel => {
+        let withdrawal: Withdrawal;
+        try {
+          withdrawal = Withdrawal.fromModel(withdrawalModel as any);
+        } catch {
+          return;
+        }
+        const walletType = withdrawal.destinationWalletType || '';
+        if (!walletType) return;
         if (!walletCounts[walletType]) {
           walletCounts[walletType] = { count: 0, amount: 0 };
         }
-        
         walletCounts[walletType].count += 1;
         walletCounts[walletType].amount += withdrawal.amount || 0;
       });

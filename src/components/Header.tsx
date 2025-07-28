@@ -3,13 +3,13 @@ import { Link, useLocation } from 'react-router-dom';
 import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home, Search } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
-import logo from '../assets/PagueBit_black.svg';
-import logoDark from '../assets/PagueBit_white.svg';
+import { useWhiteLabelConfig } from '../config/whiteLabel.config';
 
 export default function Header() {
   const { theme, setTheme } = useTheme();
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const whiteLabelConfig = useWhiteLabelConfig();
 
   // Fechar o menu quando a rota mudar
   useEffect(() => {
@@ -72,8 +72,12 @@ export default function Header() {
               className="text-xl font-bold text-foreground flex items-center group"
             >
               <img
-                src={theme === 'dark' ? logoDark : logo}
-                alt="Pague Bit Logo"
+                src={
+                  theme === 'dark'
+                    ? (whiteLabelConfig.logo.simpleDark || whiteLabelConfig.logo.simple)
+                    : whiteLabelConfig.logo.simple
+                }
+                alt={`${whiteLabelConfig.name} Logo`}
                 className="h-9 w-auto mr-2"
                 style={{ display: 'inline-block' }}
               />

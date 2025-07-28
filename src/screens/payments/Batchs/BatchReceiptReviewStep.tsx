@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
 import { ArrowLeft, ArrowRight, Edit, Check, Eye, ZoomIn, XCircle, CheckCircle } from 'lucide-react';
-import { Payment } from '../../../data/models/types';
+import { Payment } from '../../../domain/entities/Payment.entity';
 import { formatCurrency } from '../../../utils/format';
 import OcrNameSuggestion from '../../../components/OcrNameSuggestion';
 import ImageViewer from '../../../components/ImageViewer';

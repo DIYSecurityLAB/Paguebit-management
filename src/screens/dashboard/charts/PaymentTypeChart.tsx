@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
-import { formatCurrency } from '../../utils/format';
-import { Payment } from '../../data/models/types';
+import { formatCurrency } from '../../../utils/format';
+
+import { Payment } from '../../../domain/entities/Payment.entity';
 
 interface Props {
   payments: Payment[];

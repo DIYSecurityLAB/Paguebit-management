@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import { FunnelChart, Funnel, LabelList, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import { Payment } from '../../data/models/types';
-import { formatCurrency } from '../../utils/format';
-
+import { Payment } from '../../../domain/entities/Payment.entity';
+ 
 interface Props {
   payments: Payment[];
   loading?: boolean;

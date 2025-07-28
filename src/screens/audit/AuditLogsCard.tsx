@@ -9,7 +9,7 @@ import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import Select from '../../components/Select';
-import { AuditLog } from '../../data/models/types';
+import { AuditLog } from '../../domain/entities/AuditLog.entity';
 import auditRepository, { AuditLogQueryParams } from '../../data/repository/audit-repository';
 import AuditLogDetailModal from './AuditLogDetailModal';
 
@@ -35,14 +35,21 @@ export default function AuditLogsCard() {
   
   const { data, isLoading, error } = useQuery(
     ['auditLogs', currentPage, itemsPerPage, filters, orderBy, orderDirection],
-    () => auditRepository.listAuditLogs({
-      ...filters,
-      page: currentPage,
-      limit: itemsPerPage,
-      // @ts-expect-error: orderBy
-      orderBy,
-      order: orderDirection,
-    }),
+    async () => {
+      const res = await auditRepository.listAuditLogs({
+        ...filters,
+        page: currentPage,
+        limit: itemsPerPage,
+        // @ts-expect-error: orderBy
+        orderBy,
+        order: orderDirection,
+      });
+      // Converte para entidade
+      return {
+        ...res,
+        data: res.data.map((model: any) => AuditLog.fromModel(model)),
+      };
+    },
     {
       keepPreviousData: true,
       onSettled: () => {

@@ -1,7 +1,7 @@
 import { AuthUser } from "../domain/entities/auth.entity";
 import { User } from "../domain/entities/User.entity";
 import { AuthRepository } from "../data/repository/auth-repository";
-import { UserRepository } from "@/data/repository/user/user.repository";
+import { UserRepository } from "../data/repository/user-repository";
 import { UserContext } from "../context/user.context";
 import { ReactNode, useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -17,7 +17,7 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
 
   // Função clara de logout
   const logout = useCallback(() => {
-    localStorage.removeItem("FIREBASE_TOKEN");
+    // Remova apenas tokens do backend
     localStorage.removeItem("USER");
     localStorage.removeItem("ACCESS_TOKEN");
     localStorage.removeItem("REFRESH_TOKEN");
@@ -53,7 +53,15 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
       const refreshTokenValue = localStorage.getItem("REFRESH_TOKEN");
       if (!refreshTokenValue) throw new Error("Refresh token não encontrado.");
       const authRepo = new AuthRepository();
+
+      // Log para debug
+      console.log("[UserProvider] Chamando refreshToken do AuthRepository");
+
+      // Passa explicitamente o refreshTokenValue para o método
       const res = await authRepo.refreshToken(refreshTokenValue);
+
+      // Log para debug
+      console.log("[UserProvider] Resposta do refreshToken:", res);
 
       localStorage.setItem("ACCESS_TOKEN", res.accessToken);
       localStorage.setItem("REFRESH_TOKEN", res.refreshToken);
@@ -65,7 +73,8 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         setUser(userEntity);
         persistUser(userEntity);
       }
-    } catch {
+    } catch (err) {
+       console.error("[UserProvider] Erro ao renovar sessão:", err);
       toast.error("Erro ao renovar sessão. Faça login novamente.");
       logout();
     }

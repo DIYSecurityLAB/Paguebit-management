@@ -6,14 +6,13 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import ImageViewer from '../../components/ImageViewer';
-import { Payment, PaymentStatus } from '../../data/models/types';
-import paymentRepository from '../../data/repository/payment-repository';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { PaymentStatus } from '../../data/model/payment.model';
+import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
-import apiClient from '../../data/datasource/api.datasource';
 import OcrNameSuggestion from '../../components/OcrNameSuggestion';
-import { useAuth } from '../../contexts/AuthContext';
-
+ 
 interface PaymentsModalProps {
   payment: Payment;
   isOpen: boolean;
@@ -27,21 +26,18 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [copiedQrId, setCopiedQrId] = useState(false);
   const [hasfraguismo, setHasfraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
-  const { user } = useAuth(); // Pega o usuário logado
-  const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
+   const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
   const [statusLoading, setStatusLoading] = useState(false);
   const [statusPopoverOpen, setStatusPopoverOpen] = useState(false);
   const statusPopoverRef = useRef<HTMLDivElement>(null);
+
+  const paymentRepository = new PaymentRepository();
 
   const updateStatusMutation = useMutation(
     (status: PaymentStatus) =>
       paymentRepository.updatePaymentStatus(
         payment.id,
-        status,
-        undefined,
-        undefined,
-        user?.uid, // userId para auditoria
-        payment.status // status anterior
+        { status }
       ),
     {
       onSuccess: () => {

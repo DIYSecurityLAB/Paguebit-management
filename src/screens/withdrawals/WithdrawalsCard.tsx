@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
-import { format } from 'date-fns';
-import { Eye, ChevronUp, ChevronDown, ArrowDownUp, CalendarDays, DollarSign, ArrowUpDown, BarChart4, Clock, SortAsc, SortDesc, CheckCircle, AlertCircle, Loader, Filter } from 'lucide-react';
+import { Eye, ChevronUp, ChevronDown, ArrowUpDown, CalendarDays, DollarSign, SortAsc, SortDesc,  } from 'lucide-react';
 import CardItem from '../../components/CardItem';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -9,9 +8,10 @@ import StatusBadge from '../../components/StatusBadge';
 import Button from '../../components/Button';
 import WithdrawalsModal from './WithdrawalsModal';
 import WithdrawalNetworkSummary from '../../components/WithdrawalNetworkSummary';
-import { Withdrawal } from '../../data/models/types';
-import withdrawalRepository from '../../data/repository/withdrawal-repository';
-import { formatCurrency } from '../../utils/format';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import { WithdrawalModel } from '../../data/model/withdrawal.model';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 import { toast } from 'sonner';
 import Select from '../../components/Select';
 
@@ -20,96 +20,34 @@ export default function WithdrawalsCard() {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState({
     status: '',
-    userId: '',
+    storeId: '',
     dateFrom: '',
     dateTo: '',
-    name: '',
-    email: '',
     paymentId: '',
   });
-  // Adicionar estados para ordenação (padrão: criado em ordem decrescente)
-  const [orderBy, setOrderBy] = useState<string>('createdAt');
+  const [orderBy, setOrderBy] = useState<'status' | 'storeId' | 'createdAt' | 'completedAt' | 'amount' | 'destinationWallet' | 'destinationWalletType' | 'txId' | 'id' | 'whitelabelId'>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
 
-  // Função utilitária para validar datas
-  function formatDateSafe(date: any, formatStr: string) {
-    // Aceita string ISO, timestamp ou Date
-    if (!date) return '-';
-    if (typeof date === 'object' && Object.keys(date).length === 0) return '-';
-    const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
-    if (isNaN(d.getTime())) return '-';
-    return format(d, formatStr);
-  }
+  // Instanciar o repository
+  const withdrawalRepository = new WithdrawalRepository();
 
-  const columns = [
-    {
-      header: 'Loja',
-      accessor: (withdrawal: Withdrawal) => {
-        if (withdrawal.store && withdrawal.store.name) {
-          return withdrawal.store.name;
-        }
-        return withdrawal.storeId ? withdrawal.storeId.slice(0, 8) + '...' : 'Não informado';
-      },
-    },
-    {
-      header: 'ID da Loja',
-      accessor: (withdrawal: Withdrawal) => withdrawal.storeId || 'Não informado',
-    },
-    {
-      header: 'Valor',
-      accessor: (withdrawal: Withdrawal) => formatCurrency(withdrawal.amount),
-    },
-    {
-      header: 'Status',
-      accessor: (withdrawal: Withdrawal) => (
-        <StatusBadge status={withdrawal.status} />
-      ),
-    },
-    {
-      header: 'Tipo de Carteira',
-      accessor: (withdrawal: Withdrawal) => (
-        <span className="capitalize">{withdrawal.destinationWalletType}</span>
-      ),
-    },
-    {
-      header: 'Criado em',
-      accessor: (withdrawal: Withdrawal) =>
-        formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss'),
-    },
-    {
-      header: 'Concluído em',
-      accessor: (withdrawal: Withdrawal) =>
-        formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss'),
-    },
-    {
-      header: 'Ações',
-      accessor: (withdrawal: Withdrawal) => (
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSelectedWithdrawal(withdrawal)}
-          leftIcon={<Eye className="h-4 w-4" />}
-        >
-          Ver
-        </Button>
-      ),
-    },
-  ];
-
-  // Chamada única ao withdrawalRepository (não buscar User)
+  // Buscar dados usando o repository novo
   const { data, isLoading, error } = useQuery(
     ['withdrawals', currentPage, itemsPerPage, filters, orderBy, orderDirection],
-    () => withdrawalRepository.getWithdrawals({
-      page: currentPage,
-      limit: itemsPerPage,
-      ...filters,
-      orderBy,
-      order: orderDirection,
-    }),
+    async () => {
+      const response = await withdrawalRepository.listWithdrawals({
+        page: String(currentPage),
+        limit: String(itemsPerPage),
+        ...filters,
+        orderBy,
+        order: orderDirection,
+      });
+      return response;
+    },
     {
       keepPreviousData: true,
       retry: 3,
@@ -123,21 +61,13 @@ export default function WithdrawalsCard() {
     }
   );
 
-  // Garantir que o estado de filtragem seja limpo após a conclusão de qualquer operação
   useEffect(() => {
     if (!isLoading) {
       setIsFiltering(false);
     }
   }, [isLoading]);
 
-  // Adiciona log para depuração
-  useEffect(() => {
-    console.log('Estado atual dos dados no Card:', data);
-    console.log('Data array:', data?.data);
-    console.log('Is loading:', isLoading);
-    console.log('Error:', error);
-  }, [data, isLoading, error]);
-
+  // Filtros disponíveis
   const filterOptions = [
     {
       key: 'status',
@@ -145,7 +75,6 @@ export default function WithdrawalsCard() {
       type: 'select' as const,
       options: [
         { value: 'pending', label: 'Pendente' },
-        { value: 'processing', label: 'Processando' },
         { value: 'completed', label: 'Concluído' },
         { value: 'failed', label: 'Falha' },
       ],
@@ -156,22 +85,10 @@ export default function WithdrawalsCard() {
       type: 'daterange' as const,
     },
     {
-      key: 'userId',
-      label: 'ID do Usuário',
+      key: 'storeId',
+      label: 'ID da Loja',
       type: 'text' as const,
-      placeholder: 'Buscar por ID do usuário',
-    },
-    {
-      key: 'name',
-      label: 'Nome',
-      type: 'text' as const,
-      placeholder: 'Buscar por nome',
-    },
-    {
-      key: 'email',
-      label: 'Email',
-      type: 'text' as const,
-      placeholder: 'Buscar por email',
+      placeholder: 'Buscar por ID da loja',
     },
     {
       key: 'paymentId',
@@ -181,105 +98,56 @@ export default function WithdrawalsCard() {
     },
   ];
 
-  const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
-    // Ativa o indicador de carregamento enquanto os filtros são aplicados
+  const handleFilterChange = useCallback((newFilters: Record<string, unknown>) => {
     setIsFiltering(true);
-    
-    // Se o objeto newFilters estiver vazio, resetamos todos os filtros
     if (Object.keys(newFilters).length === 0) {
-      console.log("Limpando todos os filtros");
       setFilters({
         status: '',
-        userId: '',
+        storeId: '',
         dateFrom: '',
         dateTo: '',
-        name: '',
-        email: '',
         paymentId: '',
       });
-      
-      // Força uma nova consulta ao limpar os filtros
-      // Isso garante que a consulta seja refeita como se fosse a carga inicial
       setTimeout(() => {
         queryClient.invalidateQueries(['withdrawals']);
       }, 100);
     } else {
-      console.log("Aplicando filtros:", newFilters);
-      // Atualizando apenas as propriedades fornecidas
       const updatedFilters = {
         status: '',
-        userId: '',
+        storeId: '',
         dateFrom: '',
         dateTo: '',
-        name: '',
-        email: '',
         paymentId: '',
       };
-      
-      if (newFilters.status) updatedFilters.status = newFilters.status;
-      if (newFilters.userId) updatedFilters.userId = newFilters.userId;
-      if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
-      if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
-      if (newFilters.name) updatedFilters.name = newFilters.name;
-      if (newFilters.email) updatedFilters.email = newFilters.email;
-      if (newFilters.paymentId) updatedFilters.paymentId = newFilters.paymentId;
-      
+      if (newFilters.status) updatedFilters.status = String(newFilters.status);
+      if (newFilters.storeId) updatedFilters.storeId = String(newFilters.storeId);
+      if (newFilters.dateRangeFrom) updatedFilters.dateFrom = String(newFilters.dateRangeFrom);
+      if (newFilters.dateRangeTo) updatedFilters.dateTo = String(newFilters.dateRangeTo);
+      if (newFilters.paymentId) updatedFilters.paymentId = String(newFilters.paymentId);
       setFilters(updatedFilters);
     }
-    
-    // Resetar para a primeira página quando filtrar
     setCurrentPage(1);
   }, [queryClient]);
 
-  // Adicionar suporte para mudar ordenação
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
-    setOrderBy(field);
+    setOrderBy(field as typeof orderBy);
     setOrderDirection(direction);
-    setCurrentPage(1); // Voltar para a primeira página
+    setCurrentPage(1);
   }, []);
 
-  // Opções para o Select de ordenação com ícones
   const sortOptions = [
-    { 
-      value: 'createdAt-desc', 
-      label: 'Mais recentes', 
-      icon: <CalendarDays className="h-4 w-4 text-purple-500" /> 
-    },
-    { 
-      value: 'createdAt-asc', 
-      label: 'Mais antigos', 
-      icon: <CalendarDays className="h-4 w-4 text-blue-500" /> 
-    },
-    { 
-      value: 'amount-desc', 
-      label: 'Maior valor', 
-      icon: <DollarSign className="h-4 w-4 text-green-500" /> 
-    },
-    { 
-      value: 'amount-asc', 
-      label: 'Menor valor', 
-      icon: <DollarSign className="h-4 w-4 text-yellow-500" /> 
-    },
-    { 
-      value: 'status-asc', 
-      label: 'Status (A-Z)', 
-      icon: <SortAsc className="h-4 w-4 text-cyan-500" /> 
-    },
-    { 
-      value: 'status-desc', 
-      label: 'Status (Z-A)', 
-      icon: <SortDesc className="h-4 w-4 text-orange-500" /> 
-    },
+    { value: 'createdAt-desc', label: 'Mais recentes', icon: <CalendarDays className="h-4 w-4 text-purple-500" /> },
+    { value: 'createdAt-asc', label: 'Mais antigos', icon: <CalendarDays className="h-4 w-4 text-blue-500" /> },
+    { value: 'amount-desc', label: 'Maior valor', icon: <DollarSign className="h-4 w-4 text-green-500" /> },
+    { value: 'amount-asc', label: 'Menor valor', icon: <DollarSign className="h-4 w-4 text-yellow-500" /> },
+    { value: 'status-asc', label: 'Status (A-Z)', icon: <SortAsc className="h-4 w-4 text-cyan-500" /> },
+    { value: 'status-desc', label: 'Status (Z-A)', icon: <SortDesc className="h-4 w-4 text-orange-500" /> },
   ];
 
-  // Opções para o status com ícones
-  const statusOptions = [
-    { value: '', label: 'Todos os status', icon: <Filter className="h-4 w-4 text-gray-500" /> },
-    { value: 'pending', label: 'Pendente', icon: <Clock className="h-4 w-4 text-yellow-500" /> },
-    { value: 'processing', label: 'Processando', icon: <Loader className="h-4 w-4 text-blue-500" /> },
-    { value: 'completed', label: 'Concluído', icon: <CheckCircle className="h-4 w-4 text-green-500" /> },
-    { value: 'failed', label: 'Falha', icon: <AlertCircle className="h-4 w-4 text-red-500" /> },
-  ];
+  // Converte WithdrawalModel para Withdrawal entity para cada item
+  const withdrawals: Withdrawal[] = Array.isArray(data?.data)
+    ? data!.data.map((model: WithdrawalModel) => Withdrawal.fromModel(model))
+    : [];
 
   return (
     <div className="space-y-4">
@@ -353,12 +221,11 @@ export default function WithdrawalsCard() {
               Tentar novamente
             </button>
           </div>
-        ) : !data?.data || !Array.isArray(data.data) || data.data.length === 0 ? (
+        ) : !withdrawals.length ? (
           <div className="col-span-1 text-center p-6 bg-card rounded-lg border border-border">
             <p className="text-muted-foreground">Nenhum saque encontrado</p>
             <button 
               onClick={() => {
-                console.log('Tentando recarregar saques...');
                 setIsFiltering(true);
                 queryClient.invalidateQueries(['withdrawals']);
               }}
@@ -368,10 +235,10 @@ export default function WithdrawalsCard() {
             </button>
           </div>
         ) : (
-          data.data.map((withdrawal) => (
+          withdrawals.map((withdrawal) => (
             <CardItem
               key={withdrawal.id}
-              title={withdrawal.store?.name || withdrawal.storeId?.slice(0, 8) || 'Saque'}
+              title={withdrawal.storeId?.slice(0, 8) || 'Saque'}
               onClick={() => setSelectedWithdrawal(withdrawal)}
             >
               <div className="space-y-2">
@@ -390,14 +257,14 @@ export default function WithdrawalsCard() {
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Criado em:</span>
                   <span>
-                    {formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')}
+                    {withdrawal.createdAt ? formatDateTime(withdrawal.createdAt) : '-'}
                   </span>
                 </div>
                 {withdrawal.completedAt && (
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Concluído em:</span>
                     <span>
-                      {formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')}
+                      {withdrawal.completedAt ? formatDateTime(withdrawal.completedAt) : '-'}
                     </span>
                   </div>
                 )}
@@ -421,11 +288,11 @@ export default function WithdrawalsCard() {
         )}
       </div>
 
-      {data && data.pagination && (
+      {data && typeof data.total === 'number' && (
         <Pagination
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
-          totalItems={data.pagination.total}
+          totalItems={data.total}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
         />
@@ -441,3 +308,4 @@ export default function WithdrawalsCard() {
     </div>
   );
 }
+    

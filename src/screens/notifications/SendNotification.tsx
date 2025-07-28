@@ -15,19 +15,17 @@ import {
 import { toast } from "sonner";
 import Button from "../../components/Button";
 import notificationRepository from "../../data/repository/notification-repository";
-import storeRepository from "../../data/repository/store-repository";
-import { Store } from "../../data/models/types";
+import { StoreRepository } from "../../data/repository/store-repository";
+import { StoreModel } from "../../data/model/store.model";
+import { CreateNotificationReq } from "../../data/model/notification.model";
 
-// Tipo para loja a ser usado na notificação
-type StoreModel = Store;
-
-type NotificationType = "specific"; // Remover "general"
+ 
 
 export default function SendNotification() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
+  const [selectedStore, setSelectedStore] = useState<StoreModel | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -45,12 +43,12 @@ export default function SendNotification() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // Consulta para buscar lojas
+  // Consulta para buscar lojas usando o novo StoreRepository
   const { data: storesData, isLoading: searchLoading } = useQuery(
     ['stores', debouncedSearchQuery],
-    () => storeRepository.getStores({
+    () => new StoreRepository().listStores({
       name: debouncedSearchQuery,
-      limit: 5 // Limitar a 5 resultados para não sobrecarregar a UI
+      limit: String(5)
     }),
     {
       enabled: debouncedSearchQuery.length >= 2,
@@ -66,12 +64,12 @@ export default function SendNotification() {
   const createNotificationMutation = useMutation(
     () => {
       if (!selectedStore) throw new Error("Loja não selecionada");
-      return notificationRepository.createNotification({
-        storeId: selectedStore.id,
+      const data: CreateNotificationReq = {
         title,
-        message: content,
+        content,
         type: "info",
-      });
+      };
+      return notificationRepository.createNotification(selectedStore.id, data);
     },
     {
       onSuccess: () => {
@@ -100,7 +98,7 @@ export default function SendNotification() {
   };
 
   // Função com tipagem corrigida
-  const handleStoreSelect = (store: Store) => {
+  const handleStoreSelect = (store: StoreModel) => {
     setSelectedStore(store);
     setSearchQuery(""); // Limpar a busca após seleção
   };
@@ -202,7 +200,7 @@ export default function SendNotification() {
                             </div>
                           ) : searchResults.length > 0 ? (
                             <div className="divide-y divide-border">
-                              {searchResults.map((store: Store) => (
+                              {searchResults.map((store: StoreModel) => (
                                 <button
                                   key={store.id}
                                   type="button"
