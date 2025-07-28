@@ -73,4 +73,13 @@ export class Withdrawal {
       store: this.store,
     };
   }
+
+  getStatusLabel(): string {
+    const statusTranslations: Record<WithdrawalStatus, string> = {
+      pending: "Pendente",
+      completed: "Concluído",
+      failed: "Falha"
+    };
+    return statusTranslations[this.status] ?? this.status;
+  }
 }
