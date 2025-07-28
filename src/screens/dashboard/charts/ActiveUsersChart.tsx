@@ -6,8 +6,12 @@ import { ArrowUpRight } from 'lucide-react';
 import { Payment } from '../../../domain/entities/Payment.entity';
 import { User } from '../../../domain/entities/User.entity';
 
+// Importar Store
+import { Store } from '../../../domain/entities/Store.entity';
+
+// Ajustar Props para receber stores
 interface Props {
-  users: User[];
+  stores: Store[];
   payments: Payment[];
   loading?: boolean;
   height?: number;
@@ -59,10 +63,10 @@ function parsePeriodKey(key: string, period: PeriodType): Date {
   return new Date(Number(year), m, 1);
 }
 
-export default function ActiveUsersChart({ users, payments, loading, height = 220 }: Props) {
+export default function ActiveUsersChart({ stores, payments, loading, height = 220 }: Props) {
   const [period, setPeriod] = useState<PeriodType>('week');
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalUsers, setModalUsers] = useState<User[]>([]);
+  const [modalStores, setModalStores] = useState<Store[]>([]);
   const [modalPeriodLabel, setModalPeriodLabel] = useState<string>('');
   const [modalPeriodIdx, setModalPeriodIdx] = useState<number | null>(null);
   const navigate = useNavigate();
@@ -72,38 +76,36 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
     payments.filter(p => ['paid', 'approved', 'withdrawal_processing'].includes(p.status)), [payments]
   );
 
-  // Mapear pagamentos por loja e data, depois cruzar com usuários da loja
-  const userPaymentsByPeriod = useMemo(() => {
+  // Mapear pagamentos por loja e data
+  const storeIdsByPeriod = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     relevantPayments.forEach(p => {
       if (!p.storeId || !p.createdAt) return;
       const date = new Date(p.createdAt);
       const key = getPeriodKey(date, period);
       if (!map[key]) map[key] = new Set();
-      // Adiciona todos os usuários da loja correspondente
-      const storeUsers = users.filter(u => u.storeId === p.storeId || (u.stores && u.stores.some(s => s.id === p.storeId)));
-      storeUsers.forEach(u => map[key].add(u.id));
+      map[key].add(p.storeId);
     });
     return map;
-  }, [relevantPayments, period, users]);
+  }, [relevantPayments, period]);
 
-  // Mapear usuários por período
-  const usersByPeriod = useMemo(() => {
-    const map: Record<string, User[]> = {};
-    Object.entries(userPaymentsByPeriod).forEach(([periodKey, userIds]) => {
-      map[periodKey] = users.filter(u => userIds.has(u.id));
+  // Mapear lojas por período
+  const storesByPeriod = useMemo(() => {
+    const map: Record<string, Store[]> = {};
+    Object.entries(storeIdsByPeriod).forEach(([periodKey, storeIds]) => {
+      map[periodKey] = stores.filter(s => storeIds.has(s.id));
     });
     return map;
-  }, [userPaymentsByPeriod, users]);
+  }, [storeIdsByPeriod, stores]);
 
   // Gerar lista de períodos ordenados
   const periodKeysSorted = useMemo(() => {
-    return Object.keys(userPaymentsByPeriod).sort((a, b) => {
+    return Object.keys(storeIdsByPeriod).sort((a, b) => {
       const da = parsePeriodKey(a, period).getTime();
       const db = parsePeriodKey(b, period).getTime();
       return da - db;
     });
-  }, [userPaymentsByPeriod, period]);
+  }, [storeIdsByPeriod, period]);
 
   // Filtro fixo: últimos 30 dias, 12 semanas ou 12 meses
   const filteredPeriodKeys = useMemo(() => {
@@ -132,12 +134,12 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
       label: period === 'week' && periodKey.includes('-S')
         ? `S${periodKey.split('-S')[1]}/${periodKey.split('-S')[0]}`
         : periodKey,
-      activeUsers: userPaymentsByPeriod[periodKey]?.size || 0
+      activeStores: storeIdsByPeriod[periodKey]?.size || 0
     }));
-  }, [userPaymentsByPeriod, period, filteredPeriodKeys]);
+  }, [storeIdsByPeriod, period, filteredPeriodKeys]);
 
-  // Calcular usuários ativos no último período
-  const lastPeriodActive = data.length > 0 ? data[data.length - 1].activeUsers : 0;
+  // Calcular lojas ativas no último período
+  const lastPeriodActive = data.length > 0 ? data[data.length - 1].activeStores : 0;
 
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
   if (data.length === 0) return (
@@ -157,7 +159,7 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
   // Handler para abrir modal ao clicar no bloco correto
   const handleBarBlockClick = (entry: any) => {
     const idx = data.findIndex(d => d.periodKey === entry.periodKey);
-    setModalUsers(usersByPeriod[entry.periodKey] || []);
+    setModalStores(storesByPeriod[entry.periodKey] || []);
     setModalPeriodLabel(entry.label);
     setModalPeriodIdx(idx);
     setModalOpen(true);
@@ -169,7 +171,7 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
     const newIdx = modalPeriodIdx + direction;
     if (newIdx < 0 || newIdx >= data.length) return;
     const entry = data[newIdx];
-    setModalUsers(usersByPeriod[entry.periodKey] || []);
+    setModalStores(storesByPeriod[entry.periodKey] || []);
     setModalPeriodLabel(entry.label);
     setModalPeriodIdx(newIdx);
   };
@@ -250,7 +252,7 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
         </div>
         {/* Texto da direita só em telas médias para cima */}
         <span className="text-xs text-muted-foreground hidden sm:inline-block">
-          Usuários ativos {getPeriodTitle()} &middot; Último: <b>{lastPeriodActive}</b>
+          Lojas ativas {getPeriodTitle()} &middot; Último: <b>{lastPeriodActive}</b>
         </span>
       </div>
       <div className="flex-1 relative">
@@ -273,21 +275,21 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
             <Tooltip
               contentStyle={{ background: '#18181b', color: '#fff', border: 'none' }}
               formatter={(value) => [
-                <span style={{ color: '#00C49F' }}>{`${value} usuários`}</span>,
-                'Usuários ativos'
+                <span style={{ color: '#00C49F' }}>{`${value} lojas`}</span>,
+                'Lojas ativas'
               ]}
               labelStyle={{ color: '#fff' }}
             />
             <Bar
-              dataKey="activeUsers"
+              dataKey="activeStores"
               fill="#38bdf8"
               radius={[4, 4, 0, 0]}
               maxBarSize={40}
-              name="Usuários ativos"
+              name="Lojas ativas"
             />
           </BarChart>
         </ResponsiveContainer>
-        {/* Overlay para clique no bloco inteiro (sem hover visual) */}
+        {/* Overlay para clique no bloco inteiro */}
         <div className="absolute inset-0 pointer-events-none">
           {data.map((entry, idx) => (
             <div
@@ -303,12 +305,12 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
                 pointerEvents: 'auto'
               }}
               onClick={() => handleBarBlockClick(entry)}
-              title={`Ver usuários ativos em ${entry.label}`}
+              title={`Ver lojas ativas em ${entry.label}`}
             />
           ))}
         </div>
       </div>
-      {/* MODAL DE USUÁRIOS ATIVOS */}
+      {/* MODAL DE LOJAS ATIVAS */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
           <div className="bg-card rounded-lg shadow-lg max-w-lg w-full max-h-[80vh] flex flex-col">
@@ -325,7 +327,7 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
                   <span style={{fontSize: 20, display: 'inline-block'}}>&larr;</span>
                 </button>
                 <h3 className="font-semibold text-base">
-                  Usuários ativos em <span className="text-primary">{modalPeriodLabel}</span>
+                  Lojas ativas em <span className="text-primary">{modalPeriodLabel}</span>
                 </h3>
                 <button
                   className="p-1 rounded hover:bg-muted transition disabled:opacity-30"
@@ -346,34 +348,34 @@ export default function ActiveUsersChart({ users, payments, loading, height = 22
               </button>
             </div>
             <div className="overflow-y-auto px-4 py-2 flex-1">
-              {modalUsers.length === 0 ? (
+              {modalStores.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-6 text-center">
-                  Nenhum usuário encontrado.
+                  Nenhuma loja encontrada.
                 </div>
               ) : (
                 <ul className="divide-y divide-border">
-                  {modalUsers.map(u => (
+                  {modalStores.map(s => (
                     <li
-                      key={u.id}
+                      key={s.id}
                       className="py-2 flex flex-col cursor-pointer rounded transition group"
                       onClick={() => {
                         setModalOpen(false);
-                        navigate(`/users/${u.id}`);
+                        navigate(`/stores/${s.id}`);
                       }}
-                      title="Ver detalhes do usuário"
+                      title="Ver detalhes da loja"
                     >
                       <span className="font-medium text-foreground flex items-center gap-1">
-                        {u.firstName} {u.lastName}
+                        {s.name}
                         <ArrowUpRight className="h-4 w-4 text-primary opacity-70 group-hover:opacity-100" />
                       </span>
-                      <span className="text-xs text-muted-foreground">{u.email}</span>
+                      <span className="text-xs text-muted-foreground">{s.id}</span>
                     </li>
                   ))}
                 </ul>
               )}
             </div>
             <div className="border-t border-border px-4 py-2 text-xs text-muted-foreground flex justify-between">
-              <span>{modalUsers.length} usuário(s)</span>
+              <span>{modalStores.length} loja(s)</span>
               <button
                 className="text-primary hover:underline"
                 onClick={() => setModalOpen(false)}

@@ -69,21 +69,19 @@ export class Payment {
   depixAddress?: string;
   store?: { id: string; name: string };
 
-  constructor(data: PaymentType) {
-    const parsed = PaymentSchema.safeParse(data);
-    if (!parsed.success) {
-      throw new Error(parsed.error.issues.map(e => e.message).join(", "));
-    }
-    Object.assign(this, parsed.data);
+  constructor(data: Partial<PaymentType>) {
+    // Não faz validação, apenas atribui os dados
+    Object.assign(this, data);
   }
 
   static fromModel(model: PaymentModel): Payment {
-    return new Payment(model as PaymentType);
+    // Não faz validação, apenas atribui os dados
+    return new Payment(model as Partial<PaymentType>);
   }
 
   static fromObject(obj: unknown): Payment {
-    const parsed = PaymentSchema.parse(obj);
-    return new Payment(parsed);
+    // Não faz validação, apenas atribui os dados
+    return new Payment(obj as Partial<PaymentType>);
   }
 
   public toModel(): PaymentModel {

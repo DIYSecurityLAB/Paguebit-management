@@ -19,17 +19,21 @@ export class Store {
   whitelabelId!: string;
   createdAt!: string;
   updatedAt!: string;
+  users?: StoreModel["users"]; // Adicionado
+  wallets?: StoreModel["wallets"]; // Adicionado
 
-  constructor(data: StoreType) {
+  constructor(data: StoreType & Partial<Pick<Store, "users" | "wallets">>) {
     const parsed = StoreSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
     }
     Object.assign(this, parsed.data);
+    if ("users" in data) this.users = data.users;
+    if ("wallets" in data) this.wallets = data.wallets;
   }
 
   static fromModel(model: StoreModel): Store {
-    return new Store(model as StoreType);
+    return new Store(model as StoreType & Partial<Pick<Store, "users" | "wallets">>);
   }
 
   public toModel(): StoreModel {
@@ -40,6 +44,8 @@ export class Store {
       whitelabelId: this.whitelabelId,
       createdAt: this.createdAt,
       updatedAt: this.updatedAt,
+      users: this.users,
+      wallets: this.wallets,
     };
   }
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home, Search } from 'lucide-react';
+import { CreditCard, Users, Wallet, Bell, Sun, Moon, Menu, X, Home, Search, Store as StoreIcon } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useWhiteLabelConfig } from '../config/whiteLabel.config';
@@ -36,9 +36,9 @@ export default function Header() {
     location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: Home, key: 'd' },
-    { path: '/payments', label: 'Pagamentos', icon: CreditCard, key: 'p' },
+     { path: '/payments', label: 'Pagamentos', icon: CreditCard, key: 'p' },
     { path: '/users', label: 'Usuários', icon: Users, key: 'u' },
+    { path: '/stores', label: 'Lojas', icon: StoreIcon, key: 'l' }, // <-- Adicionado
     { path: '/withdrawals', label: 'Saques', icon: Wallet, key: 's' },
     { path: '/logs', label: 'Atividade', icon: Search, key: 'a' },
     { path: '/notifications', label: 'Notificações', icon: Bell, key: 'n' },

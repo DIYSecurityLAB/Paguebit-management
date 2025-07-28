@@ -1,53 +1,41 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Eye, ExternalLink, ChevronUp, ChevronDown,
-  ArrowUpDown, CalendarDays, Mail, User as UserIcon
-} from 'lucide-react';
+import { Eye, ExternalLink, ChevronUp, ChevronDown, ArrowUpDown, CalendarDays, User as UserIcon } from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
-import UsersModal from './UsersModal';
-import { User } from '../../domain/entities/User.entity';
-import { UserRepository } from '../../data/repository/user-repository';
+import StoresModal from './StoresModal';
+import { Store } from '../../domain/entities/Store.entity';
+import { StoreRepository } from '../../data/repository/store-repository';
 import { toast } from 'sonner';
 import Select from '../../components/Select';
 
-export default function UsersTable() {
+export default function StoresTable() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState({
     id: '',
-    providerId: '',
-    firstName: '',
-    lastName: '',
-    email: '',
-    documentId: '',
-    phoneNumber: '',
-    documentType: '',
-    referral: '',
-    role: '',
-    active: '',
-    dateRangeFrom: '',
-    dateRangeTo: ''
+    name: '',
+    ownerId: '',
+    whitelabelId: '',
+    createdAtFrom: '',
+    createdAtTo: ''
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [modalLoading, setModalLoading] = useState(false);
 
   const queryClient = useQueryClient();
-  const userRepository = useMemo(() => new UserRepository(), []);
+  const storeRepository = useMemo(() => new StoreRepository(), []);
 
   const { data, isLoading, error } = useQuery(
-    ['users', currentPage, itemsPerPage, filters, orderBy, orderDirection],
+    ['stores', currentPage, itemsPerPage, filters, orderBy, orderDirection],
     async () => {
-      // Monta o objeto de request conforme o model
       const req: any = {
         ...filters,
         page: String(currentPage),
@@ -55,21 +43,15 @@ export default function UsersTable() {
         orderBy,
         order: orderDirection,
       };
-      // Ajusta range de datas se necessário
-      if (filters.dateRangeFrom) req.createdAtFrom = filters.dateRangeFrom;
-      if (filters.dateRangeTo) req.createdAtTo = filters.dateRangeTo;
-      delete req.dateRangeFrom;
-      delete req.dateRangeTo;
-      // Remove campos vazios
       Object.keys(req).forEach(k => req[k] === '' && delete req[k]);
-      const res = await userRepository.listAllUsers(req);
+      const res = await storeRepository.listStores(req);
       return res;
     },
     {
       keepPreviousData: true,
       onError: (err) => {
-        console.error('Erro ao carregar usuários:', err);
-        toast.error('Não foi possível carregar os usuários. Tente novamente.');
+        console.error('Erro ao carregar lojas:', err);
+        toast.error('Não foi possível carregar as lojas. Tente novamente.');
       },
       onSettled: () => {
         setIsFiltering(false);
@@ -89,76 +71,25 @@ export default function UsersTable() {
       placeholder: 'Buscar por ID',
     },
     {
-      key: 'providerId',
-      label: 'Provider ID',
-      type: 'text' as const,
-      placeholder: 'Buscar por Provider ID',
-    },
-    {
-      key: 'firstName',
+      key: 'name',
       label: 'Nome',
       type: 'text' as const,
       placeholder: 'Buscar por nome',
     },
     {
-      key: 'lastName',
-      label: 'Sobrenome',
+      key: 'ownerId',
+      label: 'OwnerId',
       type: 'text' as const,
-      placeholder: 'Buscar por sobrenome',
+      placeholder: 'Buscar por OwnerId',
     },
     {
-      key: 'email',
-      label: 'Email',
+      key: 'whitelabelId',
+      label: 'WhitelabelId',
       type: 'text' as const,
-      placeholder: 'Buscar por email',
+      placeholder: 'Buscar por WhitelabelId',
     },
     {
-      key: 'documentId',
-      label: 'Documento',
-      type: 'text' as const,
-      placeholder: 'Buscar por documento',
-    },
-    {
-      key: 'phoneNumber',
-      label: 'Telefone',
-      type: 'text' as const,
-      placeholder: 'Buscar por telefone',
-    },
-    {
-      key: 'documentType',
-      label: 'Tipo de Documento',
-      type: 'text' as const,
-      placeholder: 'Buscar por tipo de documento',
-    },
-    {
-      key: 'referral',
-      label: 'Indicação',
-      type: 'text' as const,
-      placeholder: 'Buscar por indicação',
-    },
-    {
-      key: 'role',
-      label: 'Função',
-      type: 'select' as const,
-      options: [
-        { value: '', label: 'Todos' },
-        { value: 'USER', label: 'Usuário' },
-        { value: 'MANAGER', label: 'Administrador' },
-        { value: 'SUPER_ADMIN', label: 'Super Admin' },
-      ],
-    },
-    {
-      key: 'active',
-      label: 'Status',
-      type: 'select' as const,
-      options: [
-        { value: '', label: 'Todos' },
-        { value: 'true', label: 'Ativo' },
-        { value: 'false', label: 'Inativo' },
-      ],
-    },
-    {
-      key: 'dateRange',
+      key: 'createdAt',
       label: 'Período de Criação',
       type: 'daterange' as const,
     },
@@ -174,57 +105,41 @@ export default function UsersTable() {
     setCurrentPage(1);
   }, [orderBy]);
 
-  const columns = useMemo<TableColumn<User>[]>(() => [
+  const columns = useMemo<TableColumn<Store>[]>(() => [
     {
       header: 'Nome',
-      accessor: (user: User) => {
-        const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
-        return fullName ? 
-          fullName : 
-          <span className="text-red-500">sem informação</span>;
-      },
-      sortKey: 'firstName',
+      accessor: (store: Store) => store.name || <span className="text-red-500">sem informação</span>,
+      sortKey: 'name',
       sortable: true,
     },
     {
-      header: 'Email',
-      accessor: (user: User) => 
-        user.email || <span className="text-red-500">sem informação</span>,
-      sortKey: 'email',
+      header: 'OwnerId',
+      accessor: (store: Store) => store.ownerId || <span className="text-red-500">sem informação</span>,
+      sortKey: 'ownerId',
       sortable: true,
     },
     {
-      header: 'Documento',
-      accessor: (user: User) => {
-        const document = user.documentId ? 
-          `${user.documentType}: ${user.documentId}` : 
-          null;
-        return document || <span className="text-red-500">sem informação</span>;
-      },
+      header: 'WhitelabelId',
+      accessor: (store: Store) => store.whitelabelId || <span className="text-red-500">sem informação</span>,
+      sortKey: 'whitelabelId',
+      sortable: true,
     },
     {
-      header: 'Telefone',
-      accessor: (user: User) => 
-        user.phoneNumber ? user.phoneNumber : (<span className="text-red-500">sem informação</span>),
-    },
-    {
-      header: 'Função',
-      accessor: (user: User) => (
-        user.role ? 
-          <span className="capitalize">{user.role}</span> :
-          <span className="text-red-500">sem informação</span>
-      ),
+      header: 'Criado em',
+      accessor: (store: Store) => store.createdAt ? new Date(store.createdAt).toLocaleString() : <span className="text-red-500">sem informação</span>,
+      sortKey: 'createdAt',
+      sortable: true,
     },
     {
       header: 'Ações',
-      accessor: (user: User) => (
+      accessor: (store: Store) => (
         <div className="flex space-x-2">
           <Button
             variant="ghost"
             size="sm"
-            onClick={async (e) => {
+            onClick={(e) => {
               e.stopPropagation();
-              await handleOpenUserModal(user);
+              setSelectedStore(store);
             }}
             leftIcon={<Eye className="h-4 w-4" />}
           >
@@ -235,7 +150,7 @@ export default function UsersTable() {
             size="sm"
             onClick={(e) => {
               e.stopPropagation();
-              navigate(`/users/${user.id}`);
+              navigate(`/stores/${store.id}`);
             }}
             leftIcon={<ExternalLink className="h-4 w-4" />}
           >
@@ -246,59 +161,19 @@ export default function UsersTable() {
     },
   ], [navigate]);
 
-  // Função para buscar detalhes completos do usuário ao abrir o modal
-  const handleOpenUserModal = async (user: User) => {
-    setModalLoading(true);
-    try {
-      const userRepository = new UserRepository();
-      const userData = await userRepository.getUserById(user.id);
-      if (userData && userData.id) {
-        setSelectedUser(User.fromModel(userData));
-      } else {
-        toast.error('Não foi possível carregar detalhes do usuário.');
-      }
-    } catch (err) {
-      toast.error('Erro ao buscar detalhes do usuário.');
-    } finally {
-      setModalLoading(false);
-    }
-  };
-
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-    // Sempre monta o objeto de filtros com todos os campos possíveis (vazios se não vierem)
-    const updatedFilters: {
-      id: string;
-      providerId: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      documentId: string;
-      phoneNumber: string;
-      documentType: string;
-      referral: string;
-      role: string;
-      active: string;
-      dateRangeFrom: string;
-      dateRangeTo: string;
-    } = {
+    const updatedFilters: typeof filters = {
       id: '',
-      providerId: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      documentId: '',
-      phoneNumber: '',
-      documentType: '',
-      referral: '',
-      role: '',
-      active: '',
-      dateRangeFrom: '',
-      dateRangeTo: ''
+      name: '',
+      ownerId: '',
+      whitelabelId: '',
+      createdAtFrom: '',
+      createdAtTo: ''
     };
     Object.keys(newFilters).forEach((key) => {
       if (newFilters[key] !== undefined) {
-        // @ts-expect-error: pode haver chaves extras, mas só as conhecidas serão usadas
+        // @ts-expect-error
         updatedFilters[key] = newFilters[key];
       }
     });
@@ -318,30 +193,19 @@ export default function UsersTable() {
       icon: <CalendarDays className="h-4 w-4 text-blue-500" /> 
     },
     { 
-      value: 'email-asc', 
-      label: 'Email (A-Z)', 
-      icon: <Mail className="h-4 w-4 text-green-500" /> 
-    },
-    { 
-      value: 'email-desc', 
-      label: 'Email (Z-A)', 
-      icon: <Mail className="h-4 w-4 text-red-500" /> 
-    },
-    { 
-      value: 'firstName-asc', 
+      value: 'name-asc', 
       label: 'Nome (A-Z)', 
       icon: <UserIcon className="h-4 w-4 text-cyan-500" /> 
     },
     { 
-      value: 'firstName-desc', 
+      value: 'name-desc', 
       label: 'Nome (Z-A)', 
       icon: <UserIcon className="h-4 w-4 text-orange-500" /> 
     },
   ];
 
-  // Converte UserModel para User entity
-  const users: User[] = Array.isArray(data?.data)
-    ? data!.data.map((model: any) => User.fromModel(model))
+  const stores: Store[] = Array.isArray(data?.data)
+    ? data!.data.map((model: any) => Store.fromModel(model))
     : [];
 
   return (
@@ -392,11 +256,11 @@ export default function UsersTable() {
 
       {error ? (
         <div className="text-center p-6 bg-card rounded-lg border border-border">
-          <p className="text-status-rejected">Erro ao carregar os usuários. Tente novamente.</p>
+          <p className="text-status-rejected">Erro ao carregar as lojas. Tente novamente.</p>
           <button 
             onClick={() => {
               setIsFiltering(true);
-              queryClient.invalidateQueries(['users']);
+              queryClient.invalidateQueries(['stores']);
             }}
             className="mt-2 text-sm text-primary hover:underline"
           >
@@ -405,7 +269,7 @@ export default function UsersTable() {
         </div>
       ) : (
         <Table
-          data={users}
+          data={stores}
           columns={columns}
           isLoading={isLoading || isFiltering}
           sortColumn={orderBy}
@@ -424,12 +288,11 @@ export default function UsersTable() {
         />
       )}
 
-      {selectedUser && (
-        <UsersModal
-          user={selectedUser}
-          isOpen={!!selectedUser}
-          onClose={() => setSelectedUser(null)}
-          loading={modalLoading}
+      {selectedStore && (
+        <StoresModal
+          store={selectedStore}
+          isOpen={!!selectedStore}
+          onClose={() => setSelectedStore(null)}
         />
       )}
     </div>

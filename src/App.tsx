@@ -17,6 +17,8 @@ const Login = lazy(() => import('./screens/auth/Login'));
 const NotFound = lazy(() => import('./screens/NotFound'));
 const Dashboard = lazy(() => import('./screens/dashboard/Dashboard'));
 const AuditLogs = lazy(() => import('./screens/audit/AuditLogs'));
+const Stores = lazy(() => import('./screens/stores/Stores'));
+const StoreDetail = lazy(() => import('./screens/stores/StoreDetail'));
 
 const TOKEN_EXPIRY_MARGIN = 60 * 1000; // 1 minuto de margem
 
@@ -68,6 +70,8 @@ function App() {
             <Route path="withdrawals" element={<ProtectedRoute><Withdrawals /></ProtectedRoute>} />
             <Route path="withdrawals/:id" element={<ProtectedRoute><WithdrawalDetail /></ProtectedRoute>} />
             <Route path="notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+            <Route path="stores" element={<ProtectedRoute><Stores /></ProtectedRoute>} />
+            <Route path="stores/:id" element={<ProtectedRoute><StoreDetail /></ProtectedRoute>} />
             {/* Rota para logs de auditoria (oculta do menu principal) */}
             <Route path="logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
           </Route>

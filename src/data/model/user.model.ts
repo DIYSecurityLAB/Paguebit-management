@@ -31,10 +31,11 @@ export interface StoreUserPermissionModel {
 
 export interface StoreUserModel {
   id: string;
-  email: string;
+  name?: string; // <-- adicionado para compatibilidade com ownedStores
+  email?: string;
   firstName?: string;
   lastName?: string;
-  permissions: StoreUserPermissionModel[] | { permission: StorePermissionModel }[];
+  permissions?: StoreUserPermissionModel[] | { permission: StorePermissionModel }[];
 }
 
 export type DocumentTypeModel = "CPF" | "CNPJ" ;
