@@ -2,9 +2,9 @@ import PaymentsTable from './PaymentsTable';
 import PaymentsCard from './PaymentsCard';
 import ViewToggle from '../../components/ViewToggle';
 import ExcelExport from '../../components/ExcelExport';
-import paymentRepository from '../../repository/payment-repository';
-import { Payment, PaymentStatus } from '../../models/types';
-import { toast } from 'sonner';
+import { PaymentRepository } from '../../data/repository/payment-repository';
+import { Payment } from '../../domain/entities/Payment.entity';
+ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useState } from 'react';
 import Button from '../../components/Button';
@@ -13,18 +13,18 @@ import BatchReceiptDownloadModal from './Batchs/BatchReceiptDownloadModal';
 
 export default function Payments() {
   const [isBatchModalOpen, setIsBatchModalOpen] = useState(false);
+  const paymentRepository = new PaymentRepository();
 
   // Função para exportar todos os pagamentos
   const exportPayments = async () => {
     try {
-      // Buscar todos os pagamentos para exportação
-      const response = await paymentRepository.getPayments({
-        limit: 1000, // Limite alto para exportar o máximo possível
+      const response = await paymentRepository.listPayments({
+        limit: '1000',
         orderBy: 'createdAt',
         order: 'desc'
       });
-      
-      return response.data || [];
+      // Retorna PaymentModel[], converter para Payment entity
+      return (response.data || []).map((model: any) => Payment.fromModel(model));
     } catch (error) {
       console.error('Erro ao exportar pagamentos:', error);
       toast.error('Erro ao exportar relatório de pagamentos');
@@ -35,16 +35,11 @@ export default function Payments() {
   // Função para transformar os dados de pagamentos para o formato Excel
   const transformPaymentData = (payments: Payment[]) => {
     return payments.map(payment => {
-      // Extrair informações do usuário
-      const user = (payment as any).User;
-      const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : '';
-      const userEmail = user?.email || payment.email || '';
-      
       // Tradução dos status para o relatório
       const statusTranslation: Record<string, string> = {
         'pending': 'Pendente',
         'receipt_sent': 'Comprovante Enviado',
-        'under_review': 'Em Análise',
+        'review': 'Em Análise',
         'approved': 'Aprovado',
         'not_approved': 'Não Aprovado',
         'paid': 'Pago',
@@ -53,15 +48,12 @@ export default function Payments() {
         'rejected': 'Rejeitado'
       };
 
-      // Formatar os dados para o Excel
       return {
         'ID': payment.id || '-',
-        'Usuário': userName || 'Não informado',
-        'Email': userEmail || 'Não informado',
+        'ID da Loja': payment.storeId || '-',
         'Valor': payment.amount || 0,
         'Status': statusTranslation[payment.status] || payment.status || 'Não informado',
         'Tipo de Transação': payment.transactionType === 'static' ? 'QR Estático' : 'QR Dinâmico',
-        'Modo de Recebimento': payment.receivingMode === 'now' ? 'Imediato' : 'Armazenado',
         'Data de Criação': payment.createdAt ? format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm:ss') : 'Não informado',
         'Última Atualização': payment.updatedAt ? format(new Date(payment.updatedAt), 'dd/MM/yyyy HH:mm:ss') : 'Não informado',
         'Observação': payment.observation || '-'
@@ -69,24 +61,20 @@ export default function Payments() {
     });
   };
 
-  // Definir larguras de colunas personalizadas (em caracteres)
   const columnWidths = {
     'ID': 38,
-    'Usuário': 30,
-    'Email': 35,
+    'ID da Loja': 38,
     'Valor': 15,
     'Status': 20,
     'Tipo de Transação': 15,
-    'Modo de Recebimento': 15,
     'Data de Criação': 20,
     'Última Atualização': 20,
     'Observação': 50,
   };
 
-  // Definir estilo do cabeçalho
   const headerStyle = {
-    backgroundColor: '4B5563', // Cinza escuro sem #
-    fontColor: 'FFFFFF',       // Branco sem #
+    backgroundColor: '4B5563',
+    fontColor: 'FFFFFF',
     fontSize: 12,
     bold: true
   };

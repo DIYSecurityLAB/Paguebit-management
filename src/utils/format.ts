@@ -1,14 +1,12 @@
 import { format, formatDistanceToNow } from 'date-fns';
 
-// Função de formatação de moeda que também suporta formatação compacta
-export const formatCurrency = (value?: number, options?: { compact?: boolean }): string => {
+ export const formatCurrency = (value?: number, options?: { compact?: boolean }): string => {
   if (value === undefined || value === null) return 'R$ 0,00';
   
   const { compact } = options || {};
   
   if (compact) {
-    // Formato compacto para valores grandes
-    if (value >= 1000000) {
+     if (value >= 1000000) {
       return `R$ ${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
       return `R$ ${(value / 1000).toFixed(1)}K`;
@@ -23,8 +21,13 @@ export const formatCurrency = (value?: number, options?: { compact?: boolean }):
   });
 };
 
-export const formatDate = (date: Date | string) => {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+export const formatDate = (date: Date | string | number) => {
+  let dateObj: Date;
+  if (typeof date === 'string' || typeof date === 'number') {
+    dateObj = new Date(date);
+  } else {
+    dateObj = date;
+  }
   return format(dateObj, 'MMM dd, yyyy');
 };
 

@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import { 
   Eye, ExternalLink, ChevronUp, ChevronDown, 
-  ArrowUpDown, CalendarDays, SortAsc, SortDesc, Mail, User as UserIcon 
+  ArrowUpDown, CalendarDays, Mail, User as UserIcon 
 } from 'lucide-react';
 import CardItem from '../../components/CardItem';
 import FilterBar from '../../components/FilterBar';
@@ -11,8 +11,8 @@ import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import UsersModal from './UsersModal';
 import Select from '../../components/Select';
-import { User } from '../../models/types';
-import userRepository from '../../repository/user-repository';
+import { User } from '../../domain/entities/User.entity';
+import { UserRepository } from '../../data/repository/user-repository';
 import { toast } from 'sonner';
 
 export default function UsersCard() {
@@ -20,26 +20,47 @@ export default function UsersCard() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [filters, setFilters] = useState({
-    name: '',
+    id: '',
+    providerId: '',
+    firstName: '',
+    lastName: '',
     email: '',
+    documentId: '',
+    phoneNumber: '',
+    documentType: '',
+    referral: '',
+    role: '',
+    active: '',
+    dateRangeFrom: '',
+    dateRangeTo: ''
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  
+
   const queryClient = useQueryClient();
+  const userRepository = useMemo(() => new UserRepository(), []);
 
   const { data, isLoading, error } = useQuery(
     ['users', currentPage, itemsPerPage, filters, orderBy, orderDirection],
-    () => userRepository.getUsers({
-      page: currentPage,
-      limit: itemsPerPage,
-      ...filters,
-      orderBy,
-      order: orderDirection,
-    }),
+    async () => {
+      const req: any = {
+        ...filters,
+        page: String(currentPage),
+        limit: String(itemsPerPage),
+        orderBy,
+        order: orderDirection,
+      };
+      if (filters.dateRangeFrom) req.createdAtFrom = filters.dateRangeFrom;
+      if (filters.dateRangeTo) req.createdAtTo = filters.dateRangeTo;
+      delete req.dateRangeFrom;
+      delete req.dateRangeTo;
+      Object.keys(req).forEach(k => req[k] === '' && delete req[k]);
+      const res = await userRepository.listAllUsers(req);
+      return res;
+    },
     {
       keepPreviousData: true,
       onError: (err) => {
@@ -52,19 +73,34 @@ export default function UsersCard() {
     }
   );
 
-  // Garantir que o estado de filtragem seja limpo após a conclusão de qualquer operação
   useEffect(() => {
-    if (!isLoading) {
-      setIsFiltering(false);
-    }
+    if (!isLoading) setIsFiltering(false);
   }, [isLoading]);
 
-  const filterOptions = [
+  const filterOptions = useMemo(() => [
     {
-      key: 'name',
+      key: 'id',
+      label: 'ID',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID',
+    },
+    {
+      key: 'providerId',
+      label: 'Provider ID',
+      type: 'text' as const,
+      placeholder: 'Buscar por Provider ID',
+    },
+    {
+      key: 'firstName',
       label: 'Nome',
       type: 'text' as const,
       placeholder: 'Buscar por nome',
+    },
+    {
+      key: 'lastName',
+      label: 'Sobrenome',
+      type: 'text' as const,
+      placeholder: 'Buscar por sobrenome',
     },
     {
       key: 'email',
@@ -72,50 +108,134 @@ export default function UsersCard() {
       type: 'text' as const,
       placeholder: 'Buscar por email',
     },
-  ];
+    {
+      key: 'documentId',
+      label: 'Documento',
+      type: 'text' as const,
+      placeholder: 'Buscar por documento',
+    },
+    {
+      key: 'phoneNumber',
+      label: 'Telefone',
+      type: 'text' as const,
+      placeholder: 'Buscar por telefone',
+    },
+    {
+      key: 'documentType',
+      label: 'Tipo de Documento',
+      type: 'text' as const,
+      placeholder: 'Buscar por tipo de documento',
+    },
+    {
+      key: 'referral',
+      label: 'Indicação',
+      type: 'text' as const,
+      placeholder: 'Buscar por indicação',
+    },
+    {
+      key: 'role',
+      label: 'Função',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'USER', label: 'Usuário' },
+        { value: 'MANAGER', label: 'Administrador' },
+        { value: 'SUPER_ADMIN', label: 'Super Admin' },
+      ],
+    },
+    {
+      key: 'active',
+      label: 'Status',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'true', label: 'Ativo' },
+        { value: 'false', label: 'Inativo' },
+      ],
+    },
+    {
+      key: 'dateRange',
+      label: 'Período de Criação',
+      type: 'daterange' as const,
+    },
+  ], []);
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
-    // Ativa o indicador de carregamento enquanto os filtros são aplicados
     setIsFiltering(true);
-    
-    // Se o objeto newFilters estiver vazio, resetamos todos os filtros
-    if (Object.keys(newFilters).length === 0) {
-      console.log("Limpando todos os filtros");
-      setFilters({
-        name: '',
-        email: '',
-      });
-      
-      // Força uma nova consulta ao limpar os filtros
-      setTimeout(() => {
-        queryClient.invalidateQueries(['users']);
-      }, 100);
-    } else {
-      console.log("Aplicando filtros:", newFilters);
-      // Atualizando apenas as propriedades fornecidas
-      const updatedFilters = {
-        name: '',
-        email: '',
-      };
-      
-      if (newFilters.name) updatedFilters.name = newFilters.name;
-      if (newFilters.email) updatedFilters.email = newFilters.email;
-      
-      setFilters(updatedFilters);
-    }
-    
-    // Resetar para a primeira página quando filtrar
-    setCurrentPage(1);
-  }, [queryClient]);
 
-  // Adicionar suporte para mudar ordenação
+    // Se não houver filtros, zera todos os campos
+    if (
+      !newFilters ||
+      Object.keys(newFilters).length === 0 ||
+      Object.values(newFilters).every(v => v === '' || v === undefined)
+    ) {
+      setFilters({
+        id: '',
+        providerId: '',
+        firstName: '',
+        lastName: '',
+        email: '',
+        documentId: '',
+        phoneNumber: '',
+        documentType: '',
+        referral: '',
+        role: '',
+        active: '',
+        dateRangeFrom: '',
+        dateRangeTo: ''
+      });
+      setCurrentPage(1);
+      return;
+    }
+
+    // Sempre monta o objeto de filtros com todos os campos possíveis (vazios se não vierem)
+    const updatedFilters: {
+      id: string;
+      providerId: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      documentId: string;
+      phoneNumber: string;
+      documentType: string;
+      referral: string;
+      role: string;
+      active: string;
+      dateRangeFrom: string;
+      dateRangeTo: string;
+    } = {
+      id: '',
+      providerId: '',
+      firstName: '',
+      lastName: '',
+      email: '',
+      documentId: '',
+      phoneNumber: '',
+      documentType: '',
+      referral: '',
+      role: '',
+      active: '',
+      dateRangeFrom: '',
+      dateRangeTo: ''
+    };
+
+    Object.keys(newFilters).forEach((key) => {
+      if (newFilters[key] !== undefined) {
+        // @ts-expect-error: pode haver chaves extras, mas só as conhecidas serão usadas
+        updatedFilters[key] = newFilters[key];
+      }
+    });
+
+    setFilters(updatedFilters);
+    setCurrentPage(1);
+  }, []);
+
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setOrderBy(field);
     setOrderDirection(direction);
-    setCurrentPage(1); // Voltar para a primeira página
+    setCurrentPage(1);
   }, []);
 
-  // Opções para o Select de ordenação com ícones
   const sortOptions = [
     { 
       value: 'createdAt-desc', 
@@ -148,6 +268,11 @@ export default function UsersCard() {
       icon: <UserIcon className="h-4 w-4 text-orange-500" /> 
     },
   ];
+
+  // Converte UserModel para User entity
+  const users: User[] = Array.isArray(data?.data)
+    ? data!.data.map((model: any) => User.fromModel(model))
+    : [];
 
   return (
     <div className="space-y-4">
@@ -218,8 +343,21 @@ export default function UsersCard() {
               Tentar novamente
             </button>
           </div>
+        ) : !users.length ? (
+          <div className="col-span-1 text-center p-6 bg-card rounded-lg border border-border">
+            <p className="text-muted-foreground">Nenhum usuário encontrado</p>
+            <button 
+              onClick={() => {
+                setIsFiltering(true);
+                queryClient.invalidateQueries(['users']);
+              }}
+              className="mt-2 text-sm text-primary hover:underline"
+            >
+              Tentar novamente
+            </button>
+          </div>
         ) : (
-          data?.data.map((user) => {
+          users.map((user) => {
             const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim();
             const isMissingInfo = !fullName;
 
@@ -283,11 +421,11 @@ export default function UsersCard() {
         )}
       </div>
 
-      {data && (
+      {data && typeof data.total === 'number' && (
         <Pagination
           currentPage={currentPage}
           itemsPerPage={itemsPerPage}
-          totalItems={data.pagination.total}
+          totalItems={data.total}
           onPageChange={setCurrentPage}
           onItemsPerPageChange={setItemsPerPage}
         />

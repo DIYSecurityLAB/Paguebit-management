@@ -1,0 +1,47 @@
+{
+  "id": "paguebit",
+  "name": "PagueBit",
+  "supportWhatsapp": "+5511919050416",
+  "colors": {
+    "primary": "#FF6B00",
+    "secondary": "#1E293B",
+    "accent": "#FF8533",
+    "background": "#ffffff",
+    "backgroundSecondary": "#f8f9fa",
+    "text": "#0F172A",
+    "primaryHover": "#E65000",
+    "secondaryHover": "#0F172A",
+    "success": "#28a745",
+    "error": "#dc3545",
+    "warning": "#ffc107",
+    "dark": {
+      "primary": "#FF6B00",
+      "secondary": "#334155",
+      "accent": "#FF8533",
+      "background": "#0F172A",
+      "backgroundSecondary": "#1E293B",
+      "text": "#F8FAFC",
+      "primaryHover": "#E65000",
+      "secondaryHover": "#475569",
+      "success": "#22c55e",
+      "error": "#ef4444",
+      "warning": "#f59e0b"
+    }
+  },
+  "fonts": {
+    "main": "Lexend Deca, sans-serif",
+    "headings": "Lexend Deca, sans-serif"
+  },
+  "logo": {
+    "simple": "/paguebit/logo.svg",
+    "large": "/paguebit/logo_completa.svg",
+    "simpleDark": "/paguebit/logo_white.svg",
+    "largeDark": "/paguebit/logo_completa_white.svg"
+  },
+  "urls": {
+    "website": "https://paguebit.com",
+    "tutorials": "https://paguebit.com/tutoriais",
+    "management": "https://management.paguebit.com",
+    "support": "https://wa.me/5511919050416"
+  }
+}

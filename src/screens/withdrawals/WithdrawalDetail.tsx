@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { format } from 'date-fns';
 import { ArrowLeft, Copy } from 'lucide-react';
 import Loading from '../../components/Loading';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import Table, { TableColumn } from '../../components/Table';
 import PaymentsModal from '../payments/PaymentsModal';
-import { Withdrawal, Payment } from '../../models/types';
-import withdrawalRepository from '../../repository/withdrawal-repository';
-import paymentRepository from '../../repository/payment-repository';
-import { formatCurrency } from '../../utils/format';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import { WithdrawalModel } from '../../data/model/withdrawal.model';
+import { PaymentRepository } from '../../data/repository/payment-repository';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 
 export default function WithdrawalDetail() {
   const { id } = useParams();
@@ -20,7 +21,10 @@ export default function WithdrawalDetail() {
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [copiedQrId, setCopiedQrId] = useState<string | null>(null);
 
-  const { data: withdrawal, isLoading, error } = useQuery(
+  const withdrawalRepository = new WithdrawalRepository();
+  const paymentRepository = new PaymentRepository();
+
+  const { data: withdrawalModel, isLoading, error } = useQuery(
     ['withdrawal', id],
     () => withdrawalRepository.getWithdrawalById(id as string),
     {
@@ -32,7 +36,10 @@ export default function WithdrawalDetail() {
     }
   );
 
-  const { data: payments, isLoading: isLoadingPayments } = useQuery(
+  // Converte WithdrawalModel para Withdrawal entity (validação e métodos)
+  const withdrawal = withdrawalModel ? Withdrawal.fromModel(withdrawalModel as WithdrawalModel) : undefined;
+
+  const { data: paymentsRaw, isLoading: isLoadingPayments } = useQuery(
     ['withdrawal-payments', withdrawal?.paymentIds],
     async () => {
       if (!withdrawal?.paymentIds?.length) return [];
@@ -45,6 +52,9 @@ export default function WithdrawalDetail() {
       enabled: !!withdrawal?.paymentIds?.length,
     }
   );
+
+  // Converte PaymentModel[] para Payment[]
+  const payments = paymentsRaw ? paymentsRaw.map(p => Payment.fromModel(p)) : [];
 
   // Função para copiar o QR Code ID
   const handleCopyQrCodeId = (qrCodeId: string) => {
@@ -79,7 +89,7 @@ export default function WithdrawalDetail() {
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                handleCopyQrCodeId(payment.qrCodeId);
+                handleCopyQrCodeId(payment.qrCodeId!);
               }}
               className="p-1 rounded hover:bg-muted transition-colors"
               title="Copiar QR Code ID"
@@ -97,7 +107,10 @@ export default function WithdrawalDetail() {
     },
     {
       header: 'Data de Criação',
-      accessor: (payment: Payment) => format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm'),
+      accessor: (payment: Payment) =>
+        payment.createdAt
+          ? formatDateTime(payment.createdAt)
+          : '-',
     },
   ] as TableColumn<Payment>[];
 
@@ -164,6 +177,10 @@ export default function WithdrawalDetail() {
                 <label className="text-sm text-muted-foreground">Carteira de Destino</label>
                 <p className="font-medium break-all">{withdrawal?.destinationWallet}</p>
               </div>
+              <div>
+                <label className="text-sm text-muted-foreground">ID da Loja</label>
+                <p className="font-medium break-all">{withdrawal?.storeId}</p>
+              </div>
             </div>
           </div>
 
@@ -171,20 +188,20 @@ export default function WithdrawalDetail() {
             <h2 className="text-lg font-semibold mb-4">Detalhes de Processamento</h2>
             <div className="space-y-4">
               <div>
-                <label className="text-sm text-muted-foreground">ID do Usuário</label>
-                <p className="font-medium break-all">{withdrawal?.userId}</p>
-              </div>
-              <div>
                 <label className="text-sm text-muted-foreground">Criado em</label>
                 <p className="font-medium">
-                  {withdrawal?.createdAt ? format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm:ss') : '-'}
+                  {withdrawal?.createdAt
+                    ? formatDateTime(withdrawal.createdAt)
+                    : '-'}
                 </p>
               </div>
               {withdrawal?.completedAt && (
                 <div>
                   <label className="text-sm text-muted-foreground">Concluído em</label>
                   <p className="font-medium">
-                    {format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm:ss')}
+                    {withdrawal.completedAt
+                      ? formatDateTime(withdrawal.completedAt)
+                      : '-'}
                   </p>
                 </div>
               )}
@@ -235,3 +252,4 @@ export default function WithdrawalDetail() {
     </div>
   );
 }
+ 

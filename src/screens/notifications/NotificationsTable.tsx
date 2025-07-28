@@ -3,21 +3,22 @@ import { useQuery } from 'react-query';
 import { format } from 'date-fns';
 import { Eye } from 'lucide-react';
 import Table from '../../components/Table';
-import FilterBar from '../../components/FilterBar';
-import Pagination from '../../components/Pagination';
+ import Pagination from '../../components/Pagination';
 import Button from '../../components/Button';
 import NotificationModal from './NotificationModal';
-import { NotifyModel } from '../../models/types';
-import notificationRepository from '../../repository/notification-repository';
+import { NotificationModel } from '../../data/model/notification.model';
+import { StoreModel } from '../../data/model/store.model';
+import notificationRepository from '../../data/repository/notification-repository';
+import { StoreRepository } from '../../data/repository/store-repository';
 
 export default function NotificationsTable() {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [selectedNotification, setSelectedNotification] = useState<NotifyModel | null>(null);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationModel | null>(null);
 
   const { data, isLoading } = useQuery(
     ['notifications', currentPage, itemsPerPage],
-    () => notificationRepository.getAllNotifications({
+    () => notificationRepository.listNotifications({
       page: currentPage,
       limit: itemsPerPage,
       orderBy: 'createdAt',
@@ -28,23 +29,40 @@ export default function NotificationsTable() {
     }
   );
 
-  const notifications = data?.notifications || [];
-  const totalItems = notifications.length || 0;
+  // Buscar todas as lojas para montar o mapa id->nome usando o novo StoreRepository
+  const { data: storesData } = useQuery(
+    ['stores', 'all'],
+    () => new StoreRepository().listStores({ limit: String(100) }),
+    { staleTime: 60000 }
+  );
+  const stores = Array.isArray(storesData?.data) ? storesData.data : [];
+  const storeMap = stores.reduce<Record<string, string>>((acc, store: StoreModel) => {
+    acc[store.id] = store.name || store.id;
+    return acc;
+  }, {});
+
+  const notifications = data?.data || [];
+  const totalItems = data?.total || 0;
 
   const columns = [
     {
       header: 'Title',
-      accessor: (notification: NotifyModel) => notification.title || 'Sem título',
+      accessor: (notification: NotificationModel) => notification.title || 'Sem título',
     },
     {
       header: 'Type',
-      accessor: (notification: NotifyModel) => (
+      accessor: (notification: NotificationModel) => (
         <span className="capitalize">{notification.type}</span>
       ),
     },
     {
+      header: 'Store',
+      accessor: (notification: NotificationModel) =>
+        storeMap[notification.storeId ?? ''] || notification.storeId || 'N/A',
+    },
+    {
       header: 'Read',
-      accessor: (notification: NotifyModel) => (
+      accessor: (notification: NotificationModel) => (
         <span className={notification.read ? 'text-status-completed' : 'text-status-pending'}>
           {notification.read ? 'Yes' : 'No'}
         </span>
@@ -52,12 +70,12 @@ export default function NotificationsTable() {
     },
     {
       header: 'Created At',
-      accessor: (notification: NotifyModel) => 
+      accessor: (notification: NotificationModel) => 
         notification.createdAt ? format(new Date(notification.createdAt), 'MMM dd, yyyy HH:mm') : 'N/A',
     },
     {
       header: 'Actions',
-      accessor: (notification: NotifyModel) => (
+      accessor: (notification: NotificationModel) => (
         <Button
           variant="ghost"
           size="sm"

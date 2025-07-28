@@ -1,0 +1,47 @@
+{
+  "id": "paguepay",
+  "name": "PaguePay",
+  "supportWhatsapp": "+5511987654321",
+  "colors": {
+    "primary": "#0044FE",
+    "secondary": "#64748b",
+    "accent": "#0ea5e9",
+    "background": "#ffffff",
+    "backgroundSecondary": "#f1f5f9",
+    "text": "#0f172a",
+    "primaryHover": "#0033CC",
+    "secondaryHover": "#475569",
+    "success": "#10b981",
+    "error": "#ef4444",
+    "warning": "#f59e0b",
+    "dark": {
+      "primary": "#0044FE",
+      "secondary": "#94a3b8",
+      "accent": "#0ea5e9",
+      "background": "#0f172a",
+      "backgroundSecondary": "#1e293b",
+      "text": "#f1f5f9",
+      "primaryHover": "#1a56db",
+      "secondaryHover": "#64748b",
+      "success": "#10b981",
+      "error": "#ef4444",
+      "warning": "#f59e0b"
+    }
+  },
+  "fonts": {
+    "main": "Lexend Deca, sans-serif",
+    "headings": "Lexend Deca, sans-serif"
+  },
+  "logo": {
+    "simple": "/paguepay/logo.png",
+    "large": "/paguepay/logo_completa.png",
+    "simpleDark": "/paguepay/logo_white.png",
+    "largeDark": "/paguepay/logo_completa_white.png"
+  },
+  "urls": {
+    "website": "https://paguepay.com",
+    "tutorials": "https://paguepay.com/tutoriais",
+    "management": "https://management.paguepay.com",
+    "support": "https://t.me/paguepay"
+  }
+}

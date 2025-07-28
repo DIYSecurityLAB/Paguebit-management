@@ -7,19 +7,17 @@ import Loading from '../../components/Loading';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import ImageViewer from '../../components/ImageViewer';
-import { Payment, PaymentStatus } from '../../models/types';
-import paymentRepository from '../../repository/payment-repository';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { PaymentStatus } from '../../data/model/payment.model';
+import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
-import apiClient from '../../datasource/api-client';
 import { toast } from 'sonner';
 import Tesseract from 'tesseract.js';
-import { useAuth } from '../../contexts/AuthContext';
 
 export default function PaymentDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
   const [notFound, setNotFound] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -27,7 +25,9 @@ export default function PaymentDetail() {
   const [copiedId, setCopiedId] = useState(false);
   const [copiedQrId, setCopiedQrId] = useState(false);
 
-  const { data: payment, isLoading, error } = useQuery(
+  const paymentRepository = new PaymentRepository();
+
+  const { data: paymentModel, isLoading, error } = useQuery(
     ['payment', id],
     () => paymentRepository.getPaymentById(id as string),
     {
@@ -39,14 +39,13 @@ export default function PaymentDetail() {
     }
   );
 
+  // Converte para entity
+  const payment = paymentModel ? Payment.fromModel(paymentModel) : undefined;
+
   const updateStatusMutation = useMutation(
     (status: PaymentStatus) => paymentRepository.updatePaymentStatus(
       id as string,
-      status,
-      undefined,
-      undefined,
-      user?.uid, // userId para auditoria
-      payment?.status // status anterior
+      { status }
     ),
     {
       onSuccess: () => {
@@ -69,20 +68,15 @@ export default function PaymentDetail() {
     try {
       setIsDownloading(true);
       const fileName = `comprovante_${payment.email || 'pagamento'}_${format(new Date(payment.createdAt), 'yyyy-MM-dd')}_${payment.amount}.jpg`;
-      
-      // Verifica se já é um Data URL completo ou apenas a string base64
       const dataUrl = payment.receipt.startsWith('data:') 
         ? payment.receipt 
         : `data:image/jpeg;base64,${payment.receipt}`;
-      
-      // Download direto usando elemento <a>
       const link = document.createElement('a');
       link.href = dataUrl;
       link.download = fileName;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      
       toast.success('Comprovante baixado com sucesso');
     } catch (error) {
       toast.error('Falha ao baixar comprovante');
@@ -93,7 +87,7 @@ export default function PaymentDetail() {
   };
 
   const handleApprovePayment = async () => {
-    await updateStatusMutation.mutateAsync(PaymentStatus.APPROVED); // Corrigido para APPROVED
+    await updateStatusMutation.mutateAsync(PaymentStatus.APPROVED);
   };
 
   const handleRejectPayment = async () => {
@@ -260,23 +254,21 @@ export default function PaymentDetail() {
               <div className="space-y-4">
                 <div>
                   <label className="text-sm text-muted-foreground">ID do Usuário</label>
-                  <p className="font-medium break-all">{payment?.userId}</p>
+                  <p className="font-medium break-all">{(payment as any)?.userId}</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Nome Completo</label>
                   <p className="font-medium">{(() => {
-                    const user = (payment as any).User;
-                    if (user) {
-                      const firstName = user.firstName || '';
-                      const lastName = user.lastName || '';
-                      return [firstName, lastName].filter(Boolean).join(' ') || 'Não informado';
+                    // Se houver store, mostra o nome da loja
+                    if (payment?.store && payment.store.name) {
+                      return payment.store.name;
                     }
                     return 'Não informado';
                   })()}</p>
                 </div>
                 <div>
                   <label className="text-sm text-muted-foreground">Email</label>
-                  <p className="font-medium">{(payment as any).User?.email || payment?.email || 'Não informado'}</p>
+                  <p className="font-medium">{payment?.email || 'Não informado'}</p>
                 </div>
               </div>
               
@@ -398,3 +390,4 @@ export default function PaymentDetail() {
     </>
   );
 }
+ 

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
-import withdrawalRepository from '../repository/withdrawal-repository';
+import { WithdrawalRepository } from '../data/repository/withdrawal-repository';
+import { Withdrawal } from '../domain/entities/Withdrawal.entity';
+import { WithdrawalModel } from '../data/model/withdrawal.model';
 import { formatCurrency } from '../utils/format';
 import { Coins } from 'lucide-react';
 
@@ -13,17 +15,25 @@ interface NetworkSummary {
 
 export default function WithdrawalNetworkSummary() {
   const [networkSummaries, setNetworkSummaries] = useState<NetworkSummary[]>([]);
-  
+  const withdrawalRepository = new WithdrawalRepository();
+
   // Buscar todos os saques pendentes para calcular o resumo por rede
   const { data, isLoading } = useQuery(
     ['pending-withdrawals-summary'],
     async () => {
       // Busca apenas saques pendentes para o resumo
-      const response = await withdrawalRepository.getWithdrawals({
+      const response = await withdrawalRepository.listWithdrawals({
         status: 'pending',
-        limit: 1000 // Limite alto para pegar todos os pendentes
+        limit: '1000' // Limite alto para pegar todos os pendentes (string pois o tipo espera string)
       });
-      return response.data || [];
+      // Garante que sempre retorna array de WithdrawalModel
+      if (response && Array.isArray(response.data)) {
+        return response.data;
+      }
+      if (response && response.data && typeof response.data === 'object' && 'length' in response.data) {
+        return Array.from(response.data) as WithdrawalModel[];
+      }
+      return [];
     },
     {
       refetchInterval: 60000, // Atualiza a cada 1 minuto
@@ -42,10 +52,18 @@ export default function WithdrawalNetworkSummary() {
 
   // Calcula o resumo sempre que os dados mudam
   useEffect(() => {
-    if (!data) return;
+    // Garante que data é sempre array de WithdrawalModel
+    const withdrawals: WithdrawalModel[] = Array.isArray(data) ? data : [];
+    if (!withdrawals || withdrawals.length === 0) {
+      setNetworkSummaries([]);
+      return;
+    }
+
+    // Converte WithdrawalModel para Withdrawal entity para garantir validação e métodos
+    const withdrawalEntities = withdrawals.map(w => Withdrawal.fromModel(w));
 
     // Agrupar saques por tipo de rede e somar valores
-    const summary = data.reduce((acc: Record<string, number>, withdrawal) => {
+    const summary = withdrawalEntities.reduce((acc: Record<string, number>, withdrawal) => {
       const networkType = withdrawal.destinationWalletType;
       if (!acc[networkType]) {
         acc[networkType] = 0;
@@ -75,7 +93,11 @@ export default function WithdrawalNetworkSummary() {
 
   // Se não há dados ou está carregando, não exibe nada
   if (isLoading || networkSummaries.length === 0) {
-    return null;
+    return (
+      <div className="mb-4 bg-card border border-border rounded-lg p-4 shadow-sm text-center text-muted-foreground">
+        Nenhum saque pendente disponível para resumo por rede.
+      </div>
+    );
   }
 
   return (

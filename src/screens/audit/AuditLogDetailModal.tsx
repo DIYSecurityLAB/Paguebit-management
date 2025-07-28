@@ -1,9 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import Modal from '../../components/Modal';
-import Button from '../../components/Button';
-import { Copy } from 'lucide-react';
-import { AuditLog } from '../../models/types';
+ import { Copy } from 'lucide-react';
+import { AuditLog } from '../../domain/entities/AuditLog.entity';
 
 interface AuditLogDetailModalProps {
   log: AuditLog;
@@ -65,160 +64,37 @@ export default function AuditLogDetailModal({ log, isOpen, onClose }: AuditLogDe
           <div>
             <label className="text-sm text-muted-foreground">Data/Hora</label>
             <p className="font-medium">
-              {format(new Date(log.createdAt), "dd/MM/yyyy HH:mm:ss")}
+              {log.createdAt instanceof Date
+                ? format(log.createdAt, "dd/MM/yyyy HH:mm:ss")
+                : (typeof log.createdAt === 'string' && log.createdAt.length > 0
+                  ? (() => { try { return format(new Date(log.createdAt), "dd/MM/yyyy HH:mm:ss"); } catch { return '-'; } })()
+                  : '-')}
             </p>
           </div>
-          
           <div>
             <label className="text-sm text-muted-foreground">Ação</label>
             <p className="font-medium">{log.action}</p>
           </div>
-          
-          {/* Informações do usuário que realizou a ação, com detalhes melhorados */}
-          <div className="sm:col-span-2">
-            <label className="text-sm text-muted-foreground">Usuário</label>
-            <div className="bg-muted/30 rounded-md p-3 mt-1">
-              {log.user ? (
-                <div className="space-y-1">
-                  <p className="font-medium">{log.user.name}</p>
-                  <p className="text-sm text-muted-foreground">{log.user.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="font-mono text-xs">ID: {log.user.id}</span>
-                    <button
-                      type="button"
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                      onClick={() => handleCopy(log.user?.id, 'userId')}
-                      title="Copiar ID"
-                    >
-                      <Copy className="h-3 w-3" />
-                    </button>
-                    {copied === 'userId' && (
-                      <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <span className="font-mono text-xs break-all">{log.userId}</span>
-                  <button
-                    type="button"
-                    className="p-1 rounded hover:bg-muted transition-colors"
-                    onClick={() => handleCopy(log.userId, 'userId')}
-                    title="Copiar ID"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </button>
-                  {copied === 'userId' && (
-                    <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-          
-          {/* Usuário afetado (se existir) */}
-          {log.affectedUserId && (
-            <div className="sm:col-span-2">
-              <label className="text-sm text-muted-foreground">Usuário Afetado</label>
-              <div className="bg-muted/30 rounded-md p-3 mt-1">
-                {log.affectedUser ? (
-                  <div className="space-y-1">
-                    <p className="font-medium">{log.affectedUser.name}</p>
-                    <p className="text-sm text-muted-foreground">{log.affectedUser.email}</p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="font-mono text-xs">ID: {log.affectedUser.id}</span>
-                      <button
-                        type="button"
-                        className="p-1 rounded hover:bg-muted transition-colors"
-                        onClick={() => handleCopy(log.affectedUser?.id, 'affectedUserId')}
-                        title="Copiar ID"
-                      >
-                        <Copy className="h-3 w-3" />
-                      </button>
-                      {copied === 'affectedUserId' && (
-                        <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs break-all">{log.affectedUserId}</span>
-                    <button
-                      type="button"
-                      className="p-1 rounded hover:bg-muted transition-colors"
-                      onClick={() => handleCopy(log.affectedUserId, 'affectedUserId')}
-                      title="Copiar ID"
-                    >
-                      <Copy className="h-4 w-4" />
-                    </button>
-                    {copied === 'affectedUserId' && (
-                      <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          
-          {log.paymentId && (
+          {/* Campos novos: storeId, whitelabelId, performedBy */}
+          {log.storeId && (
             <div>
-              <label className="text-sm text-muted-foreground">ID do Pagamento</label>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs break-all">{log.paymentId}</span>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-muted transition-colors"
-                  onClick={() => handleCopy(log.paymentId, 'paymentId')}
-                  title="Copiar ID"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-                {copied === 'paymentId' && (
-                  <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                )}
-              </div>
+              <label className="text-sm text-muted-foreground">ID da Loja</label>
+              <span className="font-mono text-xs break-all">{log.storeId}</span>
             </div>
           )}
-          
-          {log.withdrawalId && (
+          {log.whitelabelId && (
             <div>
-              <label className="text-sm text-muted-foreground">ID do Saque</label>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs break-all">{log.withdrawalId}</span>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-muted transition-colors"
-                  onClick={() => handleCopy(log.withdrawalId, 'withdrawalId')}
-                  title="Copiar ID"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-                {copied === 'withdrawalId' && (
-                  <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                )}
-              </div>
+              <label className="text-sm text-muted-foreground">Whitelabel</label>
+              <span className="font-mono text-xs break-all">{log.whitelabelId}</span>
             </div>
           )}
-          
-          {log.notificationId && (
+          {log.performedBy && (
             <div>
-              <label className="text-sm text-muted-foreground">ID da Notificação</label>
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-xs break-all">{log.notificationId}</span>
-                <button
-                  type="button"
-                  className="p-1 rounded hover:bg-muted transition-colors"
-                  onClick={() => handleCopy(log.notificationId, 'notificationId')}
-                  title="Copiar ID"
-                >
-                  <Copy className="h-4 w-4" />
-                </button>
-                {copied === 'notificationId' && (
-                  <span className="text-xs text-green-600 ml-1">Copiado!</span>
-                )}
-              </div>
+              <label className="text-sm text-muted-foreground">Realizado por</label>
+              <span className="font-mono text-xs break-all">{log.performedBy}</span>
             </div>
           )}
+          {/* ...existing code... */}
         </div>
 
         {previousValue && (

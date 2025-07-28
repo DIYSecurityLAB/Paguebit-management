@@ -1,25 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState  } from 'react';
 import { useQuery } from 'react-query';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { 
-  Bell, 
-  Filter, 
+   Filter, 
   ChevronDown, 
   Search, 
   LayoutGrid, 
   Table as TableIcon, 
-  PlusCircle, 
-  AlertCircle,
+   AlertCircle,
   Calendar,
-  Clock,
-  History,
+   History,
   Send
 } from 'lucide-react';
-import { NotifyModel } from '../../models/types';
+import { NotificationModel } from '../../data/model/notification.model';
 import NotificationsTable from './NotificationsTable';
 import NotificationModal from './NotificationModal';
-import notificationRepository from '../../repository/notification-repository';
+import notificationRepository from '../../data/repository/notification-repository';
 import Button from '../../components/Button';
 import SendNotification from './SendNotification';
 
@@ -32,13 +29,14 @@ export default function Notifications() {
   // Estados para controle da interface
   const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedNotification, setSelectedNotification] = useState<NotifyModel | null>(null);
+  const [selectedNotification, setSelectedNotification] = useState<NotificationModel | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   
   // Estados de filtros
   const [filters, setFilters] = useState({
     page: 1,
     limit: 10,
+    storeId: undefined as string | undefined,
     type: undefined as string | undefined,
     read: undefined as boolean | undefined,
     search: undefined as string | undefined
@@ -47,14 +45,14 @@ export default function Notifications() {
   // Carregar notificações
   const { data, isLoading, refetch } = useQuery(
     ['notifications', filters],
-    () => notificationRepository.getAllNotifications(filters),
+    () => notificationRepository.listNotifications(filters),
     {
       keepPreviousData: true,
       enabled: activeTab === 'history',
     }
   );
 
-  const notifications = data?.notifications || [];
+  const notifications = data?.data || [];
   
   // Função para aplicar filtros
   const applyFilters = (newFilters: typeof filters) => {
@@ -71,6 +69,7 @@ export default function Notifications() {
     setFilters({
       page: 1,
       limit: 10,
+      storeId: undefined,
       type: undefined,
       read: undefined,
       search: undefined
@@ -100,7 +99,7 @@ export default function Notifications() {
   };
 
   // Função para visualizar detalhes da notificação
-  const handleViewNotificationDetails = (notification: NotifyModel) => {
+  const handleViewNotificationDetails = (notification: NotificationModel) => {
     setSelectedNotification(notification);
     setIsDetailModalOpen(true);
   };
@@ -131,7 +130,7 @@ export default function Notifications() {
 
     return (
       <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {notifications.map((notification) => (
+        {notifications.map((notification: NotificationModel) => (
           <div 
             key={notification.id} 
             className="bg-card border border-border rounded-lg shadow-sm overflow-hidden hover:border-primary transition-colors"
@@ -148,7 +147,7 @@ export default function Notifications() {
                   {notification.read ? "Lida" : "Não lida"}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{notification.message}</p>
+              <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{notification.content}</p>
               <div className="flex justify-between items-center text-xs text-muted-foreground">
                 <span className="capitalize">{notification.type}</span>
                 <span className="flex items-center gap-1">

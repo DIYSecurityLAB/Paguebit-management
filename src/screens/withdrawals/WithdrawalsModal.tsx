@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useMutation, useQuery, useQueryClient } from 'react-query';
+import { useState, useEffect, useMemo } from 'react';
+import { useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
 import { Link } from 'react-router-dom';
 import { 
@@ -11,14 +11,16 @@ import Modal from '../../components/Modal';
 import Button from '../../components/Button';
 import StatusBadge from '../../components/StatusBadge';
 import Table from '../../components/Table';
-import { Withdrawal, Payment } from '../../models/types';
-import withdrawalRepository from '../../repository/withdrawal-repository';
-import paymentRepository from '../../repository/payment-repository';
-import { formatCurrency } from '../../utils/format';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
+import { Payment } from '../../domain/entities/Payment.entity';
+import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
+import { PaymentRepository } from '../../data/repository/payment-repository';
+import { formatCurrency, formatDateTime } from '../../utils/format';
 import { toast } from 'sonner';
 import { useWithdrawalFees } from '../../hooks/useWithdrawalFees';
 import PaymentsModal from '../payments/PaymentsModal';
 import { QRCodeSVG } from 'qrcode.react';
+import { AdminUpdateWithdrawalStatusReq } from '../../data/model/withdrawal.model';
 
 interface WithdrawalsModalProps {
   withdrawal: Withdrawal;
@@ -26,22 +28,37 @@ interface WithdrawalsModalProps {
   onClose: () => void;
 }
 
+function formatDateSafe(date: string | number | Date | undefined, formatStr: string): string {
+  if (!date || (typeof date !== 'string' && typeof date !== 'number' && !(date instanceof Date))) return '-';
+  const d = typeof date === 'string' || typeof date === 'number' ? new Date(date) : date;
+  if (isNaN(d.getTime())) return '-';
+  return format(d, formatStr);
+}
+
+function getSafeValue<T>(val: T | null | undefined, fallback: string = '-'): T | string {
+  if (val === null || val === undefined) return fallback;
+  if (typeof val === 'object' && Object.keys(val).length === 0) return fallback;
+  if (typeof val === 'string' && val.trim() === '') return fallback;
+  return val;
+}
+
 export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: WithdrawalsModalProps) {
-  const [txId, setTxId] = useState('');
-  const [notes, setNotes] = useState('');
+  const [txId, setTxId] = useState<string>('');
+  const [notes, setNotes] = useState<string>('');
   const [showCompleteForm, setShowCompleteForm] = useState(false);
   const [showStatusForm, setShowStatusForm] = useState(false);
   const [showDetailedFees, setShowDetailedFees] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState<'pending' | 'processing' | 'completed' | 'failed' | null>(null);
-  const [failedReason, setFailedReason] = useState('');
+  const [failedReason, setFailedReason] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyTxIdSuccess, setCopyTxIdSuccess] = useState(false);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  // Novo estado para controlar a exibição do QR code
   const [showQrCode, setShowQrCode] = useState(false);
-  
+
   const queryClient = useQueryClient();
+  const withdrawalRepository = useMemo(() => new WithdrawalRepository(), []);
+  const paymentRepository = useMemo(() => new PaymentRepository(), []);
 
   // Calculador de taxas
   const fees = useWithdrawalFees(
@@ -54,28 +71,47 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const satoshiValue = fees.isBitcoinWallet ? 
     Math.round(parseFloat(fees.expectedAmountBTC) * 100000000) : 0;
 
-  // Fetch associated payments
-  const { data: payments, isLoading: isLoadingPayments } = useQuery(
-    ['withdrawal-payments', withdrawal.paymentIds],
-    async () => {
-      const paymentPromises = withdrawal.paymentIds.map(id => 
-        paymentRepository.getPaymentById(id)
-      );
-      return Promise.all(paymentPromises);
-    },
-    {
-      enabled: isOpen && withdrawal.paymentIds.length > 0,
+  // Buscar pagamentos se necessário (caso não venha em withdrawal.payments)
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [paymentsLoading, setPaymentsLoading] = useState(false);
+
+  useEffect(() => {
+    let ignore = false;
+    async function fetchPayments() {
+      if (!isOpen) return; // Só busca se o modal estiver aberto
+      if (withdrawal?.payments && withdrawal.payments.length > 0) {
+        setPayments(withdrawal.payments.map(p => Payment.fromModel(p)));
+      } else if (withdrawal?.paymentIds && withdrawal.paymentIds.length > 0) {
+        setPaymentsLoading(true);
+        try {
+          const paymentModels = await Promise.all(
+            withdrawal.paymentIds.map((id: string) => paymentRepository.getPaymentById(id))
+          );
+          if (!ignore) {
+            setPayments(paymentModels.map(p => Payment.fromModel(p)));
+          }
+        } catch {
+          if (!ignore) setPayments([]);
+        } finally {
+          if (!ignore) setPaymentsLoading(false);
+        }
+      } else {
+        setPayments([]);
+      }
     }
-  );
+    fetchPayments();
+    return () => { ignore = true; };
+  }, [withdrawal, paymentRepository, isOpen]);
 
   const updateStatusMutation = useMutation(
-    (status: 'pending' | 'processing' | 'completed' | 'failed') =>
-      withdrawalRepository.updateWithdrawalStatus({
-        id: withdrawal.id,
+    (status: 'pending' | 'processing' | 'completed' | 'failed') => {
+      const data: AdminUpdateWithdrawalStatusReq = {
         status,
         failedReason: status === 'failed' ? failedReason : undefined,
         txId: status === 'completed' ? txId : undefined
-      }),
+      };
+      return withdrawalRepository.updateWithdrawalStatus(withdrawal.id, data);
+    },
     {
       onSuccess: () => {
         queryClient.invalidateQueries('withdrawals');
@@ -83,7 +119,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         setShowStatusForm(false);
         setSelectedStatus(null);
         setFailedReason('');
-        setTxId(''); // Limpar txId ao concluir
+        setTxId('');
         onClose();
       },
       onError: () => {
@@ -91,32 +127,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       },
     }
   );
-
-  const completeWithdrawalMutation = useMutation(
-    () =>
-      withdrawalRepository.completeWithdrawal({
-        id: withdrawal.id,
-        txId,
-        notes,
-      }),
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries('withdrawals');
-        toast.success('Saque concluído com sucesso');
-        setShowCompleteForm(false);
-        setTxId('');
-        setNotes('');
-        onClose();
-      },
-      onError: () => {
-        toast.error('Falha ao concluir o saque');
-      },
-    }
-  );
-
-  const togglePaymentExpansion = (paymentId: string) => {
-    setExpandedPaymentId(expandedPaymentId === paymentId ? null : paymentId);
-  };
 
   const handleStatusUpdate = async () => {
     if (!selectedStatus) return;
@@ -128,7 +138,12 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       toast.error('ID da transação é obrigatório');
       return;
     }
-    await completeWithdrawalMutation.mutateAsync();
+    // O endpoint correto para concluir saque é updateWithdrawalStatus para 'completed'
+    await updateStatusMutation.mutateAsync('completed');
+  };
+
+  const togglePaymentExpansion = (paymentId: string) => {
+    setExpandedPaymentId(expandedPaymentId === paymentId ? null : paymentId);
   };
 
   const handleCopyWallet = async (text: string) => {
@@ -165,7 +180,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
 
   const getWalletInfo = (type?: string) => {
     if (!type || !walletTypeMap[type]) {
-      return { name: "Desconhecido", icon: "?" };
+      return walletTypeMap["OnChainAddress"];
     }
     return walletTypeMap[type];
   };
@@ -184,7 +199,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     },
     {
       header: 'Criado em',
-      accessor: (payment: Payment) => format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm'),
+      accessor: (payment: Payment) =>
+        payment.createdAt
+          ? formatDateTime(payment.createdAt)
+          : '-',
     },
     {
       header: 'Ações',
@@ -219,10 +237,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <p className="font-medium text-foreground">{payment.email || 'Não informado'}</p>
           </div>
           <div>
-            <p className="text-sm text-muted-foreground">Modo de Recebimento</p>
-            <p className="font-medium text-foreground">{payment.receivingMode === 'now' ? 'Imediato' : 'Armazenado'}</p>
-          </div>
-          <div>
             <p className="text-sm text-muted-foreground">Criado em</p>
             <p className="font-medium text-foreground">
               {format(new Date(payment.createdAt), 'dd/MM/yyyy HH:mm:ss')}
@@ -231,7 +245,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           <div>
             <p className="text-sm text-muted-foreground">Atualizado em</p>
             <p className="font-medium text-foreground">
-              {payment.updatedAt ? format(new Date(payment.updatedAt), 'dd/MM/yyyy HH:mm:ss') : '-'}
+              {payment.updatedAt
+                ? formatDateSafe(payment.updatedAt, 'dd/MM/yyyy HH:mm:ss')
+                : '-'}
             </p>
           </div>
           {payment.observation && (
@@ -376,34 +392,28 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       size="lg"
     >
       <div className="space-y-6">
-        {/* Banner de informação do usuário (manter) */}
+        {/* Banner de informação da loja (substitui usuário) */}
         <div className="flex items-center p-3 bg-primary/10 border border-primary/20 rounded-md">
           <User className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
           <div className="flex-grow min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {(() => {
-                const user = (withdrawal as any).User;
-                if (user) {
-                  const firstName = user.firstName || '';
-                  const lastName = user.lastName || '';
-                  return [firstName, lastName].filter(Boolean).join(' ') || 'Usuário não identificado';
-                }
-                return 'Usuário não identificado';
-              })()}
+              {getSafeValue(withdrawal.store?.name, withdrawal.storeId ? withdrawal.storeId.slice(0, 8) : 'Loja não identificada')}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {(withdrawal as any).User?.email || withdrawal.userId}
+              {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
             </p>
           </div>
-          <Link 
-            to={`/users/${withdrawal.userId}`} 
-            target="_blank"
-            rel="noopener noreferrer"
-            className="ml-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md flex items-center hover:bg-primary/90 transition-colors"
-          >
-            <ExternalLink className="h-3 w-3 mr-1" />
-            Ver Perfil
-          </Link>
+          {withdrawal.store?.id && (
+            <Link 
+              to={`/stores/${withdrawal.store.id}`} 
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md flex items-center hover:bg-primary/90 transition-colors"
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Ver Loja
+            </Link>
+          )}
         </div>
 
         <div className="flex justify-center mb-4">
@@ -414,19 +424,19 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           <div className="grid grid-cols-2 gap-4">
             <div>
               <p className="text-sm text-muted-foreground">ID do Saque</p>
-              <p className="font-medium text-foreground break-all">{withdrawal.id}</p>
+              <p className="font-medium text-foreground break-all">{getSafeValue(withdrawal.id)}</p>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Data de Solicitação</p>
               <p className="font-medium text-foreground">
-                {format(new Date(withdrawal.createdAt), 'dd/MM/yyyy HH:mm')}
+                {formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')}
               </p>
             </div>
             {withdrawal.completedAt && (
               <div className="col-span-2">
                 <p className="text-sm text-muted-foreground">Data de Conclusão</p>
                 <p className="font-medium text-foreground">
-                  {format(new Date(withdrawal.completedAt), 'dd/MM/yyyy HH:mm')}
+                  {formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')}
                 </p>
               </div>
             )}
@@ -463,27 +473,31 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <div className="mr-3 text-green-600 text-xl">💰</div>
                 <div>
                   <p className="text-sm font-medium text-foreground">Valor</p>
-                  <p className="text-lg font-bold text-green-600">{formatCurrency(withdrawal.amount)}</p>
+                  <p className="text-lg font-bold text-green-600">
+                    {formatCurrency(Number(getSafeValue(withdrawal.amount, 0)))}
+                  </p>
                 </div>
               </div>
             </div>
-            
-            {/* Manter apenas o ID do usuário, sem duplicar informações */}
             <div className="px-4 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-foreground">ID do Usuário</p>
-                  <p className="text-sm text-muted-foreground break-all">{withdrawal.userId}</p>
+                  <p className="text-sm font-medium text-foreground">ID da Loja</p>
+                  <p className="text-sm text-muted-foreground break-all">
+                    {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
+                  </p>
                 </div>
-                <Link 
-                  to={`/users/${withdrawal.userId}`} 
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="ml-2 p-2 hover:bg-muted rounded-full transition-colors"
-                  title="Ver detalhes do usuário (nova aba)"
-                >
-                  <ExternalLink className="h-4 w-4 text-primary" />
-                </Link>
+                {withdrawal.store?.id && (
+                  <Link 
+                    to={`/stores/${withdrawal.store.id}`} 
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-2 p-2 hover:bg-muted rounded-full transition-colors"
+                    title="Ver detalhes da loja (nova aba)"
+                  >
+                    <ExternalLink className="h-4 w-4 text-primary" />
+                  </Link>
+                )}
               </div>
             </div>
             
@@ -505,11 +519,17 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div className="px-4 py-4 flex flex-col">
               <div className="flex items-center justify-between">
                 <div className="flex items-center flex-1 mr-4">
-                  <div className="text-xl mr-3">{getWalletInfo(withdrawal.destinationWalletType).icon}</div>
+                  <div className="text-xl mr-3">
+                    {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).icon}
+                  </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">Carteira de Destino</p>
-                    <p className="text-sm text-muted-foreground">{getWalletInfo(withdrawal.destinationWalletType).name}</p>
-                    <p className="text-sm text-foreground break-all pr-2">{withdrawal.destinationWallet}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).name}
+                    </p>
+                    <p className="text-sm text-foreground break-all pr-2">
+                      {getSafeValue(withdrawal.destinationWallet)}
+                    </p>
                   </div>
                 </div>
                 <button
@@ -682,16 +702,15 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           </div>
         )}
 
+        {/* Pagamentos Associados */}
         <div>
           <h3 className="text-sm uppercase tracking-wider text-muted-foreground font-medium mb-3">Pagamentos Associados</h3>
           <div className="space-y-4">
             <Table
-              data={payments || []}
+              data={payments}
               columns={paymentColumns}
-              isLoading={isLoadingPayments}
+              isLoading={paymentsLoading}
             />
-            
-            {/* Adicionar a seção expandida do pagamento */}
             {expandedPaymentId && renderExpandedPaymentDetails(expandedPaymentId)}
           </div>
         </div>
@@ -827,11 +846,11 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               <Button
                 variant="success"
                 onClick={handleComplete}
-                isLoading={completeWithdrawalMutation.isLoading}
-                disabled={!txId.trim() || completeWithdrawalMutation.isLoading}
+                isLoading={updateStatusMutation.isLoading}
+                disabled={!txId.trim() || updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
               >
-                {completeWithdrawalMutation.isLoading 
+                {updateStatusMutation.isLoading 
                   ? 'Processando...' 
                   : 'Confirmar Conclusão'}
               </Button>
