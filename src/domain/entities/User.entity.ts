@@ -4,12 +4,15 @@ import { z } from "zod";
 // StoreUser agora segue o model
 export class StoreUser {
   id!: string;
-  email!: string;
+  email?: string;
   firstName?: string;
   lastName?: string;
-  permissions!: StoreUserPermissionModelType[] | { permission: StorePermissionModel }[];
-  name?: string; // novo campo
-  whitelabelId?: string; // novo campo
+  permissions?: StoreUserPermissionModelType[] | { permission: StorePermissionModel }[];
+  name?: string;
+  whitelabelId?: string;
+  ownerId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export class User {
@@ -31,8 +34,9 @@ export class User {
   createdAt?: string;
   storeId?: string;
   stores?: StoreUser[];
+  ownedStores?: StoreUser[]; // opcional, para manter compatibilidade
 
-  public static fromModel(model: UserModel): User {
+  public static fromModel(model: any): User {
     const entity = new User();
     entity.id = model.id;
     entity.whitelabelId = model.whitelabelId;
@@ -45,19 +49,35 @@ export class User {
     entity.documentType = model.documentType;
     entity.pictureUrl = model.pictureUrl;
     entity.referral = model.referral;
-    entity.monthlyVolume = model.monthlyVolume;
+    entity.monthlyVolume = Number(model.monthlyVolume); // garante número
     entity.role = model.role;
     entity.active = model.active;
     entity.updatedAt = model.updatedAt;
     entity.createdAt = model.createdAt;
     entity.storeId = model.storeId;
-    entity.stores = model.stores?.map(store => ({
-      id: store.id,
-      email: store.email,
-      firstName: store.firstName,
-      lastName: store.lastName,
-      permissions: store.permissions,
-    }));
+
+    // Corrigido: sempre popula entity.stores como array de lojas com id e name
+    if (Array.isArray(model.ownedStores) && model.ownedStores.length > 0) {
+      entity.stores = model.ownedStores.map((store: any) => ({
+        id: store.id,
+        name: store.name,
+        whitelabelId: store.whitelabelId,
+        ownerId: store.ownerId,
+        createdAt: store.createdAt,
+        updatedAt: store.updatedAt,
+      }));
+    } else if (Array.isArray(model.stores) && model.stores.length > 0) {
+      entity.stores = model.stores.map((store: any) => ({
+        id: store.id,
+        name: store.name ?? '', // garante que name exista
+        email: store.email,
+        firstName: store.firstName,
+        lastName: store.lastName,
+        permissions: store.permissions,
+      }));
+    } else {
+      entity.stores = [];
+    }
     return entity;
   }
 }
@@ -73,4 +93,3 @@ export const UpdateUser = z.object({
 export type UpdateUser = z.infer<typeof UpdateUser>;
 
 export type StoreUserPermissionModel = StoreUserPermissionModelType; // <-- exporta o tipo
- 

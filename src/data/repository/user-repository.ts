@@ -22,7 +22,7 @@ export class UserRepository {
     return res;
   }
 
-  async getUserById(id: string): Promise<UserModel> {
+  async getUserById(id: string): Promise<AdminReadUserRes> {
     const firebaseToken = localStorage.getItem("FIREBASE_TOKEN");
     const headers: Record<string, string> = {};
     if (firebaseToken) {
@@ -32,7 +32,7 @@ export class UserRepository {
       `/admin/users/${id}`,
       { headers }
     );
-    return res.data;
+    return res;
   }
 
   async updateUser(id: string, req: AdminUpdateUserReq): Promise<UserModel> {

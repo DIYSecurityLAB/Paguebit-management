@@ -39,6 +39,7 @@ export default function UsersTable() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const queryClient = useQueryClient();
   const userRepository = useMemo(() => new UserRepository(), []);
@@ -221,9 +222,9 @@ export default function UsersTable() {
           <Button
             variant="ghost"
             size="sm"
-            onClick={(e) => {
+            onClick={async (e) => {
               e.stopPropagation();
-              setSelectedUser(user);
+              await handleOpenUserModal(user);
             }}
             leftIcon={<Eye className="h-4 w-4" />}
           >
@@ -244,6 +245,24 @@ export default function UsersTable() {
       ),
     },
   ], [navigate]);
+
+  // Função para buscar detalhes completos do usuário ao abrir o modal
+  const handleOpenUserModal = async (user: User) => {
+    setModalLoading(true);
+    try {
+      const userRepository = new UserRepository();
+      const userData = await userRepository.getUserById(user.id);
+      if (userData && userData.id) {
+        setSelectedUser(User.fromModel(userData));
+      } else {
+        toast.error('Não foi possível carregar detalhes do usuário.');
+      }
+    } catch (err) {
+      toast.error('Erro ao buscar detalhes do usuário.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
@@ -410,6 +429,7 @@ export default function UsersTable() {
           user={selectedUser}
           isOpen={!!selectedUser}
           onClose={() => setSelectedUser(null)}
+          loading={modalLoading}
         />
       )}
     </div>

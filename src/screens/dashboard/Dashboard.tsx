@@ -346,14 +346,14 @@ export default function Dashboard() {
           title="Crescimento de Usuários" 
           content={<UsersGrowthChart users={usersData?.data || []} loading={loadingUsers} height={220} />} 
         />
-        {/* Usuários Ativos pode ser mantido, mas agora não depende de pagamentos/saques diretamente */}
+        {/* Lojas Ativas pode ser mantido, mas agora não depende de pagamentos/saques diretamente */}
         <ChartCard 
-          title="Usuários Ativos (pagamento retido ou pago)" 
+          title="Lojas Ativas (pagamento retido ou pago)" 
           content={
             <ActiveUsersChart 
-              users={usersData?.data || []} 
+              stores={storesData?.data || []} 
               payments={paymentsData?.data || []} 
-              loading={loadingUsers || loadingPayments} 
+              loading={loadingStores || loadingPayments} 
               height={220}
             />
           }

@@ -39,6 +39,7 @@ export default function UsersCard() {
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [modalLoading, setModalLoading] = useState(false);
 
   const queryClient = useQueryClient();
   const userRepository = useMemo(() => new UserRepository(), []);
@@ -274,6 +275,24 @@ export default function UsersCard() {
     ? data!.data.map((model: any) => User.fromModel(model))
     : [];
 
+  // Função para buscar detalhes completos do usuário ao abrir o modal
+  const handleOpenUserModal = async (user: User) => {
+    setModalLoading(true);
+    try {
+      const userRepository = new UserRepository();
+      const userData = await userRepository.getUserById(user.id);
+      if (userData && userData.id) {
+        setSelectedUser(User.fromModel(userData));
+      } else {
+        toast.error('Não foi possível carregar detalhes do usuário.');
+      }
+    } catch (err) {
+      toast.error('Erro ao buscar detalhes do usuário.');
+    } finally {
+      setModalLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Cabeçalho e filtros */}
@@ -366,7 +385,7 @@ export default function UsersCard() {
                 key={user.id}
                 title={fullName || "sem informação"}
                 titleClassName={isMissingInfo ? "text-red-500" : ""}
-                onClick={() => setSelectedUser(user)}
+                onClick={() => handleOpenUserModal(user)}
               >
                 <div className="space-y-2">
                   <div className="flex justify-between">
@@ -395,9 +414,9 @@ export default function UsersCard() {
                     size="sm"
                     className="w-1/2"
                     leftIcon={<Eye className="h-4 w-4" />}
-                    onClick={(e) => {
+                    onClick={async (e) => {
                       e.stopPropagation();
-                      setSelectedUser(user);
+                      await handleOpenUserModal(user);
                     }}
                   >
                     Ver
@@ -431,11 +450,13 @@ export default function UsersCard() {
         />
       )}
 
+      {/* Modal detalhado do usuário */}
       {selectedUser && (
         <UsersModal
           user={selectedUser}
           isOpen={!!selectedUser}
           onClose={() => setSelectedUser(null)}
+          loading={modalLoading}
         />
       )}
     </div>

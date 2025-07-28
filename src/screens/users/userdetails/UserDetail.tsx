@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, ExternalLink } from 'lucide-react';
 import Loading from '../../../components/Loading';
 import Button from '../../../components/Button';
 import { User } from '../../../domain/entities/User.entity';
@@ -23,7 +23,14 @@ export default function UserDetail() {
         setLoading(true);
         const userRepository = new UserRepository();
         const userData = await userRepository.getUserById(id);
-        setUser(User.fromModel(userData));
+        console.log('[UserDetail] userData response:', userData);
+        // Corrigido: backend retorna o usuário puro, não { data: ... }
+        if (userData && userData.id) {
+          setUser(User.fromModel(userData));
+        } else {
+          setUser(null);
+          setError('Usuário não encontrado');
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
       } finally {
@@ -88,8 +95,31 @@ export default function UserDetail() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <UserBasicInfo user={user} onUserUpdate={handleUserUpdate} />
         </div>
+        {/* Sempre exibe a(s) loja(s) do usuário */}
+        {user.stores && user.stores.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-lg font-semibold mb-2">Loja(s) vinculada(s)</h2>
+            <ul className="space-y-2">
+              {user.stores.map(store => (
+                <li key={store.id} className="flex items-center gap-2">
+                  <span className="font-mono text-sm bg-muted px-2 py-1 rounded">{store.id}</span>
+                  {store.name && (
+                    <span className="text-sm ml-2">{store.name}</span>
+                  )}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => window.open(`/stores/${store.id}`, '_blank')}
+                    leftIcon={<ExternalLink className="h-4 w-4" />}
+                  >
+                    Abrir loja
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </div>
-
       {/* Aqui você pode mostrar as lojas do usuário, se desejar */}
       {/* Exemplo:
       <div className="bg-card rounded-lg shadow-md p-6">
