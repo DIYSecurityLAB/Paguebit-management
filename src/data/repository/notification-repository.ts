@@ -1,4 +1,4 @@
-import apiClient from '../datasource/api.datasource';
+import { apiDataSource } from '../datasource/api.datasource';
 import type {
   ListNotificationsReq,
   ListNotificationsRes,
@@ -8,11 +8,11 @@ import type {
 
 class NotificationRepository {
   async listNotifications(params?: ListNotificationsReq): Promise<ListNotificationsRes> {
-    return apiClient.get<ListNotificationsRes>('/admin/notifications', { params });
+    return apiDataSource.get<ListNotificationsRes>('/admin/notifications', { params });
   }
 
   async createNotification(storeId: string, data: CreateNotificationReq): Promise<CreateNotificationRes> {
-    return apiClient.post<CreateNotificationRes>(`/admin/stores/${storeId}/notifications`, data);
+    return apiDataSource.post<CreateNotificationRes>(`/admin/stores/${storeId}/notifications`, data);
   }
 }
 
