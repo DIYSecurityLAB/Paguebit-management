@@ -65,12 +65,10 @@ const paguebitConfig: WhiteLabelConfig = paguebitConfigJson as unknown as WhiteL
 const paguepayConfig: WhiteLabelConfig = paguepayConfigJson as unknown as WhiteLabelConfig;
 
 export const domainConfigs: Record<string, WhiteLabelConfig> = {
-  'paguebit.com': paguebitConfig,
   'management.paguebit.com': paguebitConfig,
   'paguebit-management.vercel.app': paguebitConfig,
   'paguepay-management.vercel.app': paguepayConfig,
-  'www.paguepay.com': paguepayConfig,
-  'admin.paguepay.com': paguepayConfig,
+  'management.paguepay.app': paguepayConfig,
   'localhost': paguepayConfig,
   '127.0.0.1': paguepayConfig,
 };
