@@ -69,7 +69,7 @@ export const domainConfigs: Record<string, WhiteLabelConfig> = {
   'paguebit-management.vercel.app': paguebitConfig,
   'paguepay-management.vercel.app': paguepayConfig,
   'management.paguepay.app': paguepayConfig,
-  'localhost': paguepayConfig,
+  'localhost': paguebitConfig,
   '127.0.0.1': paguepayConfig,
 };
 

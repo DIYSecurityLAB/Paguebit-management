@@ -33,10 +33,10 @@
     "headings": "Lexend Deca, sans-serif"
   },
   "logo": {
-    "simple": "/paguebit/logo.svg",
-    "large": "/paguebit/logo_completa.svg",
+    "simple": "/paguebit/logo_dark.svg",
+    "large": "/paguebit/logo_dark.svg",
     "simpleDark": "/paguebit/logo_white.svg",
-    "largeDark": "/paguebit/logo_completa_white.svg"
+    "largeDark": "/paguebit/logo_white.svg"
   },
   "urls": {
     "website": "https://paguebit.com",
