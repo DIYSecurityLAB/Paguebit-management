@@ -33,10 +33,10 @@
     "headings": "Lexend Deca, sans-serif"
   },
   "logo": {
-    "simple": "/paguepay/logo.png",
-    "large": "/paguepay/logo_completa.png",
-    "simpleDark": "/paguepay/logo_white.png",
-    "largeDark": "/paguepay/logo_completa_white.png"
+    "simple": "/paguepay/logo.svg",
+    "large": "/paguepay/logo.svg",
+    "simpleDark": "/paguepay/logo.svg",
+    "largeDark": "/paguepay/logo.svg"
   },
   "urls": {
     "website": "https://paguepay.com",

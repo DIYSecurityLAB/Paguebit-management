@@ -3,8 +3,6 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { useUserContext } from "../../context/user.context";
 import {   Mail, Lock, Eye, EyeOff, Sun, Moon } from "lucide-react";
 import Button from "../../components/Button";
-import logo from '../../assets/PagueBit_black.svg';
-import logoDark from '../../assets/PagueBit_white.svg';
 import { useTheme } from '../../hooks/useTheme';
 import { auth } from "../../data/datasource/firebase.datasource";
 import { signInWithEmailAndPassword } from "firebase/auth";
@@ -12,6 +10,7 @@ import { AuthRepository } from "../../data/repository/auth-repository";
 import { AuthUser } from "../../domain/entities/auth.entity";
 import { mapAuthUserToUser } from "../../utils/authusertouserMapping";
 import { toast } from "sonner";
+import { useWhiteLabelConfig } from "../../config/whiteLabel.config";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -26,6 +25,9 @@ export default function Login() {
   const [loginAttempts, setLoginAttempts] = useState(0);
 
   const MAX_ATTEMPTS = 5;
+
+  const whitelabelConfig = useWhiteLabelConfig();
+  const logo = whitelabelConfig.logo;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +105,7 @@ export default function Login() {
         <div className="mb-8 text-center">
           <div className="flex justify-center mb-4">
             <img
-              src={theme === 'dark' ? logoDark : logo}
+              src={theme === 'dark' ? logo.simpleDark : logo.simple}
               alt="Pague Bit Logo"
               className="h-14 w-auto"
               style={{ display: 'inline-block' }}
