@@ -1,7 +1,7 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from 'react-query';
 import { format } from 'date-fns';
-import { Eye, CheckCircle, XCircle, ArrowUp, ArrowDown, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, CheckCircle, XCircle, ArrowUp, ArrowDown, ChevronUp, ChevronDown, ExternalLink } from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -13,6 +13,7 @@ import { PaymentStatus } from '../../data/model/payment.model';
 import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency } from '../../utils/format';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
  
 export default function PaymentsTable() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -33,7 +34,7 @@ export default function PaymentsTable() {
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
   const [filtersExpanded, setFiltersExpanded] = useState(false);
- 
+  const navigate = useNavigate();
   const paymentRepository = useMemo(() => new PaymentRepository(), []);
 
   const updateStatusMutation = useMutation(
@@ -234,6 +235,17 @@ export default function PaymentsTable() {
           >
             Ver
           </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/payments/${payment.id}`);
+            }}
+            leftIcon={<ExternalLink className="h-4 w-4" />}
+          >
+            Detalhes
+          </Button>
           {payment.status === PaymentStatus.RECEIPT_SENT && (
             <>
               <Button
@@ -259,7 +271,7 @@ export default function PaymentsTable() {
         </div>
       ),
     },
-  ], [updateStatusMutation]);
+  ], [updateStatusMutation, navigate]);
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
