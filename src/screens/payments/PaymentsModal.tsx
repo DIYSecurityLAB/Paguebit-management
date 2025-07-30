@@ -24,6 +24,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
   const [copied, setCopied] = useState(false);
   const [copiedQrId, setCopiedQrId] = useState(false);
+  const [copiedStoreId, setCopiedStoreId] = useState(false);
   const [hasfraguismo, setHasfraguismo] = useState<boolean | null>(null);
   const queryClient = useQueryClient();
    const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
@@ -165,6 +166,13 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
     setTimeout(() => setCopiedQrId(false), 1200);
   };
 
+  // Função para copiar o ID da loja
+  const handleCopyStoreId = () => {
+    navigator.clipboard.writeText(payment.storeId || '');
+    setCopiedStoreId(true);
+    setTimeout(() => setCopiedStoreId(false), 1200);
+  };
+
   // Fechar popover quando clicar fora dele
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -245,6 +253,21 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
             <label className="text-sm text-muted-foreground">ID da Loja</label>
             <div className="flex items-center gap-2 mt-1">
               <span className="font-mono text-xs break-all">{payment.storeId || <span className="text-red-500">sem informação</span>}</span>
+              {payment.storeId && (
+                <>
+                  <button
+                    type="button"
+                    className="p-1 rounded hover:bg-muted transition-colors"
+                    onClick={handleCopyStoreId}
+                    title="Copiar ID da Loja"
+                  >
+                    <Copy className="h-4 w-4" />
+                  </button>
+                  {copiedStoreId && (
+                    <span className="text-xs text-green-600 ml-1">Copiado!</span>
+                  )}
+                </>
+              )}
             </div>
           </div>
           {/* Adiciona exibição do ID do Pagamento */}
