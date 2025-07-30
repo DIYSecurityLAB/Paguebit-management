@@ -107,7 +107,7 @@ export default function WithdrawalsTable() {
   const columns = useMemo<TableColumn<Withdrawal>[]>(() => [
     {
       header: 'ID',
-      accessor: (withdrawal: Withdrawal) => withdrawal.id,
+      accessor: (withdrawal: Withdrawal) => withdrawal.id ? `${withdrawal.id.substring(0, 10)}...` : '-',
       sortKey: 'id',
       sortable: true,
     },

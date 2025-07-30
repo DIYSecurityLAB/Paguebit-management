@@ -52,6 +52,8 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const [failedReason, setFailedReason] = useState<string>('');
   const [copySuccess, setCopySuccess] = useState(false);
   const [copyTxIdSuccess, setCopyTxIdSuccess] = useState(false);
+  const [copyIdSuccess, setCopyIdSuccess] = useState(false);
+  const [copyStoreIdSuccess, setCopyStoreIdSuccess] = useState(false);
   const [expandedPaymentId, setExpandedPaymentId] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
   const [showQrCode, setShowQrCode] = useState(false);
@@ -167,6 +169,30 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     } catch (err) {
       console.error('Falha ao copiar texto:', err);
       toast.error('Falha ao copiar hash');
+    }
+  };
+
+  const handleCopyId = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyIdSuccess(true);
+      setTimeout(() => setCopyIdSuccess(false), 2000);
+      toast.success('ID copiado com sucesso');
+    } catch (err) {
+      console.error('Falha ao copiar texto:', err);
+      toast.error('Falha ao copiar ID');
+    }
+  };
+
+  const handleCopyStoreId = async (text: string) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopyStoreIdSuccess(true);
+      setTimeout(() => setCopyStoreIdSuccess(false), 2000);
+      toast.success('ID da loja copiado com sucesso');
+    } catch (err) {
+      console.error('Falha ao copiar texto:', err);
+      toast.error('Falha ao copiar ID da loja');
     }
   };
 
@@ -422,9 +448,22 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
 
         <div className="bg-muted/30 rounded-lg p-4 mb-4 border border-border">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-muted-foreground">ID do Saque</p>
-              <p className="font-medium text-foreground break-all">{getSafeValue(withdrawal.id)}</p>
+            <div className="flex justify-between items-start">
+              <div className="flex-1 pr-2">
+                <p className="text-sm text-muted-foreground">ID do Saque</p>
+                <p className="font-medium text-foreground break-all">{getSafeValue(withdrawal.id)}</p>
+              </div>
+              <button
+                onClick={() => handleCopyId(withdrawal.id || '')}
+                className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
+                title="Copiar ID do saque"
+              >
+                {copyIdSuccess ? (
+                  <Check className="h-5 w-5 text-green-600" />
+                ) : (
+                  <Copy className="h-5 w-5 text-muted-foreground" />
+                )}
+              </button>
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Data de Solicitação</p>
@@ -474,30 +513,43 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <div>
                   <p className="text-sm font-medium text-foreground">Valor</p>
                   <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(Number(getSafeValue(withdrawal.amount, 0)))}
+                    {formatCurrency(Number(getSafeValue(withdrawal.amount, '0')))}
                   </p>
                 </div>
               </div>
             </div>
             <div className="px-4 py-4 border-b border-border">
               <div className="flex items-center justify-between">
-                <div>
+                <div className="flex-1 pr-2">
                   <p className="text-sm font-medium text-foreground">ID da Loja</p>
                   <p className="text-sm text-muted-foreground break-all">
                     {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
                   </p>
                 </div>
-                {withdrawal.store?.id && (
-                  <Link 
-                    to={`/stores/${withdrawal.store.id}`} 
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="ml-2 p-2 hover:bg-muted rounded-full transition-colors"
-                    title="Ver detalhes da loja (nova aba)"
+                <div className="flex items-center">
+                  <button
+                    onClick={() => handleCopyStoreId(withdrawal.store?.id || withdrawal.storeId || '')}
+                    className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors mr-1"
+                    title="Copiar ID da loja"
                   >
-                    <ExternalLink className="h-4 w-4 text-primary" />
-                  </Link>
-                )}
+                    {copyStoreIdSuccess ? (
+                      <Check className="h-4 w-4 text-green-600" />
+                    ) : (
+                      <Copy className="h-4 w-4 text-muted-foreground" />
+                    )}
+                  </button>
+                  {withdrawal.store?.id && (
+                    <Link 
+                      to={`/stores/${withdrawal.store.id}`} 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-2 hover:bg-muted rounded-full transition-colors"
+                      title="Ver detalhes da loja (nova aba)"
+                    >
+                      <ExternalLink className="h-4 w-4 text-primary" />
+                    </Link>
+                  )}
+                </div>
               </div>
             </div>
             
