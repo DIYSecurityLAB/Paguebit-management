@@ -49,6 +49,14 @@ export default function StatusBadge({ status, className, onClick, clickable }: S
           label: 'Em Análise',
           icon: <Search className="h-3.5 w-3.5 flex-shrink-0" />
         };
+      case 'review':
+        return {
+          bg: 'bg-purple-50 dark:bg-purple-950/30',
+          text: 'text-purple-700 dark:text-purple-300',
+          border: 'border-purple-200 dark:border-purple-800/50',
+          label: 'Em Análise',
+          icon: <Search className="h-3.5 w-3.5 flex-shrink-0" />
+        };
       case 'approved':
         return {
           bg: 'bg-green-50 dark:bg-green-950/30',
@@ -63,6 +71,14 @@ export default function StatusBadge({ status, className, onClick, clickable }: S
           text: 'text-red-700 dark:text-red-300',
           border: 'border-red-200 dark:border-red-800/50',
           label: 'Não Aprovado',
+          icon: <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
+        };
+      case 'rejected':
+        return {
+          bg: 'bg-red-50 dark:bg-red-950/30',
+          text: 'text-red-700 dark:text-red-300',
+          border: 'border-red-200 dark:border-red-800/50',
+          label: 'Rejeitado',
           icon: <XCircle className="h-3.5 w-3.5 flex-shrink-0" />
         };
       case 'paid':

@@ -27,6 +27,7 @@ export default function PaymentsTable() {
     email: '',
     id: '',
     transactionType: '',
+    ownerEmail: '',
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
@@ -99,6 +100,12 @@ export default function PaymentsTable() {
       label: 'ID do Usuário',
       type: 'text' as const,
       placeholder: 'Buscar por ID do usuário',
+    },
+    {
+      key: 'ownerEmail',
+      label: 'Email do Owner',
+      type: 'text' as const,
+      placeholder: 'Buscar por email do owner',
     },
     {
       key: 'status',
@@ -285,6 +292,7 @@ export default function PaymentsTable() {
         email: '',
         id: '',
         transactionType: '',
+        ownerEmail: '',
       });
       setTimeout(() => {
         queryClient.invalidateQueries(['payments']);
@@ -299,6 +307,7 @@ export default function PaymentsTable() {
         email: '',
         id: '',
         transactionType: '',
+        ownerEmail: '',
       };
       if (newFilters.status) updatedFilters.status = newFilters.status;
       if (newFilters.userId) updatedFilters.userId = newFilters.userId;
@@ -308,6 +317,7 @@ export default function PaymentsTable() {
       if (newFilters.email) updatedFilters.email = newFilters.email;
       if (newFilters.id) updatedFilters.id = newFilters.id;
       if (newFilters.transactionType) updatedFilters.transactionType = newFilters.transactionType;
+      if (newFilters.ownerEmail) updatedFilters.ownerEmail = newFilters.ownerEmail;
       setFilters(updatedFilters);
     }
     setCurrentPage(1);

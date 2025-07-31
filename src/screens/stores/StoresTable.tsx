@@ -20,6 +20,7 @@ export default function StoresTable() {
     id: '',
     name: '',
     ownerId: '',
+    ownerEmail: '',
     whitelabelId: '',
     createdAtFrom: '',
     createdAtTo: ''
@@ -83,6 +84,12 @@ export default function StoresTable() {
       placeholder: 'Buscar por OwnerId',
     },
     {
+      key: 'ownerEmail',
+      label: 'Email do Owner',
+      type: 'text' as const,
+      placeholder: 'Buscar por email do owner',
+    },
+    {
       key: 'whitelabelId',
       label: 'WhitelabelId',
       type: 'text' as const,
@@ -119,9 +126,9 @@ export default function StoresTable() {
       sortable: true,
     },
     {
-      header: 'WhitelabelId',
-      accessor: (store: Store) => store.whitelabelId || <span className="text-red-500">sem informação</span>,
-      sortKey: 'whitelabelId',
+      header: 'Email do Owner',
+      accessor: (store: Store) => store.owner?.email || <span className="text-red-500">sem informação</span>,
+      sortKey: 'ownerEmail',
       sortable: true,
     },
     {
@@ -167,6 +174,7 @@ export default function StoresTable() {
       id: '',
       name: '',
       ownerId: '',
+      ownerEmail: '',
       whitelabelId: '',
       createdAtFrom: '',
       createdAtTo: ''

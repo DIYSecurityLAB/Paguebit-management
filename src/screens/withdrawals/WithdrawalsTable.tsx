@@ -118,8 +118,8 @@ export default function WithdrawalsTable() {
       sortable: true,
     },
     {
-      header: 'ID do Whitelabel',
-      accessor: (withdrawal: Withdrawal) => withdrawal.whitelabelId || 'Não informado',
+      header: 'Email do Owner',
+      accessor: (withdrawal: Withdrawal) => withdrawal.ownerEmail || 'Não informado',
       sortKey: 'whitelabelId',
       sortable: true,
     },
