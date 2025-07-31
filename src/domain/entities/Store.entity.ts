@@ -21,8 +21,9 @@ export class Store {
   updatedAt!: string;
   users?: StoreModel["users"]; // Adicionado
   wallets?: StoreModel["wallets"]; // Adicionado
+  owner?: { email: string }; // Adicionado para email do owner
 
-  constructor(data: StoreType & Partial<Pick<Store, "users" | "wallets">>) {
+  constructor(data: StoreType & Partial<Pick<Store, "users" | "wallets" | "owner">>) {
     const parsed = StoreSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
@@ -30,13 +31,14 @@ export class Store {
     Object.assign(this, parsed.data);
     if ("users" in data) this.users = data.users;
     if ("wallets" in data) this.wallets = data.wallets;
+    if ("owner" in data) this.owner = data.owner;
   }
 
-  static fromModel(model: StoreModel): Store {
-    return new Store(model as StoreType & Partial<Pick<Store, "users" | "wallets">>);
+  static fromModel(model: StoreModel & { owner?: { email: string } }): Store {
+    return new Store(model as StoreType & Partial<Pick<Store, "users" | "wallets" | "owner">>);
   }
 
-  public toModel(): StoreModel {
+  public toModel(): StoreModel & { owner?: { email: string } } {
     return {
       id: this.id,
       name: this.name,
@@ -46,6 +48,7 @@ export class Store {
       updatedAt: this.updatedAt,
       users: this.users,
       wallets: this.wallets,
+      owner: this.owner,
     };
   }
 }

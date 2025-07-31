@@ -21,6 +21,7 @@ export const WithdrawalSchema = z.object({
   notes: z.string().nullable().optional(),
   payments: z.array(z.any()).optional(),
   store: z.any().optional(),
+  ownerEmail: z.string().nullable().optional(),
 });
 
 export type WithdrawalType = z.infer<typeof WithdrawalSchema>;
@@ -41,17 +42,24 @@ export class Withdrawal {
   notes?: string | null;
   payments?: PaymentModel[];
   store?: StoreModel;
+  owner?: { email: string };
+  ownerEmail?: string | null;
 
-  constructor(data: WithdrawalType) {
+  constructor(data: WithdrawalType & { owner?: { email: string } }) {
     const parsed = WithdrawalSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
     }
     Object.assign(this, parsed.data);
+    if ("owner" in data) this.owner = data.owner;
   }
 
-  static fromModel(model: WithdrawalModel): Withdrawal {
-    return new Withdrawal(model as WithdrawalType);
+  static fromModel(model: WithdrawalModel & { Store?: { owner?: { email: string } } }): Withdrawal {
+    const withdrawalData = {
+      ...model,
+      ownerEmail: model.Store?.owner?.email || null
+    };
+    return new Withdrawal(withdrawalData as WithdrawalType & { owner?: { email: string } });
   }
 
   public toModel(): WithdrawalModel {
@@ -63,12 +71,12 @@ export class Withdrawal {
       paymentIds: this.paymentIds,
       status: this.status,
       createdAt: this.createdAt,
-      completedAt: this.completedAt,
-      destinationWallet: this.destinationWallet,
-      destinationWalletType: this.destinationWalletType,
-      failedReason: this.failedReason,
-      txId: this.txId,
-      notes: this.notes,
+      completedAt: this.completedAt ?? undefined,
+      destinationWallet: this.destinationWallet ?? undefined,
+      destinationWalletType: this.destinationWalletType ?? undefined,
+      failedReason: this.failedReason ?? undefined,
+      txId: this.txId ?? undefined,
+      notes: this.notes ?? undefined,
       payments: this.payments,
       store: this.store,
     };
