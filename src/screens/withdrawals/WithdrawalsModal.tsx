@@ -549,16 +549,14 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <span className="text-sm text-muted-foreground">Valor do Saque</span>
                 <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
               </div>
-              {/* Valor a Enviar */}
+              {/* Valores detalhados */}
               {w.feesDetail && w.feesDetail.length > 0 && (
                 <>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-sm text-muted-foreground">Valor a Enviar</span>
                     <span className="font-semibold">
                       {formatCurrency(
-                        Number(getSafeValue(w.amount, '0')) - (
-                          Number(w.feesDetail[0].feeAmount) + Number(w.feesDetail[0].spreadAmount)
-                        )
+                        Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
                       )}
                     </span>
                   </div>
@@ -697,16 +695,14 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <span className="text-sm text-muted-foreground">Valor do Saque</span>
                 <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
               </div>
-              {/* Valor a Enviar */}
+              {/* Valores detalhados */}
               {w.feesDetail && w.feesDetail.length > 0 && (
                 <>
                   <div className="flex justify-between items-center mt-2">
                     <span className="text-sm text-muted-foreground">Valor a Enviar</span>
                     <span className="font-semibold">
                       {formatCurrency(
-                        Number(getSafeValue(w.amount, '0')) - (
-                          Number(w.feesDetail[0].feeAmount) + Number(w.feesDetail[0].spreadAmount)
-                        )
+                        Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
                       )}
                     </span>
                   </div>
@@ -716,6 +712,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
                     </span>
                   </div>
+ 
                 </>
               )}
             </div>
@@ -757,7 +754,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       <div>
                         <span className="text-muted-foreground">Total Plataforma:</span>
                         <span className="font-medium ml-1">
-                          {formatCurrency(Number(fee.platformTotal))}
+                           {formatCurrency(Number(fee.platformFeeAmount ?? 0))}
                         </span>
                       </div>
                     </div>
