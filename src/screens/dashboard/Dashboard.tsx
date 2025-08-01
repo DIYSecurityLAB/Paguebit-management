@@ -38,7 +38,7 @@ export default function Dashboard() {
   );
   const { data: paymentsData, isLoading: loadingPayments } = useQuery(
     'allPayments',
-    () => paymentRepository.listPayments({ page: '1', limit: '100000', noreceipt: 'true' })
+    () => paymentRepository.listPayments({ page: '1', limit: '100000' })
   );
   const { data: withdrawalsData, isLoading: loadingWithdrawals } = useQuery(
     'allWithdrawals',
