@@ -297,120 +297,325 @@ const StoreFeeRules: React.FC<StoreFeeRulesProps> = ({ storeId }) => {
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         title={editingRule ? 'Editar Regra de Taxa' : 'Adicionar Regra de Taxa'}
-        size="md"
-        footer={
-          <div className="flex justify-end space-x-2">
+        size="lg"
+      >
+        <div className="space-y-6">
+          {/* Header com ícone e descrição */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6">
+            <div className="flex items-center mb-2">
+              <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-4">
+                {editingRule ? <Edit2 className="h-5 w-5 text-blue-600 dark:text-blue-400" /> : <PlusCircle className="h-5 w-5 text-blue-600 dark:text-blue-400" />}
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">
+                  {editingRule ? 'Editar Regra de Taxa' : 'Nova Regra de Taxa'}
+                </h3>
+                <p className="text-sm text-muted-foreground">
+                  {editingRule ? 'Modifique os parâmetros da regra de taxa existente' : 'Configure uma nova regra de taxa para esta loja'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <form id="fee-rule-form" onSubmit={handleFormSubmit} className="space-y-6">
+            {/* Seção de Faixa de Valores */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h4 className="text-md font-medium text-foreground mb-4 flex items-center">
+                <div className="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-xs text-green-600 dark:text-green-400">💰</span>
+                </div>
+                Faixa de Valores
+              </h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    Valor Mínimo
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      name="minAmount"
+                      value={formState.minAmount}
+                      onChange={handleFormChange}
+                      className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                      placeholder="0,00"
+                    />
+                  </div>
+                  {formErrors.minAmount && (
+                    <p className="text-xs text-red-500 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {formErrors.minAmount}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    Valor Máximo
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">R$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      name="maxAmount"
+                      placeholder="999999999 para infinito"
+                      value={formState.maxAmount}
+                      onChange={handleFormChange}
+                      className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                    />
+                  </div>
+                  {formErrors.maxAmount && (
+                    <p className="text-xs text-red-500 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {formErrors.maxAmount}
+                    </p>
+                  )}
+                  <p className="text-xs text-muted-foreground">
+                    💡 Use 999999999 para valor máximo ilimitado
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Seção de Configuração da Taxa */}
+            <div className="bg-card border border-border rounded-lg p-6">
+              <h4 className="text-md font-medium text-foreground mb-4 flex items-center">
+                <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-2">
+                  <span className="text-xs text-purple-600 dark:text-purple-400">%</span>
+                </div>
+                Configuração da Taxa
+              </h4>
+              <div className="space-y-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-foreground">
+                    Tipo de Taxa
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="feeType"
+                      value={formState.feeType}
+                      onChange={handleFormChange}
+                      className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 appearance-none"
+                    >
+                      <option value={FeeType.PERCENT}>📊 Percentual</option>
+                      <option value={FeeType.FIXED}>💵 Valor Fixo</option>
+                    </select>
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                      <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </div>
+                  </div>
+                  {formErrors.feeType && (
+                    <p className="text-xs text-red-500 flex items-center">
+                      <span className="mr-1">⚠️</span>
+                      {formErrors.feeType}
+                    </p>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      {formState.feeType === FeeType.PERCENT ? 'Percentual da Taxa' : 'Valor Fixo da Taxa'}
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">
+                        {formState.feeType === FeeType.PERCENT ? '%' : 'R$'}
+                      </span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        name="feeValue"
+                        value={formState.feeValue}
+                        onChange={handleFormChange}
+                        className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                        placeholder={formState.feeType === FeeType.PERCENT ? "Ex: 3.99" : "Ex: 5.00"}
+                      />
+                    </div>
+                    {formErrors.feeValue && (
+                      <p className="text-xs text-red-500 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {formErrors.feeValue}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-foreground">
+                      Spread (%)
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">%</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0.5"
+                        name="spreadPercent"
+                        value={formState.spreadPercent}
+                        onChange={handleFormChange}
+                        className="w-full pl-10 pr-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                        placeholder="Ex: 2.5"
+                      />
+                    </div>
+                    {formErrors.spreadPercent && (
+                      <p className="text-xs text-red-500 flex items-center">
+                        <span className="mr-1">⚠️</span>
+                        {formErrors.spreadPercent}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground flex items-center">
+                      <span className="mr-1">ℹ️</span>
+                      O spread não pode ser menor que 0,5%
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview da Regra */}
+            {formState.minAmount && formState.maxAmount && formState.feeValue && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-lg p-6">
+                <h4 className="text-md font-medium text-foreground mb-3 flex items-center">
+                  <div className="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-2">
+                    <span className="text-xs text-green-600 dark:text-green-400">👁️</span>
+                  </div>
+                  Preview da Regra
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Faixa</p>
+                    <p className="font-medium">
+                      {formatCurrency(parseFloat(formState.minAmount) || 0)} - {
+                        parseFloat(formState.maxAmount) >= 999999999 
+                          ? "∞" 
+                          : formatCurrency(parseFloat(formState.maxAmount) || 0)
+                      }
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Taxa</p>
+                    <p className="font-medium">
+                      {formState.feeType === FeeType.PERCENT 
+                        ? `${parseFloat(formState.feeValue) || 0}%`
+                        : formatCurrency(parseFloat(formState.feeValue) || 0)
+                      }
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Spread</p>
+                    <p className="font-medium">{parseFloat(formState.spreadPercent) || 0}%</p>
+                  </div>
+                  <div className="text-center">
+                    <p className="text-muted-foreground">Tipo</p>
+                    <p className="font-medium">
+                      {formState.feeType === FeeType.PERCENT ? 'Percentual' : 'Fixo'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </form>
+
+          {/* Footer com botões */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsFormOpen(false)}
+              className="order-2 sm:order-1"
             >
               Cancelar
             </Button>
-            <Button type="submit" form="fee-rule-form">
+            <Button 
+              type="submit" 
+              form="fee-rule-form"
+              className="order-1 sm:order-2"
+              leftIcon={editingRule ? <Edit2 className="h-4 w-4" /> : <PlusCircle className="h-4 w-4" />}
+            >
               {editingRule ? 'Atualizar' : 'Adicionar'} Regra
             </Button>
           </div>
-        }
-      >
-        <form id="fee-rule-form" onSubmit={handleFormSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground">Valor Mínimo (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="minAmount"
-                value={formState.minAmount}
-                onChange={handleFormChange}
-                className="input input-bordered w-full bg-background text-foreground"
-              />
-              {formErrors.minAmount && <span className="text-xs text-red-500">{formErrors.minAmount}</span>}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-muted-foreground">Valor Máximo (R$)</label>
-              <input
-                type="number"
-                step="0.01"
-                min="0"
-                name="maxAmount"
-                placeholder="Deixe 999999999 para infinito"
-                value={formState.maxAmount}
-                onChange={handleFormChange}
-                className="input input-bordered w-full bg-background text-foreground"
-              />
-              {formErrors.maxAmount && <span className="text-xs text-red-500">{formErrors.maxAmount}</span>}
-            </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground">Tipo de Taxa</label>
-            <select
-              name="feeType"
-              value={formState.feeType}
-              onChange={handleFormChange}
-              className="input input-bordered w-full bg-background text-foreground"
-            >
-              <option value={FeeType.PERCENT}>Percentual</option>
-              <option value={FeeType.FIXED}>Fixo</option>
-            </select>
-            {formErrors.feeType && <span className="text-xs text-red-500">{formErrors.feeType}</span>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground">
-              {formState.feeType === FeeType.PERCENT
-                ? 'Valor da Taxa (%)'
-                : 'Valor Fixo (R$)'}
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              name="feeValue"
-              value={formState.feeValue}
-              onChange={handleFormChange}
-              className="input input-bordered w-full bg-background text-foreground"
-            />
-            {formErrors.feeValue && <span className="text-xs text-red-500">{formErrors.feeValue}</span>}
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-muted-foreground">Spread (%)</label>
-            <input
-              type="number"
-              step="0.01"
-              min="0.5"
-              name="spreadPercent"
-              value={formState.spreadPercent}
-              onChange={handleFormChange}
-              className="input input-bordered w-full bg-background text-foreground"
-            />
-            <p className="text-xs text-muted-foreground mt-1">
-              O spread não pode ser menor que 0,5%
-            </p>
-            {formErrors.spreadPercent && <span className="text-xs text-red-500">{formErrors.spreadPercent}</span>}
-          </div>
-        </form>
+        </div>
       </Modal>
-      {/* Dialog de confirmação para excluir */}
+
+      {/* Modal de confirmação de exclusão melhorado */}
       <Modal
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        title="Confirmar exclusão"
-        size="sm"
-        footer={
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+        title="Confirmar Exclusão"
+        size="md"
+      >
+        <div className="space-y-6">
+          {/* Header de aviso */}
+          <div className="bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-950/20 dark:to-rose-950/20 rounded-xl p-6">
+            <div className="flex items-center">
+              <div className="w-10 h-10 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-4">
+                <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-foreground">Excluir Regra de Taxa</h3>
+                <p className="text-sm text-muted-foreground">Esta ação não pode ser desfeita</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Detalhes da regra a ser excluída */}
+          {ruleToDelete && (
+            <div className="bg-card border border-border rounded-lg p-4">
+              <h4 className="font-medium text-foreground mb-3">Regra que será excluída:</h4>
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Faixa:</span>
+                  <p className="font-medium">
+                    {formatCurrency(ruleToDelete.minAmount)} - {
+                      ruleToDelete.maxAmount === Number.MAX_SAFE_INTEGER 
+                        ? "∞" 
+                        : formatCurrency(ruleToDelete.maxAmount)
+                    }
+                  </p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Taxa:</span>
+                  <p className="font-medium">
+                    {ruleToDelete.feeType === FeeType.PERCENT 
+                      ? formatPercentage(ruleToDelete.feeValue)
+                      : formatCurrency(ruleToDelete.feeValue)
+                    }
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <p className="text-sm text-muted-foreground">
+            ⚠️ Tem certeza que deseja excluir esta regra de taxa? Os saques futuros não utilizarão mais esta configuração.
+          </p>
+
+          {/* Footer com botões */}
+          <div className="flex flex-col sm:flex-row justify-end gap-3 pt-4 border-t border-border">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDeleteDialogOpen(false)}
+              className="order-2 sm:order-1"
+            >
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDeleteConfirm}>
-              Excluir
+            <Button 
+              variant="destructive" 
+              onClick={handleDeleteConfirm}
+              leftIcon={<Trash2 className="h-4 w-4" />}
+              className="order-1 sm:order-2"
+            >
+              Excluir Regra
             </Button>
           </div>
-        }
-      >
-        <p className="mb-4 text-sm text-muted-foreground">
-          Tem certeza que deseja excluir esta regra de taxa? Esta ação não pode ser desfeita.
-        </p>
+        </div>
       </Modal>
     </div>
   );

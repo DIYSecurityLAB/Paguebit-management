@@ -689,83 +689,133 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             </button>
           </div>
           
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="px-4 py-4 border-b border-border">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">Valor do Saque</span>
-                <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            {/* Seção principal de valores */}
+            <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Valor do Saque */}
+                <div className="text-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-2xl mb-2">💰</div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor Solicitado</p>
+                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                      {formatCurrency(Number(getSafeValue(w.amount, '0')))}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Valor a Enviar */}
+                {w.feesDetail && w.feesDetail.length > 0 && (
+                  <>
+                    <div className="text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="text-2xl mb-2">📤</div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor a Enviar</p>
+                        <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(
+                            Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
+                          )}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="text-2xl mb-2">💎</div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor Líquido</p>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
-              {/* Valores detalhados */}
-              {w.feesDetail && w.feesDetail.length > 0 && (
-                <>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm text-muted-foreground">Valor a Enviar</span>
-                    <span className="font-semibold">
-                      {formatCurrency(
-                        Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
-                      )}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mt-2">
-                    <span className="text-sm font-medium text-foreground">Valor Líquido Whitelabel</span>
-                    <span className="font-bold text-green-700">
-                      {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
-                    </span>
-                  </div>
- 
-                </>
-              )}
             </div>
+
             {/* Detalhamento das taxas */}
             {showDetailedFees && w.feesDetail && w.feesDetail.length > 0 && (
-              <div className="px-4 py-4 bg-muted border-t border-border">
+              <div className="border-t border-border">
                 {w.feesDetail.map((fee, idx) => (
-                  <div key={fee.id} className="mb-6 last:mb-0">
-                    <div className="mb-2">
-                      <span className="text-xs text-muted-foreground">Detalhamento #{idx + 1}</span>
-                      <span className="ml-2 text-xs text-muted-foreground">({formatDateSafe(fee.createdAt, 'dd/MM/yyyy HH:mm')})</span>
+                  <div key={fee.id} className="p-6 border-b border-border last:border-b-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-primary">{idx + 1}</span>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-foreground">Detalhamento de Taxas</h5>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateSafe(fee.createdAt, 'dd/MM/yyyy \'às\' HH:mm')}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
-                      {/* Valor da Fee */}
-                      <div>
-                        <span className="text-muted-foreground">Valor da Fee:</span>
-                        <span className="font-medium ml-1">
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Taxa de Serviço */}
+                      <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-red-600 dark:text-red-400">%</span>
+                          </div>
+                          <span className="text-sm font-medium text-red-700 dark:text-red-300">Taxa de Serviço</span>
+                        </div>
+                        <p className="text-lg font-bold text-red-600 dark:text-red-400">
                           {formatCurrency(Number(fee.feeAmount))}
-                          {fee.feeType === 'PERCENT' && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              ({Number(fee.feeValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
-                            </span>
-                          )}
-                        </span>
+                        </p>
+                        {fee.feeType === 'PERCENT' && (
+                          <p className="text-xs text-red-600/70 dark:text-red-400/70">
+                            {Number(fee.feeValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                          </p>
+                        )}
                       </div>
-                      {/* Valor do Spread */}
-                      <div>
-                        <span className="text-muted-foreground">Valor do Spread:</span>
-                        <span className="font-medium ml-1">
+
+                      {/* Spread */}
+                      <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400">📊</span>
+                          </div>
+                          <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Spread</span>
+                        </div>
+                        <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
                           {formatCurrency(Number(fee.spreadAmount))}
-                          {fee.spreadPercent && Number(fee.spreadPercent) > 0 && (
-                            <span className="ml-1 text-xs text-muted-foreground">
-                              ({Number(fee.spreadPercent).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
-                            </span>
-                          )}
-                        </span>
+                        </p>
+                        {fee.spreadPercent && Number(fee.spreadPercent) > 0 && (
+                          <p className="text-xs text-yellow-600/70 dark:text-yellow-400/70">
+                            {Number(fee.spreadPercent).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                          </p>
+                        )}
                       </div>
+
                       {/* Total Plataforma */}
-                      <div>
-                        <span className="text-muted-foreground">Total Plataforma:</span>
-                        <span className="font-medium ml-1">
-                           {formatCurrency(Number(fee.platformFeeAmount ?? 0))}
-                        </span>
+                      <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-purple-600 dark:text-purple-400">🏢</span>
+                          </div>
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Total Plataforma</span>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                          {formatCurrency(Number(fee.platformFeeAmount ?? 0))}
+                        </p>
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
             )}
+
             {/* Caso não haja detalhamento */}
             {showDetailedFees && (!w.feesDetail || w.feesDetail.length === 0) && (
-              <div className="px-4 py-4 bg-muted border-t border-border text-sm text-muted-foreground">
-                Nenhum detalhamento de taxas disponível para este saque.
+              <div className="p-6 text-center border-t border-border">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Info className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Nenhum detalhamento de taxas disponível para este saque.
+                </p>
               </div>
             )}
           </div>
@@ -799,45 +849,67 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         {renderStatusActions()}
 
         {showStatusForm && (
-          <div className="mt-4 border-t border-border pt-4">
-            <h3 className="font-medium text-lg mb-3">Atualizar Status</h3>
+          <div className="mt-6 border-t border-border pt-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+                  {statusIcons[selectedStatus as keyof typeof statusIcons]}
+                </div>
+                Atualizar Status para {statusLabels[selectedStatus || 'pending']}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {selectedStatus === 'completed' && 'Marque este saque como concluído fornecendo o hash da transação.'}
+                {selectedStatus === 'failed' && 'Informe o motivo da falha para registrar no sistema.'}
+                {selectedStatus === 'processing' && 'Marque este saque como em processamento.'}
+              </p>
+            </div>
             
             {selectedStatus === 'failed' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Motivo da Falha <span className="text-red-500">*</span>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                    Motivo da Falha <span className="text-red-500">*</span>
+                  </div>
                 </label>
                 <textarea
                   value={failedReason}
                   onChange={(e) => setFailedReason(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                  rows={3}
-                  placeholder="Explique o motivo da falha"
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  rows={4}
+                  placeholder="Descreva detalhadamente o motivo da falha do saque..."
                   required
                 />
               </div>
             )}
 
             {selectedStatus === 'completed' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Hash da Transação <span className="text-red-500">*</span>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Hash da Transação <span className="text-red-500">*</span>
+                  </div>
                 </label>
                 <input
                   type="text"
                   value={txId}
                   onChange={(e) => setTxId(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                  placeholder="Hash da transação no blockchain"
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 font-mono"
+                  placeholder="Cole aqui o hash da transação no blockchain..."
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  O hash da transação confirma que o pagamento foi processado na blockchain.
+                </p>
               </div>
             )}
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowStatusForm(false)}
+                className="order-2 sm:order-1"
               >
                 Cancelar
               </Button>
@@ -861,66 +933,70 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                   updateStatusMutation.isLoading
                 }
                 rightIcon={<ChevronRight className="h-4 w-4" />}
+                className="order-1 sm:order-2"
               >
                 {updateStatusMutation.isLoading 
                   ? 'Processando...' 
-                  : `Atualizar para ${statusLabels[selectedStatus || 'pending']}`}
+                  : `Confirmar ${statusLabels[selectedStatus || 'pending']}`}
               </Button>
             </div>
           </div>
         )}
 
-        {!showStatusForm && !showCompleteForm && (
-          <div className="flex justify-center mt-4 pt-4 border-t border-border">
-            <Button
-              variant="default"
-              onClick={() => {
-                setShowCompleteForm(true);
-                setShowStatusForm(false);
-              }}
-              disabled={withdrawal.status === 'completed'}
-              leftIcon={<CheckCircle className="h-4 w-4" />}
-            >
-              Concluir Saque
-            </Button>
-          </div>
-        )}
-
         {showCompleteForm && (
-          <div className="mt-4 border-t border-border pt-4">
-            <h3 className="font-medium text-lg mb-3">Concluir Saque</h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                ID da Transação <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={txId}
-                onChange={(e) => setTxId(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                placeholder="ID da transação no blockchain"
-                required
-              />
+          <div className="mt-6 border-t border-border pt-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                Concluir Saque
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Confirme a conclusão do saque fornecendo as informações da transação.
+              </p>
             </div>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Observações
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                rows={3}
-                placeholder="Informações adicionais sobre o saque"
-              />
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Hash da Transação <span className="text-red-500">*</span>
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  value={txId}
+                  onChange={(e) => setTxId(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 font-mono"
+                  placeholder="Cole aqui o hash da transação no blockchain..."
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <Info className="h-4 w-4 text-blue-500 mr-2" />
+                    Observações
+                  </div>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  rows={3}
+                  placeholder="Adicione observações sobre o processamento do saque (opcional)..."
+                />
+              </div>
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <Button
                 variant="outline"
                 onClick={() => setShowCompleteForm(false)}
+                className="order-2 sm:order-1"
               >
                 Cancelar
               </Button>
@@ -930,6 +1006,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 isLoading={updateStatusMutation.isLoading}
                 disabled={!txId.trim() || updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
+                className="order-1 sm:order-2"
               >
                 {updateStatusMutation.isLoading 
                   ? 'Processando...' 
