@@ -9,6 +9,7 @@ import StoreDashboard from './components/dashboard/StoreDashboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import StoreUsersTable from './components/tables/StoreUsersTable';
 import StoreWalletsTable from './components/tables/StoreWalletsTable';
+import StoreFeeRules from './components/fee-rules/StoreFeeRules';
 
 export default function StoreDetail() {
   const { id } = useParams();
@@ -24,10 +25,8 @@ export default function StoreDetail() {
         setLoading(true);
         const storeRepository = new StoreRepository();
         const storeData = await storeRepository.getStoreById(id);
-        // storeData pode ser ApiResponse ou StoreModel, ajuste conforme necessário
         const model = (storeData as any).data ? (storeData as any).data : storeData;
         setStore(Store.fromModel(model));
-        console.log('store:', Store.fromModel(model)); // <-- Adicionado para debug
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Falha ao carregar dados');
       } finally {
@@ -86,6 +85,7 @@ export default function StoreDetail() {
           <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
           <TabsTrigger value="info">Informações</TabsTrigger>
           <TabsTrigger value="users">Usuários</TabsTrigger>
+          <TabsTrigger value="fee-rules">Taxas</TabsTrigger>
         </TabsList>
         
         <TabsContent value="dashboard" className="p-1">
@@ -116,7 +116,6 @@ export default function StoreDetail() {
                 <p className="text-foreground">{store.updatedAt ? new Date(store.updatedAt).toLocaleString() : 'Não informado'}</p>
               </div>
             </div>
-            {/* Tabela de carteiras cadastradas */}
             <div className="mt-8">
               <h3 className="text-lg font-medium mb-4">Carteiras Cadastradas</h3>
               <StoreWalletsTable wallets={store.wallets || []} />
@@ -136,8 +135,14 @@ export default function StoreDetail() {
             />
           </div>
         </TabsContent>
+        
+        <TabsContent value="fee-rules">
+          <div className="bg-card rounded-lg shadow-md p-6">
+            <StoreFeeRules storeId={store.id} />
+          </div>
+        </TabsContent>
       </Tabs>
     </div>
   );
 }
-
+    

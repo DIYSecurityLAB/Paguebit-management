@@ -11,6 +11,36 @@ export enum WalletType {
   Polygon = "Polygon",
 }
 
+export enum FeeType {
+  PERCENT = "PERCENT",
+  FIXED = "FIXED",
+}
+
+export interface WithdrawalFeeDetail {
+  id: string;
+  withdrawalId: string;
+  whitelabelId: string;
+  storeId: string;
+  withdrawalAmount: string; // Decimal como string
+  feeType: FeeType;
+  feeValue: string; // Decimal como string
+  feeAmount: string; // Decimal como string
+  spreadPercent: string; // Decimal como string
+  spreadAmount: string; // Decimal como string
+  agioPercent: string; // Decimal como string
+  agioAmount: string; // Decimal como string
+  whitelabelTotal: string; // Decimal como string
+  platformTotal: string; // Decimal como string
+  whitelabelNet: string; // Decimal como string
+  platformFeeType?: FeeType;
+  platformFeeValue?: string; // Decimal como string
+  platformFeeAmount?: string; // Decimal como string
+  couponId?: string;
+  couponDiscount?: number;
+  couponAmount?: number;
+  createdAt: string;
+}
+
 export interface WithdrawalModel {
   id: string;
   storeId: string;
@@ -27,6 +57,7 @@ export interface WithdrawalModel {
   notes?: string;
   payments?: PaymentModel[];
   store?: StoreModel;
+  feesDetail?: WithdrawalFeeDetail[];
 }
 
 export interface WithdrawalCreateRequest {

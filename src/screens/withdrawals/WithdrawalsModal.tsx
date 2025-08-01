@@ -17,7 +17,6 @@ import { WithdrawalRepository } from '../../data/repository/withdrawal-repositor
 import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import { toast } from 'sonner';
-import { useWithdrawalFees } from '../../hooks/useWithdrawalFees';
 import PaymentsModal from '../payments/PaymentsModal';
 import { QRCodeSVG } from 'qrcode.react';
 import { AdminUpdateWithdrawalStatusReq } from '../../data/model/withdrawal.model';
@@ -61,17 +60,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const queryClient = useQueryClient();
   const withdrawalRepository = useMemo(() => new WithdrawalRepository(), []);
   const paymentRepository = useMemo(() => new PaymentRepository(), []);
-
-  // Calculador de taxas
-  const fees = useWithdrawalFees(
-    withdrawal?.amount || 0,
-    withdrawal?.destinationWalletType || "",
-    false
-  );
-
-  // Cálculo de satoshis (1 BTC = 100,000,000 satoshis)
-  const satoshiValue = fees.isBitcoinWallet ? 
-    Math.round(parseFloat(fees.expectedAmountBTC) * 100000000) : 0;
 
   // Buscar pagamentos se necessário (caso não venha em withdrawal.payments)
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -410,6 +398,44 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     );
   };
 
+  // Função utilitária para formatar decimais (string ou number)
+  function formatDecimal(val: string | number | undefined, digits = 2) {
+    if (val === undefined || val === null) return '-';
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return '-';
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  // Novo estado para o saque detalhado
+  const [detailedWithdrawal, setDetailedWithdrawal] = useState<Withdrawal | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && withdrawal?.id) {
+      setLoadingDetails(true);
+      withdrawalRepository.getWithdrawalById(withdrawal.id)
+        .then((model) => {
+          setDetailedWithdrawal(Withdrawal.fromModel(model));
+        })
+        .catch(() => {
+          setDetailedWithdrawal(null);
+        })
+        .finally(() => setLoadingDetails(false));
+    } else {
+      setDetailedWithdrawal(null);
+    }
+  }, [isOpen, withdrawal?.id, withdrawalRepository]);
+
+  if (loadingDetails) {
+    return (
+      <Modal title="Detalhes do Saque" isOpen={isOpen} onClose={onClose} size="lg">
+        <div className="p-8 text-center text-muted-foreground">Carregando detalhes do saque...</div>
+      </Modal>
+    );
+  }
+
+  const w = detailedWithdrawal || withdrawal;
+
   return (
     <Modal
       title="Detalhes do Saque"
@@ -423,15 +449,15 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           <User className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
           <div className="flex-grow min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {getSafeValue(withdrawal.store?.name, withdrawal.storeId ? withdrawal.storeId.slice(0, 8) : 'Loja não identificada')}
+              {getSafeValue(w.store?.name, w.storeId ? w.storeId.slice(0, 8) : 'Loja não identificada')}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
+              {getSafeValue(w.store?.id, w.storeId || '-')}
             </p>
           </div>
-          {withdrawal.store?.id && (
+          {w.store?.id && (
             <Link 
-              to={`/stores/${withdrawal.store.id}`} 
+              to={`/stores/${w.store.id}`} 
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md flex items-center hover:bg-primary/90 transition-colors"
@@ -443,7 +469,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         </div>
 
         <div className="flex justify-center mb-4">
-          <StatusBadge status={withdrawal.status} />
+          <StatusBadge status={w.status} />
         </div>
 
         <div className="bg-muted/30 rounded-lg p-4 mb-4 border border-border">
@@ -451,10 +477,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div className="flex justify-between items-start">
               <div className="flex-1 pr-2">
                 <p className="text-sm text-muted-foreground">ID do Saque</p>
-                <p className="font-medium text-foreground break-all">{getSafeValue(withdrawal.id)}</p>
+                <p className="font-medium text-foreground break-all">{getSafeValue(w.id)}</p>
               </div>
               <button
-                onClick={() => handleCopyId(withdrawal.id || '')}
+                onClick={() => handleCopyId(w.id || '')}
                 className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
                 title="Copiar ID do saque"
               >
@@ -468,27 +494,27 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div>
               <p className="text-sm text-muted-foreground">Data de Solicitação</p>
               <p className="font-medium text-foreground">
-                {formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')}
+                {formatDateSafe(w.createdAt, 'dd/MM/yyyy HH:mm:ss')}
               </p>
             </div>
-            {withdrawal.completedAt && (
+            {w.completedAt && (
               <div className="col-span-2">
                 <p className="text-sm text-muted-foreground">Data de Conclusão</p>
                 <p className="font-medium text-foreground">
-                  {formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')}
+                  {formatDateSafe(w.completedAt, 'dd/MM/yyyy HH:mm:ss')}
                 </p>
               </div>
             )}
             
             {/* Exibir o Hash da Transação caso exista */}
-            {withdrawal.txId && (
+            {w.txId && (
               <div className="col-span-2 flex justify-between items-start mt-2">
                 <div className="flex-1 pr-2">
                   <p className="text-sm text-muted-foreground">Hash da Transação</p>
-                  <p className="font-medium text-foreground break-all">{withdrawal.txId}</p>
+                  <p className="font-medium text-foreground break-all">{w.txId}</p>
                 </div>
                 <button
-                  onClick={() => handleCopyTxId(withdrawal.txId || '')}
+                  onClick={() => handleCopyTxId(w.txId || '')}
                   className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
                   title="Copiar hash da transação"
                 >
@@ -513,22 +539,49 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <div>
                   <p className="text-sm font-medium text-foreground">Valor</p>
                   <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(Number(getSafeValue(withdrawal.amount, '0')))}
+                    {formatCurrency(Number(getSafeValue(w.amount, '0')))}
                   </p>
                 </div>
               </div>
+            </div>
+            <div className="px-4 py-4 border-b border-border">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Valor do Saque</span>
+                <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
+              </div>
+              {/* Valor a Enviar */}
+              {w.feesDetail && w.feesDetail.length > 0 && (
+                <>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-muted-foreground">Valor a Enviar</span>
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        Number(getSafeValue(w.amount, '0')) - (
+                          Number(w.feesDetail[0].feeAmount) + Number(w.feesDetail[0].spreadAmount)
+                        )
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm font-medium text-foreground">Valor Líquido Whitelabel</span>
+                    <span className="font-bold text-green-700">
+                      {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="px-4 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex-1 pr-2">
                   <p className="text-sm font-medium text-foreground">ID da Loja</p>
                   <p className="text-sm text-muted-foreground break-all">
-                    {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
+                    {getSafeValue(w.store?.id, w.storeId || '-')}
                   </p>
                 </div>
                 <div className="flex items-center">
                   <button
-                    onClick={() => handleCopyStoreId(withdrawal.store?.id || withdrawal.storeId || '')}
+                    onClick={() => handleCopyStoreId(w.store?.id || w.storeId || '')}
                     className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors mr-1"
                     title="Copiar ID da loja"
                   >
@@ -538,9 +591,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       <Copy className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
-                  {withdrawal.store?.id && (
+                  {w.store?.id && (
                     <Link 
-                      to={`/stores/${withdrawal.store.id}`} 
+                      to={`/stores/${w.store.id}`} 
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -554,14 +607,14 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             </div>
             
             {/* Corrigir seção de referral para usar o campo correto */}
-            {(withdrawal as any).User?.referral && (
+            {(w as any).User?.referral && (
               <div className="px-4 py-4 border-b border-border">
                 <div className="flex items-start">
                   <Users className="h-4 w-4 text-primary mt-1 mr-2 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">Referral</p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      {(withdrawal as any).User?.referral}
+                      {(w as any).User?.referral}
                     </p>
                   </div>
                 </div>
@@ -572,20 +625,20 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               <div className="flex items-center justify-between">
                 <div className="flex items-center flex-1 mr-4">
                   <div className="text-xl mr-3">
-                    {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).icon}
+                    {getWalletInfo(getSafeValue(w.destinationWalletType)).icon}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">Carteira de Destino</p>
                     <p className="text-sm text-muted-foreground">
-                      {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).name}
+                      {getWalletInfo(getSafeValue(w.destinationWalletType)).name}
                     </p>
                     <p className="text-sm text-foreground break-all pr-2">
-                      {getSafeValue(withdrawal.destinationWallet)}
+                      {getSafeValue(w.destinationWallet)}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
+                  onClick={() => w.destinationWallet && handleCopyWallet(w.destinationWallet)}
                   className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors"
                   title="Copiar endereço"
                 >
@@ -642,113 +695,92 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div className="px-4 py-4 border-b border-border">
               <div className="flex justify-between items-center mb-2">
                 <span className="text-sm text-muted-foreground">Valor do Saque</span>
-                <span className="font-semibold">{formatCurrency(withdrawal.amount)}</span>
+                <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
               </div>
-              
-              {showDetailedFees && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Taxa da Plataforma ({(fees.alfredFeeRate * 100).toFixed(2)}%)</span>
-                  <span className="text-red-600 font-medium">- {formatCurrency(fees.alfredFee)}</span>
-                </div>
-              )}
-              
-              {showDetailedFees && fees.isBitcoinWallet && withdrawal.destinationWalletType === "OnChainAddress" && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Taxa de Mineração (estimada)</span>
-                  <span className="text-red-600 font-medium">~ {formatCurrency(10)}</span>
-                </div>
-              )}
-              
-              <div className="mt-3 pt-3 border-t border-border">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-foreground">Valor Final (BRL)</span>
-                  <span className="font-bold">{formatCurrency(fees.finalAmountBRL)}</span>
-                </div>
-              </div>
-            </div>
-      
-            {(fees.isBitcoinWallet || fees.isUsdtWallet) && (
-              <div className="px-4 py-4 bg-primary/10 border-t border-primary/20">
-                <div className="flex items-start">
-                  <Info className="h-5 w-5 text-primary mr-2 mt-0 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium text-foreground text-sm">
-                      Valor estimado a ser recebido em {fees.isBitcoinWallet ? "Bitcoin" : "USDT"}:
-                    </p>
-                    <p className="text-base font-mono font-bold mt-1">
-                      {fees.isBitcoinWallet
-                        ? `${fees.expectedAmountBTC} BTC`
-                        : `${fees.expectedAmountUSDT} USDT`}
-                    </p>
-                    
-                    {/* Adicionar valor em satoshis para Bitcoin */}
-                    {fees.isBitcoinWallet && (
-                      <p className="text-sm font-mono text-muted-foreground mt-1">
-                        {satoshiValue.toLocaleString()} satoshis
-                      </p>
-                    )}
+              {/* Valor a Enviar */}
+              {w.feesDetail && w.feesDetail.length > 0 && (
+                <>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-muted-foreground">Valor a Enviar</span>
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        Number(getSafeValue(w.amount, '0')) - (
+                          Number(w.feesDetail[0].feeAmount) + Number(w.feesDetail[0].spreadAmount)
+                        )
+                      )}
+                    </span>
                   </div>
-                </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm font-medium text-foreground">Valor Líquido Whitelabel</span>
+                    <span className="font-bold text-green-700">
+                      {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
+                    </span>
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Detalhamento das taxas */}
+            {showDetailedFees && w.feesDetail && w.feesDetail.length > 0 && (
+              <div className="px-4 py-4 bg-muted border-t border-border">
+                {w.feesDetail.map((fee, idx) => (
+                  <div key={fee.id} className="mb-6 last:mb-0">
+                    <div className="mb-2">
+                      <span className="text-xs text-muted-foreground">Detalhamento #{idx + 1}</span>
+                      <span className="ml-2 text-xs text-muted-foreground">({formatDateSafe(fee.createdAt, 'dd/MM/yyyy HH:mm')})</span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
+                      {/* Valor da Fee */}
+                      <div>
+                        <span className="text-muted-foreground">Valor da Fee:</span>
+                        <span className="font-medium ml-1">
+                          {formatCurrency(Number(fee.feeAmount))}
+                          {fee.feeType === 'PERCENT' && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({Number(fee.feeValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {/* Valor do Spread */}
+                      <div>
+                        <span className="text-muted-foreground">Valor do Spread:</span>
+                        <span className="font-medium ml-1">
+                          {formatCurrency(Number(fee.spreadAmount))}
+                          {fee.spreadPercent && Number(fee.spreadPercent) > 0 && (
+                            <span className="ml-1 text-xs text-muted-foreground">
+                              ({Number(fee.spreadPercent).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%)
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                      {/* Total Plataforma */}
+                      <div>
+                        <span className="text-muted-foreground">Total Plataforma:</span>
+                        <span className="font-medium ml-1">
+                          {formatCurrency(Number(fee.platformTotal))}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
-            
-            {showDetailedFees && (
-              <div className="px-4 py-4 bg-muted border-t border-border">
-                <h5 className="text-sm font-medium text-foreground mb-3">Conversão para Criptomoeda</h5>
-                
-                {fees.loading ? (
-                  <div className="text-center py-2">
-                    <span className="animate-pulse text-muted-foreground">Carregando taxas...</span>
-                  </div>
-                ) : fees.error ? (
-                  <div className="text-center py-2">
-                    <span className="text-red-500 text-sm">{fees.error}</span>
-                  </div>
-                ) : (
-                  <>
-                    {fees.isBitcoinWallet && (
-                      <div className="mb-3">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-muted-foreground">Cotação Bitcoin (com ágio {(fees.btcSpreadRate * 100).toFixed(1)}%)</span>
-                          <span>{formatCurrency(fees.btcToBrl || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Valor Aproximado em Bitcoin</span>
-                          <span className="font-mono font-medium">₿ {fees.expectedAmountBTC}</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm font-medium">Valor em Satoshis</span>
-                          <span className="font-mono font-medium">{satoshiValue.toLocaleString()} sats</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {fees.isUsdtWallet && (
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-muted-foreground">Cotação USDT (com ágio {(fees.usdtSpreadRate * 100).toFixed(1)}%)</span>
-                          <span>{formatCurrency(fees.usdtToBrl || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Valor Aproximado em USDT</span>
-                          <span className="font-mono font-medium">$ {fees.expectedAmountUSDT}</span>
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
+            {/* Caso não haja detalhamento */}
+            {showDetailedFees && (!w.feesDetail || w.feesDetail.length === 0) && (
+              <div className="px-4 py-4 bg-muted border-t border-border text-sm text-muted-foreground">
+                Nenhum detalhamento de taxas disponível para este saque.
               </div>
             )}
           </div>
         </div>
 
-        {withdrawal.failedReason && (
+        {w.failedReason && (
           <div className="mb-4 p-4 bg-status-rejected/10 rounded-lg border border-status-rejected/20">
             <div className="flex items-start">
               <AlertTriangle className="h-5 w-5 text-status-rejected mr-3 mt-0.5" />
               <div>
                 <h4 className="text-sm font-medium text-status-rejected">Motivo da Falha</h4>
-                <p className="mt-1 text-sm text-status-rejected">{withdrawal.failedReason}</p>
+                <p className="mt-1 text-sm text-status-rejected">{w.failedReason}</p>
               </div>
             </div>
           </div>
