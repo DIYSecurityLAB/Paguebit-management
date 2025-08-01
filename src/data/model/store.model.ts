@@ -46,7 +46,48 @@ export interface StoreModel {
   wallets?: StoreWalletModel[];
   users?: StoreUserModel[];
   permissions?: StoreUserPermissionModel[];
+  feeRules?: FeeRuleModel[]; // Adicionado
 }
+
+// --- Fee Rules ---
+export enum FeeType {
+  PERCENT = 'PERCENT',
+  FIXED = 'FIXED',
+}
+
+export interface FeeRuleModel {
+  id: string;
+  whitelabelId?: string | null;
+  storeId?: string | null;
+  minAmount: number;
+  maxAmount: number;
+  feeType: FeeType;
+  feeValue: number;
+  spreadPercent?: number | null;
+  appliesTo: 'PLATFORM' | 'WHITELABEL';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateFeeRuleRequest {
+  minAmount: number;
+  maxAmount: number;
+  feeType: FeeType;
+  feeValue: number;
+  spreadPercent?: number;
+}
+
+export interface UpdateFeeRuleRequest {
+  minAmount?: number;
+  maxAmount?: number;
+  feeType?: FeeType;
+  feeValue?: number;
+  spreadPercent?: number;
+}
+
+export type CreateFeeRuleResponse = ApiResponse<FeeRuleModel>;
+export type UpdateFeeRuleResponse = ApiResponse<FeeRuleModel>;
+export type ListFeeRulesResponse = ApiResponse<FeeRuleModel[]>;
 
 // --- Requests ---
 export interface CreateStoreRequest {

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { WithdrawalModel, WithdrawalStatus, WalletType } from "../../data/model/withdrawal.model";
+import { WithdrawalModel, WithdrawalStatus, WalletType, WithdrawalFeeDetail } from "../../data/model/withdrawal.model";
 import { PaymentModel } from "../../data/model/payment.model";
 import { StoreModel } from "../../data/model/store.model";
 
@@ -21,6 +21,7 @@ export const WithdrawalSchema = z.object({
   notes: z.string().nullable().optional(),
   payments: z.array(z.any()).optional(),
   store: z.any().optional(),
+  feesDetail: z.array(z.any()).optional(),
 });
 
 export type WithdrawalType = z.infer<typeof WithdrawalSchema>;
@@ -41,6 +42,7 @@ export class Withdrawal {
   notes?: string | null;
   payments?: PaymentModel[];
   store?: StoreModel;
+  feesDetail?: WithdrawalFeeDetail[];
 
   constructor(data: WithdrawalType) {
     const parsed = WithdrawalSchema.safeParse(data);
@@ -63,14 +65,15 @@ export class Withdrawal {
       paymentIds: this.paymentIds,
       status: this.status,
       createdAt: this.createdAt,
-      completedAt: this.completedAt,
-      destinationWallet: this.destinationWallet,
-      destinationWalletType: this.destinationWalletType,
-      failedReason: this.failedReason,
-      txId: this.txId,
-      notes: this.notes,
+      completedAt: this.completedAt ?? undefined,
+      destinationWallet: this.destinationWallet ?? undefined,
+      destinationWalletType: this.destinationWalletType ?? undefined,
+      failedReason: this.failedReason ?? undefined,
+      txId: this.txId ?? undefined,
+      notes: this.notes ?? undefined,
       payments: this.payments,
       store: this.store,
+      feesDetail: this.feesDetail,
     };
   }
 

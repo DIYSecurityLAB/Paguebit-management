@@ -17,7 +17,6 @@ import { WithdrawalRepository } from '../../data/repository/withdrawal-repositor
 import { PaymentRepository } from '../../data/repository/payment-repository';
 import { formatCurrency, formatDateTime } from '../../utils/format';
 import { toast } from 'sonner';
-import { useWithdrawalFees } from '../../hooks/useWithdrawalFees';
 import PaymentsModal from '../payments/PaymentsModal';
 import { QRCodeSVG } from 'qrcode.react';
 import { AdminUpdateWithdrawalStatusReq } from '../../data/model/withdrawal.model';
@@ -61,17 +60,6 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const queryClient = useQueryClient();
   const withdrawalRepository = useMemo(() => new WithdrawalRepository(), []);
   const paymentRepository = useMemo(() => new PaymentRepository(), []);
-
-  // Calculador de taxas
-  const fees = useWithdrawalFees(
-    withdrawal?.amount || 0,
-    withdrawal?.destinationWalletType || "",
-    false
-  );
-
-  // Cálculo de satoshis (1 BTC = 100,000,000 satoshis)
-  const satoshiValue = fees.isBitcoinWallet ? 
-    Math.round(parseFloat(fees.expectedAmountBTC) * 100000000) : 0;
 
   // Buscar pagamentos se necessário (caso não venha em withdrawal.payments)
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -410,6 +398,44 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     );
   };
 
+  // Função utilitária para formatar decimais (string ou number)
+  function formatDecimal(val: string | number | undefined, digits = 2) {
+    if (val === undefined || val === null) return '-';
+    const num = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(num)) return '-';
+    return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  }
+
+  // Novo estado para o saque detalhado
+  const [detailedWithdrawal, setDetailedWithdrawal] = useState<Withdrawal | null>(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && withdrawal?.id) {
+      setLoadingDetails(true);
+      withdrawalRepository.getWithdrawalById(withdrawal.id)
+        .then((model) => {
+          setDetailedWithdrawal(Withdrawal.fromModel(model));
+        })
+        .catch(() => {
+          setDetailedWithdrawal(null);
+        })
+        .finally(() => setLoadingDetails(false));
+    } else {
+      setDetailedWithdrawal(null);
+    }
+  }, [isOpen, withdrawal?.id, withdrawalRepository]);
+
+  if (loadingDetails) {
+    return (
+      <Modal title="Detalhes do Saque" isOpen={isOpen} onClose={onClose} size="lg">
+        <div className="p-8 text-center text-muted-foreground">Carregando detalhes do saque...</div>
+      </Modal>
+    );
+  }
+
+  const w = detailedWithdrawal || withdrawal;
+
   return (
     <Modal
       title="Detalhes do Saque"
@@ -423,15 +449,15 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           <User className="h-5 w-5 text-primary mr-3 flex-shrink-0" />
           <div className="flex-grow min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {getSafeValue(withdrawal.store?.name, withdrawal.storeId ? withdrawal.storeId.slice(0, 8) : 'Loja não identificada')}
+              {getSafeValue(w.store?.name, w.storeId ? w.storeId.slice(0, 8) : 'Loja não identificada')}
             </p>
             <p className="text-xs text-muted-foreground truncate">
-              {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
+              {getSafeValue(w.store?.id, w.storeId || '-')}
             </p>
           </div>
-          {withdrawal.store?.id && (
+          {w.store?.id && (
             <Link 
-              to={`/stores/${withdrawal.store.id}`} 
+              to={`/stores/${w.store.id}`} 
               target="_blank"
               rel="noopener noreferrer"
               className="ml-2 px-2 py-1 text-xs bg-primary text-primary-foreground rounded-md flex items-center hover:bg-primary/90 transition-colors"
@@ -443,7 +469,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         </div>
 
         <div className="flex justify-center mb-4">
-          <StatusBadge status={withdrawal.status} />
+          <StatusBadge status={w.status} />
         </div>
 
         <div className="bg-muted/30 rounded-lg p-4 mb-4 border border-border">
@@ -451,10 +477,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div className="flex justify-between items-start">
               <div className="flex-1 pr-2">
                 <p className="text-sm text-muted-foreground">ID do Saque</p>
-                <p className="font-medium text-foreground break-all">{getSafeValue(withdrawal.id)}</p>
+                <p className="font-medium text-foreground break-all">{getSafeValue(w.id)}</p>
               </div>
               <button
-                onClick={() => handleCopyId(withdrawal.id || '')}
+                onClick={() => handleCopyId(w.id || '')}
                 className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
                 title="Copiar ID do saque"
               >
@@ -468,27 +494,27 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             <div>
               <p className="text-sm text-muted-foreground">Data de Solicitação</p>
               <p className="font-medium text-foreground">
-                {formatDateSafe(withdrawal.createdAt, 'dd/MM/yyyy HH:mm:ss')}
+                {formatDateSafe(w.createdAt, 'dd/MM/yyyy HH:mm:ss')}
               </p>
             </div>
-            {withdrawal.completedAt && (
+            {w.completedAt && (
               <div className="col-span-2">
                 <p className="text-sm text-muted-foreground">Data de Conclusão</p>
                 <p className="font-medium text-foreground">
-                  {formatDateSafe(withdrawal.completedAt, 'dd/MM/yyyy HH:mm:ss')}
+                  {formatDateSafe(w.completedAt, 'dd/MM/yyyy HH:mm:ss')}
                 </p>
               </div>
             )}
             
             {/* Exibir o Hash da Transação caso exista */}
-            {withdrawal.txId && (
+            {w.txId && (
               <div className="col-span-2 flex justify-between items-start mt-2">
                 <div className="flex-1 pr-2">
                   <p className="text-sm text-muted-foreground">Hash da Transação</p>
-                  <p className="font-medium text-foreground break-all">{withdrawal.txId}</p>
+                  <p className="font-medium text-foreground break-all">{w.txId}</p>
                 </div>
                 <button
-                  onClick={() => handleCopyTxId(withdrawal.txId || '')}
+                  onClick={() => handleCopyTxId(w.txId || '')}
                   className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors flex-shrink-0 mt-1"
                   title="Copiar hash da transação"
                 >
@@ -513,22 +539,47 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 <div>
                   <p className="text-sm font-medium text-foreground">Valor</p>
                   <p className="text-lg font-bold text-green-600">
-                    {formatCurrency(Number(getSafeValue(withdrawal.amount, '0')))}
+                    {formatCurrency(Number(getSafeValue(w.amount, '0')))}
                   </p>
                 </div>
               </div>
+            </div>
+            <div className="px-4 py-4 border-b border-border">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm text-muted-foreground">Valor do Saque</span>
+                <span className="font-semibold">{formatCurrency(Number(getSafeValue(w.amount, '0')))}</span>
+              </div>
+              {/* Valores detalhados */}
+              {w.feesDetail && w.feesDetail.length > 0 && (
+                <>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm text-muted-foreground">Valor a Enviar</span>
+                    <span className="font-semibold">
+                      {formatCurrency(
+                        Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mt-2">
+                    <span className="text-sm font-medium text-foreground">Valor Líquido Whitelabel</span>
+                    <span className="font-bold text-green-700">
+                      {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
+                    </span>
+                  </div>
+                </>
+              )}
             </div>
             <div className="px-4 py-4 border-b border-border">
               <div className="flex items-center justify-between">
                 <div className="flex-1 pr-2">
                   <p className="text-sm font-medium text-foreground">ID da Loja</p>
                   <p className="text-sm text-muted-foreground break-all">
-                    {getSafeValue(withdrawal.store?.id, withdrawal.storeId || '-')}
+                    {getSafeValue(w.store?.id, w.storeId || '-')}
                   </p>
                 </div>
                 <div className="flex items-center">
                   <button
-                    onClick={() => handleCopyStoreId(withdrawal.store?.id || withdrawal.storeId || '')}
+                    onClick={() => handleCopyStoreId(w.store?.id || w.storeId || '')}
                     className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors mr-1"
                     title="Copiar ID da loja"
                   >
@@ -538,9 +589,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       <Copy className="h-4 w-4 text-muted-foreground" />
                     )}
                   </button>
-                  {withdrawal.store?.id && (
+                  {w.store?.id && (
                     <Link 
-                      to={`/stores/${withdrawal.store.id}`} 
+                      to={`/stores/${w.store.id}`} 
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-2 hover:bg-muted rounded-full transition-colors"
@@ -554,14 +605,14 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             </div>
             
             {/* Corrigir seção de referral para usar o campo correto */}
-            {(withdrawal as any).User?.referral && (
+            {(w as any).User?.referral && (
               <div className="px-4 py-4 border-b border-border">
                 <div className="flex items-start">
                   <Users className="h-4 w-4 text-primary mt-1 mr-2 flex-shrink-0" />
                   <div>
                     <p className="text-sm font-medium text-foreground">Referral</p>
                     <p className="text-sm text-muted-foreground font-mono">
-                      {(withdrawal as any).User?.referral}
+                      {(w as any).User?.referral}
                     </p>
                   </div>
                 </div>
@@ -572,20 +623,20 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               <div className="flex items-center justify-between">
                 <div className="flex items-center flex-1 mr-4">
                   <div className="text-xl mr-3">
-                    {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).icon}
+                    {getWalletInfo(getSafeValue(w.destinationWalletType)).icon}
                   </div>
                   <div className="flex-1">
                     <p className="text-sm font-medium text-foreground">Carteira de Destino</p>
                     <p className="text-sm text-muted-foreground">
-                      {getWalletInfo(getSafeValue(withdrawal.destinationWalletType)).name}
+                      {getWalletInfo(getSafeValue(w.destinationWalletType)).name}
                     </p>
                     <p className="text-sm text-foreground break-all pr-2">
-                      {getSafeValue(withdrawal.destinationWallet)}
+                      {getSafeValue(w.destinationWallet)}
                     </p>
                   </div>
                 </div>
                 <button
-                  onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
+                  onClick={() => w.destinationWallet && handleCopyWallet(w.destinationWallet)}
                   className="flex items-center justify-center p-2 hover:bg-muted rounded-full transition-colors"
                   title="Copiar endereço"
                 >
@@ -638,117 +689,145 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             </button>
           </div>
           
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
-            <div className="px-4 py-4 border-b border-border">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm text-muted-foreground">Valor do Saque</span>
-                <span className="font-semibold">{formatCurrency(withdrawal.amount)}</span>
-              </div>
-              
-              {showDetailedFees && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Taxa da Plataforma ({(fees.alfredFeeRate * 100).toFixed(2)}%)</span>
-                  <span className="text-red-600 font-medium">- {formatCurrency(fees.alfredFee)}</span>
-                </div>
-              )}
-              
-              {showDetailedFees && fees.isBitcoinWallet && withdrawal.destinationWalletType === "OnChainAddress" && (
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm text-muted-foreground">Taxa de Mineração (estimada)</span>
-                  <span className="text-red-600 font-medium">~ {formatCurrency(10)}</span>
-                </div>
-              )}
-              
-              <div className="mt-3 pt-3 border-t border-border">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-foreground">Valor Final (BRL)</span>
-                  <span className="font-bold">{formatCurrency(fees.finalAmountBRL)}</span>
-                </div>
-              </div>
-            </div>
-      
-            {(fees.isBitcoinWallet || fees.isUsdtWallet) && (
-              <div className="px-4 py-4 bg-primary/10 border-t border-primary/20">
-                <div className="flex items-start">
-                  <Info className="h-5 w-5 text-primary mr-2 mt-0 flex-shrink-0" />
-                  <div>
-                    <p className="font-medium text-foreground text-sm">
-                      Valor estimado a ser recebido em {fees.isBitcoinWallet ? "Bitcoin" : "USDT"}:
+          <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+            {/* Seção principal de valores */}
+            <div className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {/* Valor do Saque */}
+                <div className="text-center">
+                  <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                    <div className="text-2xl mb-2">💰</div>
+                    <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor Solicitado</p>
+                    <p className="text-xl font-bold text-blue-600 dark:text-blue-400">
+                      {formatCurrency(Number(getSafeValue(w.amount, '0')))}
                     </p>
-                    <p className="text-base font-mono font-bold mt-1">
-                      {fees.isBitcoinWallet
-                        ? `${fees.expectedAmountBTC} BTC`
-                        : `${fees.expectedAmountUSDT} USDT`}
-                    </p>
-                    
-                    {/* Adicionar valor em satoshis para Bitcoin */}
-                    {fees.isBitcoinWallet && (
-                      <p className="text-sm font-mono text-muted-foreground mt-1">
-                        {satoshiValue.toLocaleString()} satoshis
-                      </p>
-                    )}
                   </div>
                 </div>
-              </div>
-            )}
-            
-            {showDetailedFees && (
-              <div className="px-4 py-4 bg-muted border-t border-border">
-                <h5 className="text-sm font-medium text-foreground mb-3">Conversão para Criptomoeda</h5>
-                
-                {fees.loading ? (
-                  <div className="text-center py-2">
-                    <span className="animate-pulse text-muted-foreground">Carregando taxas...</span>
-                  </div>
-                ) : fees.error ? (
-                  <div className="text-center py-2">
-                    <span className="text-red-500 text-sm">{fees.error}</span>
-                  </div>
-                ) : (
+
+                {/* Valor a Enviar */}
+                {w.feesDetail && w.feesDetail.length > 0 && (
                   <>
-                    {fees.isBitcoinWallet && (
-                      <div className="mb-3">
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-muted-foreground">Cotação Bitcoin (com ágio {(fees.btcSpreadRate * 100).toFixed(1)}%)</span>
-                          <span>{formatCurrency(fees.btcToBrl || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Valor Aproximado em Bitcoin</span>
-                          <span className="font-mono font-medium">₿ {fees.expectedAmountBTC}</span>
-                        </div>
-                        <div className="flex justify-between items-center mt-1">
-                          <span className="text-sm font-medium">Valor em Satoshis</span>
-                          <span className="font-mono font-medium">{satoshiValue.toLocaleString()} sats</span>
-                        </div>
+                    <div className="text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="text-2xl mb-2">📤</div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor a Enviar</p>
+                        <p className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                          {formatCurrency(
+                            Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)
+                          )}
+                        </p>
                       </div>
-                    )}
-                    
-                    {fees.isUsdtWallet && (
-                      <div>
-                        <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm text-muted-foreground">Cotação USDT (com ágio {(fees.usdtSpreadRate * 100).toFixed(1)}%)</span>
-                          <span>{formatCurrency(fees.usdtToBrl || 0)}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">Valor Aproximado em USDT</span>
-                          <span className="font-mono font-medium">$ {fees.expectedAmountUSDT}</span>
-                        </div>
+                    </div>
+
+                    <div className="text-center">
+                      <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                        <div className="text-2xl mb-2">💎</div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground font-medium mb-1">Valor Líquido</p>
+                        <p className="text-xl font-bold text-green-600 dark:text-green-400">
+                          {formatCurrency(Number(w.feesDetail[0].whitelabelNet))}
+                        </p>
                       </div>
-                    )}
+                    </div>
                   </>
                 )}
+              </div>
+            </div>
+
+            {/* Detalhamento das taxas */}
+            {showDetailedFees && w.feesDetail && w.feesDetail.length > 0 && (
+              <div className="border-t border-border">
+                {w.feesDetail.map((fee, idx) => (
+                  <div key={fee.id} className="p-6 border-b border-border last:border-b-0">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center">
+                        <div className="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center mr-3">
+                          <span className="text-sm font-medium text-primary">{idx + 1}</span>
+                        </div>
+                        <div>
+                          <h5 className="font-medium text-foreground">Detalhamento de Taxas</h5>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDateSafe(fee.createdAt, 'dd/MM/yyyy \'às\' HH:mm')}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {/* Taxa de Serviço */}
+                      <div className="bg-red-50 dark:bg-red-950/20 rounded-lg p-4 border border-red-200 dark:border-red-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-red-600 dark:text-red-400">%</span>
+                          </div>
+                          <span className="text-sm font-medium text-red-700 dark:text-red-300">Taxa de Serviço</span>
+                        </div>
+                        <p className="text-lg font-bold text-red-600 dark:text-red-400">
+                          {formatCurrency(Number(fee.feeAmount))}
+                        </p>
+                        {fee.feeType === 'PERCENT' && (
+                          <p className="text-xs text-red-600/70 dark:text-red-400/70">
+                            {Number(fee.feeValue).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Spread */}
+                      <div className="bg-yellow-50 dark:bg-yellow-950/20 rounded-lg p-4 border border-yellow-200 dark:border-yellow-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-yellow-100 dark:bg-yellow-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-yellow-600 dark:text-yellow-400">📊</span>
+                          </div>
+                          <span className="text-sm font-medium text-yellow-700 dark:text-yellow-300">Spread</span>
+                        </div>
+                        <p className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
+                          {formatCurrency(Number(fee.spreadAmount))}
+                        </p>
+                        {fee.spreadPercent && Number(fee.spreadPercent) > 0 && (
+                          <p className="text-xs text-yellow-600/70 dark:text-yellow-400/70">
+                            {Number(fee.spreadPercent).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Total Plataforma */}
+                      <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-4 border border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center mb-2">
+                          <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs text-purple-600 dark:text-purple-400">🏢</span>
+                          </div>
+                          <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Total Plataforma</span>
+                        </div>
+                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                          {formatCurrency(Number(fee.platformFeeAmount ?? 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Caso não haja detalhamento */}
+            {showDetailedFees && (!w.feesDetail || w.feesDetail.length === 0) && (
+              <div className="p-6 text-center border-t border-border">
+                <div className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <Info className="h-8 w-8 text-gray-400" />
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Nenhum detalhamento de taxas disponível para este saque.
+                </p>
               </div>
             )}
           </div>
         </div>
 
-        {withdrawal.failedReason && (
+        {w.failedReason && (
           <div className="mb-4 p-4 bg-status-rejected/10 rounded-lg border border-status-rejected/20">
             <div className="flex items-start">
               <AlertTriangle className="h-5 w-5 text-status-rejected mr-3 mt-0.5" />
               <div>
                 <h4 className="text-sm font-medium text-status-rejected">Motivo da Falha</h4>
-                <p className="mt-1 text-sm text-status-rejected">{withdrawal.failedReason}</p>
+                <p className="mt-1 text-sm text-status-rejected">{w.failedReason}</p>
               </div>
             </div>
           </div>
@@ -770,45 +849,67 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
         {renderStatusActions()}
 
         {showStatusForm && (
-          <div className="mt-4 border-t border-border pt-4">
-            <h3 className="font-medium text-lg mb-3">Atualizar Status</h3>
+          <div className="mt-6 border-t border-border pt-6">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
+                  {statusIcons[selectedStatus as keyof typeof statusIcons]}
+                </div>
+                Atualizar Status para {statusLabels[selectedStatus || 'pending']}
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                {selectedStatus === 'completed' && 'Marque este saque como concluído fornecendo o hash da transação.'}
+                {selectedStatus === 'failed' && 'Informe o motivo da falha para registrar no sistema.'}
+                {selectedStatus === 'processing' && 'Marque este saque como em processamento.'}
+              </p>
+            </div>
             
             {selectedStatus === 'failed' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Motivo da Falha <span className="text-red-500">*</span>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <AlertTriangle className="h-4 w-4 text-red-500 mr-2" />
+                    Motivo da Falha <span className="text-red-500">*</span>
+                  </div>
                 </label>
                 <textarea
                   value={failedReason}
                   onChange={(e) => setFailedReason(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                  rows={3}
-                  placeholder="Explique o motivo da falha"
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  rows={4}
+                  placeholder="Descreva detalhadamente o motivo da falha do saque..."
                   required
                 />
               </div>
             )}
 
             {selectedStatus === 'completed' && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  Hash da Transação <span className="text-red-500">*</span>
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Hash da Transação <span className="text-red-500">*</span>
+                  </div>
                 </label>
                 <input
                   type="text"
                   value={txId}
                   onChange={(e) => setTxId(e.target.value)}
-                  className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                  placeholder="Hash da transação no blockchain"
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 font-mono"
+                  placeholder="Cole aqui o hash da transação no blockchain..."
                   required
                 />
+                <p className="text-xs text-muted-foreground mt-2">
+                  O hash da transação confirma que o pagamento foi processado na blockchain.
+                </p>
               </div>
             )}
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3">
               <Button
                 variant="outline"
                 onClick={() => setShowStatusForm(false)}
+                className="order-2 sm:order-1"
               >
                 Cancelar
               </Button>
@@ -832,66 +933,70 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                   updateStatusMutation.isLoading
                 }
                 rightIcon={<ChevronRight className="h-4 w-4" />}
+                className="order-1 sm:order-2"
               >
                 {updateStatusMutation.isLoading 
                   ? 'Processando...' 
-                  : `Atualizar para ${statusLabels[selectedStatus || 'pending']}`}
+                  : `Confirmar ${statusLabels[selectedStatus || 'pending']}`}
               </Button>
             </div>
           </div>
         )}
 
-        {!showStatusForm && !showCompleteForm && (
-          <div className="flex justify-center mt-4 pt-4 border-t border-border">
-            <Button
-              variant="default"
-              onClick={() => {
-                setShowCompleteForm(true);
-                setShowStatusForm(false);
-              }}
-              disabled={withdrawal.status === 'completed'}
-              leftIcon={<CheckCircle className="h-4 w-4" />}
-            >
-              Concluir Saque
-            </Button>
-          </div>
-        )}
-
         {showCompleteForm && (
-          <div className="mt-4 border-t border-border pt-4">
-            <h3 className="font-medium text-lg mb-3">Concluir Saque</h3>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                ID da Transação <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                value={txId}
-                onChange={(e) => setTxId(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                placeholder="ID da transação no blockchain"
-                required
-              />
+          <div className="mt-6 border-t border-border pt-6">
+            <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20 rounded-xl p-6 mb-6">
+              <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center">
+                <div className="w-8 h-8 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-3">
+                  <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+                </div>
+                Concluir Saque
+              </h3>
+              <p className="text-sm text-muted-foreground">
+                Confirme a conclusão do saque fornecendo as informações da transação.
+              </p>
             </div>
             
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-foreground mb-1">
-                Observações
-              </label>
-              <textarea
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                className="w-full px-3 py-2 bg-background border border-input rounded-md"
-                rows={3}
-                placeholder="Informações adicionais sobre o saque"
-              />
+            <div className="space-y-6">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
+                    Hash da Transação <span className="text-red-500">*</span>
+                  </div>
+                </label>
+                <input
+                  type="text"
+                  value={txId}
+                  onChange={(e) => setTxId(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200 font-mono"
+                  placeholder="Cole aqui o hash da transação no blockchain..."
+                  required
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-2">
+                  <div className="flex items-center">
+                    <Info className="h-4 w-4 text-blue-500 mr-2" />
+                    Observações
+                  </div>
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full px-4 py-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200"
+                  rows={3}
+                  placeholder="Adicione observações sobre o processamento do saque (opcional)..."
+                />
+              </div>
             </div>
             
-            <div className="flex justify-end gap-2">
+            <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
               <Button
                 variant="outline"
                 onClick={() => setShowCompleteForm(false)}
+                className="order-2 sm:order-1"
               >
                 Cancelar
               </Button>
@@ -901,6 +1006,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 isLoading={updateStatusMutation.isLoading}
                 disabled={!txId.trim() || updateStatusMutation.isLoading}
                 leftIcon={<CheckCircle className="h-4 w-4" />}
+                className="order-1 sm:order-2"
               >
                 {updateStatusMutation.isLoading 
                   ? 'Processando...' 
