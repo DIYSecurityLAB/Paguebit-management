@@ -52,32 +52,37 @@ class ApiDataSource {
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    console.log("[API][GET] Enviando para:", url, "Config:", config);
     const response: AxiosResponse<T> = await this.api.get(url, config);
-   
+    console.log("[API][GET] Resposta de:", url, "Dados:", response.data);
     return response.data;
   }
 
   async post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
+    console.log("[API][POST] Enviando para:", url, "Body:", data, "Config:", config);
     const response: AxiosResponse<T> = await this.api.post(url, data, config);
-    
+    console.log("[API][POST] Resposta de:", url, "Dados:", response.data);
     return response.data;
   }
 
   async put<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
+    console.log("[API][PUT] Enviando para:", url, "Body:", data, "Config:", config);
     const response: AxiosResponse<T> = await this.api.put(url, data, config);
-    
+    console.log("[API][PUT] Resposta de:", url, "Dados:", response.data);
     return response.data;
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
+    console.log("[API][DELETE] Enviando para:", url, "Config:", config);
     const response: AxiosResponse<T> = await this.api.delete(url, config);
-     
+    console.log("[API][DELETE] Resposta de:", url, "Dados:", response.data);
     return response.data;
   }
 
   async patch<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
+    console.log("[API][PATCH] Enviando para:", url, "Body:", data, "Config:", config);
     const response: AxiosResponse<T> = await this.api.patch(url, data, config);
-     
+    console.log("[API][PATCH] Resposta de:", url, "Dados:", response.data);
     return response.data;
   }
 }
