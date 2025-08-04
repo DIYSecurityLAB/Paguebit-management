@@ -255,6 +255,10 @@ export default function WithdrawalsCard() {
                   <span className="capitalize">{withdrawal.destinationWalletType}</span>
                 </div>
                 <div className="flex justify-between">
+                  <span className="text-muted-foreground">Email do Owner:</span>
+                  <span className="font-medium">{withdrawal.ownerEmail || 'Não informado'}</span>
+                </div>
+                <div className="flex justify-between">
                   <span className="text-muted-foreground">Criado em:</span>
                   <span>
                     {withdrawal.createdAt ? formatDateTime(withdrawal.createdAt) : '-'}
