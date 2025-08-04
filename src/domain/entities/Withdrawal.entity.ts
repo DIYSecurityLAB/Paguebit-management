@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { WithdrawalModel, WithdrawalStatus, WalletType, WithdrawalFeeDetail } from "../../data/model/withdrawal.model";
-import { PaymentModel } from "../../data/model/payment.model";
+ import { PaymentModel } from "../../data/model/payment.model";
 import { StoreModel } from "../../data/model/store.model";
 
 export const WithdrawalStatusSchema = z.enum(['pending', 'completed', 'failed']);
@@ -100,3 +100,4 @@ export class Withdrawal {
     return statusTranslations[this.status] ?? this.status;
   }
 }
+ 

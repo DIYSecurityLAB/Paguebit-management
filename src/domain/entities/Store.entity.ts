@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { StoreModel, FeeRuleModel } from "../../data/model/store.model";
-
+ 
 export const StoreSchema = z.object({
   id: z.string().min(1, "ID da loja não pode ser vazio"),
   name: z.string().min(1, "Nome da loja não pode ser vazio"),
