@@ -19,11 +19,14 @@ export class Store {
   whitelabelId!: string;
   createdAt!: string;
   updatedAt!: string;
-  users?: StoreModel["users"]; // Adicionado
-  wallets?: StoreModel["wallets"]; // Adicionado
-  feeRules?: FeeRuleModel[]; // Adicionado
+  users?: StoreModel["users"];
+  wallets?: StoreModel["wallets"];
+  feeRules?: FeeRuleModel[];
+  owner?: { email: string };
 
-  constructor(data: StoreType & Partial<Pick<Store, "users" | "wallets" | "feeRules">>) {
+  constructor(
+    data: StoreType & Partial<Pick<Store, "users" | "wallets" | "feeRules" | "owner">>
+  ) {
     const parsed = StoreSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
@@ -32,13 +35,14 @@ export class Store {
     if ("users" in data) this.users = data.users;
     if ("wallets" in data) this.wallets = data.wallets;
     if ("feeRules" in data) this.feeRules = data.feeRules;
+    if ("owner" in data) this.owner = data.owner;
   }
 
-  static fromModel(model: StoreModel): Store {
-    return new Store(model as StoreType & Partial<Pick<Store, "users" | "wallets" | "feeRules">>);
+  static fromModel(model: StoreModel & { feeRules?: FeeRuleModel[]; owner?: { email: string } }): Store {
+    return new Store(model as StoreType & Partial<Pick<Store, "users" | "wallets" | "feeRules" | "owner">>);
   }
 
-  public toModel(): StoreModel {
+  public toModel(): StoreModel & { feeRules?: FeeRuleModel[]; owner?: { email: string } } {
     return {
       id: this.id,
       name: this.name,
@@ -49,6 +53,8 @@ export class Store {
       users: this.users,
       wallets: this.wallets,
       feeRules: this.feeRules,
+      owner: this.owner,
     };
   }
 }
+ 
