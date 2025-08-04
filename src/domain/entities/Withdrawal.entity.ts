@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { WithdrawalModel, WithdrawalStatus, WalletType, WithdrawalFeeDetail } from "../../data/model/withdrawal.model";
-import { PaymentModel } from "../../data/model/payment.model";
+ import { PaymentModel } from "../../data/model/payment.model";
 import { StoreModel } from "../../data/model/store.model";
 
 export const WithdrawalStatusSchema = z.enum(['pending', 'completed', 'failed']);
@@ -22,6 +22,7 @@ export const WithdrawalSchema = z.object({
   payments: z.array(z.any()).optional(),
   store: z.any().optional(),
   feesDetail: z.array(z.any()).optional(),
+  ownerEmail: z.string().nullable().optional(),
 });
 
 export type WithdrawalType = z.infer<typeof WithdrawalSchema>;
@@ -43,20 +44,31 @@ export class Withdrawal {
   payments?: PaymentModel[];
   store?: StoreModel;
   feesDetail?: WithdrawalFeeDetail[];
+  owner?: { email: string };
+  ownerEmail?: string | null;
 
-  constructor(data: WithdrawalType) {
+  constructor(data: WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail">>) {
     const parsed = WithdrawalSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
     }
     Object.assign(this, parsed.data);
+    if ("feesDetail" in data) this.feesDetail = data.feesDetail;
+    if ("owner" in data) this.owner = data.owner;
+    if ("ownerEmail" in data) this.ownerEmail = data.ownerEmail;
   }
 
-  static fromModel(model: WithdrawalModel): Withdrawal {
-    return new Withdrawal(model as WithdrawalType);
+  static fromModel(model: WithdrawalModel & { Store?: { owner?: { email: string } } }): Withdrawal {
+    const withdrawalData = {
+      ...model,
+      feesDetail: model.feesDetail,
+      owner: model.Store?.owner,
+      ownerEmail: model.Store?.owner?.email || null,
+    };
+    return new Withdrawal(withdrawalData as WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail">>);
   }
 
-  public toModel(): WithdrawalModel {
+  public toModel(): WithdrawalModel & { feesDetail?: WithdrawalFeeDetail[]; owner?: { email: string }; ownerEmail?: string | null } {
     return {
       id: this.id,
       storeId: this.storeId,
@@ -74,6 +86,8 @@ export class Withdrawal {
       payments: this.payments,
       store: this.store,
       feesDetail: this.feesDetail,
+      owner: this.owner,
+      ownerEmail: this.ownerEmail,
     };
   }
 
@@ -86,3 +100,4 @@ export class Withdrawal {
     return statusTranslations[this.status] ?? this.status;
   }
 }
+ 

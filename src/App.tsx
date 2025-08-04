@@ -19,6 +19,7 @@ const Dashboard = lazy(() => import('./screens/dashboard/Dashboard'));
 const AuditLogs = lazy(() => import('./screens/audit/AuditLogs'));
 const Stores = lazy(() => import('./screens/stores/Stores'));
 const StoreDetail = lazy(() => import('./screens/stores/StoreDetail'));
+const Coupons = lazy(() => import('./screens/coupons/Coupons'));
 
 const TOKEN_EXPIRY_MARGIN = 60 * 1000; // 1 minuto de margem
 
@@ -74,6 +75,7 @@ function App() {
             <Route path="stores/:id" element={<ProtectedRoute><StoreDetail /></ProtectedRoute>} />
             {/* Rota para logs de auditoria (oculta do menu principal) */}
             <Route path="logs" element={<ProtectedRoute><AuditLogs /></ProtectedRoute>} />
+            <Route path="coupons" element={<ProtectedRoute><Coupons /></ProtectedRoute>} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
