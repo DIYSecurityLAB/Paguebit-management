@@ -42,6 +42,18 @@ export const PaymentSchema = z.object({
     id: z.string().min(1),
     name: z.string().min(1),
   }).optional(),
+  Store: z.object({
+    id: z.string().min(1),
+    name: z.string().min(1),
+    ownerId: z.string(),
+    whitelabelId: z.string(),
+    couponId: z.string().nullable(),
+    createdAt: z.string(),
+    updatedAt: z.string(),
+    owner: z.object({
+      email: z.string().email(),
+    }),
+  }).optional(),
 });
 
 export type PaymentType = z.infer<typeof PaymentSchema>;
@@ -68,20 +80,61 @@ export class Payment {
   description?: string;
   depixAddress?: string;
   store?: { id: string; name: string };
+  Store?: {
+    id: string;
+    name: string;
+    ownerId: string;
+    whitelabelId: string;
+    couponId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    owner: {
+      email: string;
+    };
+  };
 
   constructor(data: Partial<PaymentType>) {
     // Não faz validação, apenas atribui os dados
     Object.assign(this, data);
+    
+    // Normaliza a propriedade store para manter compatibilidade
+    if (data.Store && !data.store) {
+      this.store = {
+        id: data.Store.id,
+        name: data.Store.name,
+      };
+    }
   }
 
   static fromModel(model: PaymentModel): Payment {
     // Não faz validação, apenas atribui os dados
-    return new Payment(model as Partial<PaymentType>);
+    const payment = new Payment(model as Partial<PaymentType>);
+    
+    // Normaliza a propriedade store para manter compatibilidade
+    if (model.Store && !model.store) {
+      payment.store = {
+        id: model.Store.id,
+        name: model.Store.name,
+      };
+    }
+    
+    return payment;
   }
 
   static fromObject(obj: unknown): Payment {
     // Não faz validação, apenas atribui os dados
-    return new Payment(obj as Partial<PaymentType>);
+    const payment = new Payment(obj as Partial<PaymentType>);
+    
+    // Normaliza a propriedade store para manter compatibilidade
+    const objData = obj as any;
+    if (objData?.Store && !objData.store) {
+      payment.store = {
+        id: objData.Store.id,
+        name: objData.Store.name,
+      };
+    }
+    
+    return payment;
   }
 
   public toModel(): PaymentModel {
@@ -107,6 +160,7 @@ export class Payment {
       description: this.description,
       depixAddress: this.depixAddress,
       store: this.store,
+      Store: this.Store,
     };
   }
 

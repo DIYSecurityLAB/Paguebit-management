@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { formatCurrency } from '../../../utils/format';
 
@@ -35,19 +35,6 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
     );
   }
 
-  // LOGS DE DEPURAÇÃO
-  console.log('Total de payments recebidos:', payments.length);
-  const staticAll = payments.filter(p => p.transactionType === 'static');
-  const dynamicAll = payments.filter(p => p.transactionType === 'dynamic');
-  const emptyTypeAll = payments.filter(p => !p.transactionType || p.transactionType === '');
-  const otherTypeAll = payments.filter(
-    p => p.transactionType !== 'static' && p.transactionType !== 'dynamic' && p.transactionType !== ''
-  );
-  console.log('Pagamentos static (todos):', staticAll.length);
-  console.log('Pagamentos dynamic (todos):', dynamicAll.length);
-  console.log('Pagamentos sem tipo:', emptyTypeAll.length);
-  console.log('Pagamentos com outro tipo:', otherTypeAll.length, otherTypeAll.map(p => p.transactionType));
-
   // Filtragem baseada na categoria selecionada
   let filteredPayments = payments;
   if (activeCategory === 'retained') {
@@ -55,20 +42,16 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
   } else if (activeCategory === 'paid') {
     filteredPayments = payments.filter(p => p.status === 'paid');
   }
-  console.log('Após filtro de categoria:', filteredPayments.length);
 
   // Filtrar apenas pagamentos com tipo válido
   // Corrigido: não compare tipos incompatíveis, só filtre explicitamente pelos dois tipos válidos
   const validPayments = filteredPayments.filter(
     p => p.transactionType === 'static' || p.transactionType === 'dynamic'
   );
-  console.log('Pagamentos válidos para gráfico:', validPayments.length);
 
   // Contar e somar por tipo
   const staticPayments = validPayments.filter(p => p.transactionType === 'static');
   const dynamicPayments = validPayments.filter(p => p.transactionType === 'dynamic');
-  console.log('Pagamentos static (finais):', staticPayments.length);
-  console.log('Pagamentos dynamic (finais):', dynamicPayments.length);
 
   const staticCount = staticPayments.length;
   const dynamicCount = dynamicPayments.length;
@@ -211,7 +194,7 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
                 innerRadius="40%"
                 paddingAngle={3}
                 dataKey="value"
-                label={({ name, value, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
               >
                 {chartData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} />

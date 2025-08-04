@@ -118,7 +118,7 @@ export default function PaymentsCard() {
       type: 'select' as const,
       options: [
         { value: 'static', label: 'QR Estático' },
-        { value: 'dinamic', label: 'QR Dinâmico' },
+        { value: 'dynamic', label: 'QR Dinâmico' },
       ],
     },
     {
