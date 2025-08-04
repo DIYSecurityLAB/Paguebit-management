@@ -35,77 +35,23 @@ export default function PaymentTypeChart({ payments, loading, height = 450 }: Pr
     );
   }
 
-  // LOGS DE DEPURAÇÃO
-  console.log('🔍 === DEBUG PaymentTypeChart ===');
-  console.log('Total de payments recebidos:', payments.length);
-  console.log('Categoria ativa:', activeCategory);
-  console.log('Métrica ativa:', activeMetric);
-  
-  const staticAll = payments.filter(p => p.transactionType === 'static');
-  const dynamicAll = payments.filter(p => p.transactionType === 'dynamic');
-  const emptyTypeAll = payments.filter(p => p.transactionType === '');
-  const otherTypeAll = payments.filter(
-    p => p.transactionType !== 'static' && p.transactionType !== 'dynamic' && p.transactionType !== ''
-  );
-  
-  console.log('📊 Distribuição ANTES dos filtros de categoria:');
-  console.log('  Pagamentos static (todos):', staticAll.length);
-  console.log('  Pagamentos dynamic (todos):', dynamicAll.length);
-  console.log('  Pagamentos sem tipo:', emptyTypeAll.length);
-  console.log('  Pagamentos com outro tipo:', otherTypeAll.length, otherTypeAll.map(p => p.transactionType));
-
-  // Análise dos status dos pagamentos
-  const statusCounts = payments.reduce((acc, p) => {
-    acc[p.status] = (acc[p.status] || 0) + 1;
-    return acc;
-  }, {} as Record<string, number>);
-  console.log('📈 Status dos pagamentos:', statusCounts);
-
   // Filtragem baseada na categoria selecionada
   let filteredPayments = payments;
   if (activeCategory === 'retained') {
     filteredPayments = payments.filter(p => ['withdrawal_processing', 'approved'].includes(p.status));
-    console.log('🔄 Filtrando para RETIDOS (withdrawal_processing + approved)');
   } else if (activeCategory === 'paid') {
     filteredPayments = payments.filter(p => p.status === 'paid');
-    console.log('💰 Filtrando para PAGOS (paid)');
-  } else {
-    console.log('🌟 Usando TODOS os pagamentos');
   }
-  console.log('Após filtro de categoria:', filteredPayments.length);
 
   // Filtrar apenas pagamentos com tipo válido
   // Corrigido: não compare tipos incompatíveis, só filtre explicitamente pelos dois tipos válidos
   const validPayments = filteredPayments.filter(
     p => p.transactionType === 'static' || p.transactionType === 'dynamic'
   );
-  console.log('✅ Pagamentos válidos para gráfico:', validPayments.length);
 
   // Contar e somar por tipo
   const staticPayments = validPayments.filter(p => p.transactionType === 'static');
   const dynamicPayments = validPayments.filter(p => p.transactionType === 'dynamic');
-  
-  console.log('📊 Distribuição FINAL após todos os filtros:');
-  console.log('  Pagamentos static (finais):', staticPayments.length);
-  console.log('  Pagamentos dynamic (finais):', dynamicPayments.length);
-  
-  // Debug dos primeiros pagamentos para entender os dados
-  if (staticPayments.length > 0) {
-    console.log('🔍 Exemplo de pagamento static:', {
-      id: staticPayments[0].id,
-      status: staticPayments[0].status,
-      amount: staticPayments[0].amount,
-      transactionType: staticPayments[0].transactionType
-    });
-  }
-  if (dynamicPayments.length > 0) {
-    console.log('🔍 Exemplo de pagamento dynamic:', {
-      id: dynamicPayments[0].id,
-      status: dynamicPayments[0].status,
-      amount: dynamicPayments[0].amount,
-      transactionType: dynamicPayments[0].transactionType
-    });
-  }
 
   const staticCount = staticPayments.length;
   const dynamicCount = dynamicPayments.length;
