@@ -19,9 +19,9 @@ export class Store {
   whitelabelId!: string;
   createdAt!: string;
   updatedAt!: string;
-  users?: StoreModel["users"]; // Adicionado
-  wallets?: StoreModel["wallets"]; // Adicionado
-  owner?: { email: string }; // Adicionado para email do owner
+  users?: StoreModel["users"];
+  wallets?: StoreModel["wallets"];
+  owner?: { email: string };
 
   constructor(data: StoreType & Partial<Pick<Store, "users" | "wallets" | "owner">>) {
     const parsed = StoreSchema.safeParse(data);
