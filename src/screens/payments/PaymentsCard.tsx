@@ -21,9 +21,14 @@ export default function PaymentsCard() {
     status: '',
     dateFrom: '',
     dateTo: '',
-    userId: '',
     id: '',
     transactionType: '',
+    noreceipt: '',
+    storeId: '',
+    qrCodeId: '',
+    payerName: '',
+    observation: '',
+    notes: '',
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
@@ -78,28 +83,16 @@ export default function PaymentsCard() {
   );
 
   const filterOptions = useMemo(() => [
-    {
-      key: 'id',
-      label: 'ID do Pagamento',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do pagamento',
-    },
-    {
-      key: 'storeId',
-      label: 'ID da Loja',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID da loja',
-    },
-    {
-      key: 'userId',
-      label: 'ID do Usuário',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do usuário',
-    },
+    { key: 'id', label: 'ID do Pagamento', type: 'text', placeholder: 'Buscar por ID do pagamento' },
+    { key: 'storeId', label: 'ID da Loja', type: 'text', placeholder: 'Buscar por ID da loja' },
+    { key: 'payerName', label: 'Nome do Pagador', type: 'text', placeholder: 'Buscar por nome do pagador' },
+    { key: 'qrCodeId', label: 'ID do QR Code', type: 'text', placeholder: 'Buscar por ID do QR Code' },
+    { key: 'observation', label: 'Observação', type: 'text', placeholder: 'Buscar por observação' },
+    { key: 'notes', label: 'Notas', type: 'text', placeholder: 'Buscar por notas' },
     {
       key: 'status',
       label: 'Status',
-      type: 'select' as const,
+      type: 'select',
       options: [
         { value: 'pending', label: 'Pendente' },
         { value: 'receipt_sent', label: 'Comprovante Enviado' },
@@ -115,7 +108,7 @@ export default function PaymentsCard() {
     {
       key: 'transactionType',
       label: 'Tipo de Transação',
-      type: 'select' as const,
+      type: 'select',
       options: [
         { value: 'static', label: 'QR Estático' },
         { value: 'dynamic', label: 'QR Dinâmico' },
@@ -124,7 +117,7 @@ export default function PaymentsCard() {
     {
       key: 'noreceipt',
       label: 'Sem Comprovante',
-      type: 'select' as const,
+      type: 'select',
       options: [
         { value: '', label: 'Todos' },
         { value: 'true', label: 'Apenas sem comprovante' },
@@ -134,42 +127,37 @@ export default function PaymentsCard() {
     {
       key: 'dateRange',
       label: 'Período',
-      type: 'daterange' as const,
+      type: 'daterange',
     },
   ], []);
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
+    const updatedFilters = {
+      status: '',
+      dateFrom: '',
+      dateTo: '',
+      id: '',
+      transactionType: '',
+      noreceipt: '',
+      storeId: '',
+      qrCodeId: '',
+      payerName: '',
+      observation: '',
+      notes: '',
+    };
+    Object.keys(updatedFilters).forEach(key => {
+      if (newFilters[key]) updatedFilters[key] = newFilters[key];
+    });
+    if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
+    if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
+    setFilters(updatedFilters);
+    setCurrentPage(1);
     if (Object.keys(newFilters).length === 0) {
-      setFilters({
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        userId: '',
-        id: '',
-        transactionType: '',
-      });
       setTimeout(() => {
         queryClient.invalidateQueries(['payments']);
       }, 100);
-    } else {
-      const updatedFilters = {
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        userId: '',
-        id: '',
-        transactionType: '',
-      };
-      if (newFilters.status) updatedFilters.status = newFilters.status;
-      if (newFilters.userId) updatedFilters.userId = newFilters.userId;
-      if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
-      if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
-      if (newFilters.id) updatedFilters.id = newFilters.id;
-      if (newFilters.transactionType) updatedFilters.transactionType = newFilters.transactionType;
-      setFilters(updatedFilters);
     }
-    setCurrentPage(1);
   }, [queryClient]);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {

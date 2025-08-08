@@ -16,15 +16,19 @@ export default function StoresTable() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     id: '',
     name: '',
     ownerId: '',
     ownerEmail: '',
-    whitelabelId: '',
+    paymentId: '',
+    withdrawalId: '',
     createdAtFrom: '',
-    createdAtTo: ''
-  });
+    createdAtTo: '',
+    updatedAtFrom: '',
+    updatedAtTo: ''
+  };
+  const [filters, setFilters] = useState(initialFilters);
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
@@ -67,37 +71,48 @@ export default function StoresTable() {
   const filterOptions = useMemo(() => [
     {
       key: 'id',
-      label: 'ID',
+      label: 'ID da Loja',
       type: 'text' as const,
-      placeholder: 'Buscar por ID',
+      placeholder: 'Buscar por ID da loja',
     },
     {
       key: 'name',
-      label: 'Nome',
+      label: 'Nome da Loja',
       type: 'text' as const,
-      placeholder: 'Buscar por nome',
+      placeholder: 'Buscar por nome da loja',
     },
     {
       key: 'ownerId',
-      label: 'OwnerId',
+      label: 'ID do Dono',
       type: 'text' as const,
-      placeholder: 'Buscar por OwnerId',
+      placeholder: 'Buscar por ID do dono',
     },
     {
       key: 'ownerEmail',
-      label: 'Email do Owner',
+      label: 'Email do Dono',
       type: 'text' as const,
-      placeholder: 'Buscar por email do owner',
+      placeholder: 'Buscar por email do dono',
     },
     {
-      key: 'whitelabelId',
-      label: 'WhitelabelId',
+      key: 'paymentId',
+      label: 'ID do Pagamento',
       type: 'text' as const,
-      placeholder: 'Buscar por WhitelabelId',
+      placeholder: 'Buscar por ID do pagamento',
+    },
+    {
+      key: 'withdrawalId',
+      label: 'ID do Saque',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do saque',
     },
     {
       key: 'createdAt',
       label: 'Período de Criação',
+      type: 'daterange' as const,
+    },
+    {
+      key: 'updatedAt',
+      label: 'Período de Atualização',
       type: 'daterange' as const,
     },
   ], []);
@@ -170,16 +185,16 @@ export default function StoresTable() {
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-    const updatedFilters: typeof filters = {
-      id: '',
-      name: '',
-      ownerId: '',
-      ownerEmail: '',
-      whitelabelId: '',
-      createdAtFrom: '',
-      createdAtTo: ''
-    };
-    Object.keys(newFilters).forEach((key) => {
+    if (!newFilters || Object.keys(newFilters).length === 0 || Object.values(newFilters).every(v => v === '' || v === undefined)) {
+      setFilters(initialFilters);
+      setCurrentPage(1);
+      setTimeout(() => {
+        queryClient.invalidateQueries(['stores']);
+      }, 100);
+      return;
+    }
+    const updatedFilters = { ...initialFilters };
+    Object.keys(updatedFilters).forEach(key => {
       if (newFilters[key] !== undefined) {
         // @ts-expect-error
         updatedFilters[key] = newFilters[key];
@@ -187,7 +202,7 @@ export default function StoresTable() {
     });
     setFilters(updatedFilters);
     setCurrentPage(1);
-  }, []);
+  }, [queryClient]);
 
   const sortOptions = [
     { 
@@ -306,3 +321,4 @@ export default function StoresTable() {
     </div>
   );
 }
+    

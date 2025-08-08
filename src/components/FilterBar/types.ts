@@ -3,6 +3,12 @@ export type FilterType = "select" | "daterange" | "text";
 export interface SelectOption {
   value: string;
   label: string;
+  icon?: React.ReactNode;
+}
+
+export interface DateRange {
+  from: string;
+  to: string;
 }
 
 export interface FilterOption {

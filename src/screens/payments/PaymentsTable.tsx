@@ -22,12 +22,14 @@ export default function PaymentsTable() {
     status: '',
     dateFrom: '',
     dateTo: '',
-    userId: '',
-    name: '',
-    email: '',
     id: '',
     transactionType: '',
-    ownerEmail: '',
+    noreceipt: '',
+    storeId: '',
+    qrCodeId: '',
+    payerName: '',
+    observation: '',
+    notes: '',
   });
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
@@ -83,30 +85,12 @@ export default function PaymentsTable() {
   );
 
   const filterOptions = useMemo(() => [
-    {
-      key: 'id',
-      label: 'ID do Pagamento',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do pagamento',
-    },
-    {
-      key: 'storeId',
-      label: 'ID da Loja',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID da loja',
-    },
-    {
-      key: 'userId',
-      label: 'ID do Usuário',
-      type: 'text' as const,
-      placeholder: 'Buscar por ID do usuário',
-    },
-    {
-      key: 'ownerEmail',
-      label: 'Email do Owner',
-      type: 'text' as const,
-      placeholder: 'Buscar por email do owner',
-    },
+    { key: 'id', label: 'ID do Pagamento', type: 'text' as const, placeholder: 'Buscar por ID do pagamento' },
+    { key: 'storeId', label: 'ID da Loja', type: 'text' as const, placeholder: 'Buscar por ID da loja' },
+    { key: 'payerName', label: 'Nome do Pagador', type: 'text' as const, placeholder: 'Buscar por nome do pagador' },
+    { key: 'qrCodeId', label: 'ID do QR Code', type: 'text' as const, placeholder: 'Buscar por ID do QR Code' },
+    { key: 'observation', label: 'Observação', type: 'text' as const, placeholder: 'Buscar por observação' },
+    { key: 'notes', label: 'Notas', type: 'text' as const, placeholder: 'Buscar por notas' },
     {
       key: 'status',
       label: 'Status',
@@ -287,12 +271,14 @@ export default function PaymentsTable() {
         status: '',
         dateFrom: '',
         dateTo: '',
-        userId: '',
-        name: '',
-        email: '',
         id: '',
         transactionType: '',
-        ownerEmail: '',
+        noreceipt: '',
+        storeId: '',
+        qrCodeId: '',
+        payerName: '',
+        observation: '',
+        notes: '',
       });
       setTimeout(() => {
         queryClient.invalidateQueries(['payments']);
@@ -302,22 +288,20 @@ export default function PaymentsTable() {
         status: '',
         dateFrom: '',
         dateTo: '',
-        userId: '',
-        name: '',
-        email: '',
         id: '',
         transactionType: '',
-        ownerEmail: '',
+        noreceipt: '',
+        storeId: '',
+        qrCodeId: '',
+        payerName: '',
+        observation: '',
+        notes: '',
       };
-      if (newFilters.status) updatedFilters.status = newFilters.status;
-      if (newFilters.userId) updatedFilters.userId = newFilters.userId;
+      Object.keys(updatedFilters).forEach(key => {
+        if (newFilters[key]) updatedFilters[key] = newFilters[key];
+      });
       if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
       if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
-      if (newFilters.name) updatedFilters.name = newFilters.name;
-      if (newFilters.email) updatedFilters.email = newFilters.email;
-      if (newFilters.id) updatedFilters.id = newFilters.id;
-      if (newFilters.transactionType) updatedFilters.transactionType = newFilters.transactionType;
-      if (newFilters.ownerEmail) updatedFilters.ownerEmail = newFilters.ownerEmail;
       setFilters(updatedFilters);
     }
     setCurrentPage(1);
