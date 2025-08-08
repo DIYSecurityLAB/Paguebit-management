@@ -129,7 +129,7 @@ export default function PaymentsTable() {
       type: 'select' as const,
       options: [
         { value: 'static', label: 'QR Estático' },
-        { value: 'dinamic', label: 'QR Dinâmico' },
+        { value: 'dynamic', label: 'QR Dinâmico' },
       ],
     },
     {
@@ -208,7 +208,7 @@ export default function PaymentsTable() {
     },
     {
       header: 'Email',
-      accessor: (payment: Payment) => payment.email || 'Não informado',
+      accessor: (payment: Payment) => payment.Store.owner.email || 'Não informado',
     },
     {
       header: 'Valor',

@@ -194,7 +194,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
     const statusOptions: { value: PaymentStatus, label: string }[] = [
       { value: PaymentStatus.PENDING, label: 'Pendente' },
       { value: PaymentStatus.RECEIPT_SENT, label: 'Comprovante Enviado' },
-      { value: PaymentStatus.UNDER_REVIEW, label: 'Em Análise' },
+      { value: PaymentStatus.REVIEW, label: 'Em Análise' },
       { value: PaymentStatus.APPROVED, label: 'Aprovado' },
       { value: PaymentStatus.NOT_APPROVED, label: 'Não Aprovado' },
       { value: PaymentStatus.WITHDRAWAL_PROCESSING, label: 'Processamento de Saque' },

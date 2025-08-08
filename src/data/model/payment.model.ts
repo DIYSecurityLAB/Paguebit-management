@@ -31,6 +31,18 @@ export type PaymentModel = {
   description?: string;
   depixAddress?: string;
   store?: { id: string; name: string }; 
+  Store?: {
+    id: string;
+    name: string;
+    ownerId: string;
+    whitelabelId: string;
+    couponId: string | null;
+    createdAt: string;
+    updatedAt: string;
+    owner: {
+      email: string;
+    };
+  };
 };
 
 export type CreatePaymentDto = {
