@@ -19,7 +19,7 @@ export default function UsersCard() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     id: '',
     providerId: '',
     firstName: '',
@@ -33,7 +33,8 @@ export default function UsersCard() {
     active: '',
     dateRangeFrom: '',
     dateRangeTo: ''
-  });
+  };
+  const [filters, setFilters] = useState(initialFilters);
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -124,8 +125,12 @@ export default function UsersCard() {
     {
       key: 'documentType',
       label: 'Tipo de Documento',
-      type: 'text' as const,
-      placeholder: 'Buscar por tipo de documento',
+      type: 'select' as const,
+      options: [
+        { value: '', label: 'Todos' },
+        { value: 'CPF', label: 'CPF' },
+        { value: 'CNPJ', label: 'CNPJ' },
+      ],
     },
     {
       key: 'referral',
@@ -163,73 +168,24 @@ export default function UsersCard() {
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-
-    // Se não houver filtros, zera todos os campos
-    if (
-      !newFilters ||
-      Object.keys(newFilters).length === 0 ||
-      Object.values(newFilters).every(v => v === '' || v === undefined)
-    ) {
-      setFilters({
-        id: '',
-        providerId: '',
-        firstName: '',
-        lastName: '',
-        email: '',
-        documentId: '',
-        phoneNumber: '',
-        documentType: '',
-        referral: '',
-        role: '',
-        active: '',
-        dateRangeFrom: '',
-        dateRangeTo: ''
-      });
+    if (!newFilters || Object.keys(newFilters).length === 0 || Object.values(newFilters).every(v => v === '' || v === undefined)) {
+      setFilters(initialFilters);
       setCurrentPage(1);
+      setTimeout(() => {
+        queryClient.invalidateQueries(['users']);
+      }, 100);
       return;
     }
-
-    // Sempre monta o objeto de filtros com todos os campos possíveis (vazios se não vierem)
-    const updatedFilters: {
-      id: string;
-      providerId: string;
-      firstName: string;
-      lastName: string;
-      email: string;
-      documentId: string;
-      phoneNumber: string;
-      documentType: string;
-      referral: string;
-      role: string;
-      active: string;
-      dateRangeFrom: string;
-      dateRangeTo: string;
-    } = {
-      id: '',
-      providerId: '',
-      firstName: '',
-      lastName: '',
-      email: '',
-      documentId: '',
-      phoneNumber: '',
-      documentType: '',
-      referral: '',
-      role: '',
-      active: '',
-      dateRangeFrom: '',
-      dateRangeTo: ''
-    };
-
-    Object.keys(newFilters).forEach((key) => {
+    const updatedFilters = { ...initialFilters };
+    Object.keys(updatedFilters).forEach(key => {
       if (newFilters[key] !== undefined) {
-        // @ts-expect-error: pode haver chaves extras, mas só as conhecidas serão usadas
+        // @ts-expect-error
         updatedFilters[key] = newFilters[key];
       }
     });
-
     setFilters(updatedFilters);
     setCurrentPage(1);
-  }, []);
+  }, [queryClient]);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setOrderBy(field);

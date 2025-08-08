@@ -16,14 +16,19 @@ export default function StoresCard() {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [filters, setFilters] = useState({
+  const initialFilters = {
     id: '',
     name: '',
     ownerId: '',
-    whitelabelId: '',
+    ownerEmail: '',
+    paymentId: '',
+    withdrawalId: '',
     createdAtFrom: '',
-    createdAtTo: ''
-  });
+    createdAtTo: '',
+    updatedAtFrom: '',
+    updatedAtTo: ''
+  };
+  const [filters, setFilters] = useState(initialFilters);
   const [orderBy, setOrderBy] = useState<string>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedStore, setSelectedStore] = useState<Store | null>(null);
@@ -66,46 +71,64 @@ export default function StoresCard() {
   const filterOptions = useMemo(() => [
     {
       key: 'id',
-      label: 'ID',
+      label: 'ID da Loja',
       type: 'text' as const,
-      placeholder: 'Buscar por ID',
+      placeholder: 'Buscar por ID da loja',
     },
     {
       key: 'name',
-      label: 'Nome',
+      label: 'Nome da Loja',
       type: 'text' as const,
-      placeholder: 'Buscar por nome',
+      placeholder: 'Buscar por nome da loja',
     },
     {
       key: 'ownerId',
-      label: 'OwnerId',
+      label: 'ID do Dono',
       type: 'text' as const,
-      placeholder: 'Buscar por OwnerId',
+      placeholder: 'Buscar por ID do dono',
     },
     {
-      key: 'whitelabelId',
-      label: 'WhitelabelId',
+      key: 'ownerEmail',
+      label: 'Email do Dono',
       type: 'text' as const,
-      placeholder: 'Buscar por WhitelabelId',
+      placeholder: 'Buscar por email do dono',
+    },
+    {
+      key: 'paymentId',
+      label: 'ID do Pagamento',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do pagamento',
+    },
+    {
+      key: 'withdrawalId',
+      label: 'ID do Saque',
+      type: 'text' as const,
+      placeholder: 'Buscar por ID do saque',
     },
     {
       key: 'createdAt',
       label: 'Período de Criação',
       type: 'daterange' as const,
     },
+    {
+      key: 'updatedAt',
+      label: 'Período de Atualização',
+      type: 'daterange' as const,
+    },
   ], []);
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
-    const updatedFilters: typeof filters = {
-      id: '',
-      name: '',
-      ownerId: '',
-      whitelabelId: '',
-      createdAtFrom: '',
-      createdAtTo: ''
-    };
-    Object.keys(newFilters).forEach((key) => {
+    if (!newFilters || Object.keys(newFilters).length === 0 || Object.values(newFilters).every(v => v === '' || v === undefined)) {
+      setFilters(initialFilters);
+      setCurrentPage(1);
+      setTimeout(() => {
+        queryClient.invalidateQueries(['stores']);
+      }, 100);
+      return;
+    }
+    const updatedFilters = { ...initialFilters };
+    Object.keys(updatedFilters).forEach(key => {
       if (newFilters[key] !== undefined) {
         // @ts-expect-error
         updatedFilters[key] = newFilters[key];
@@ -113,7 +136,7 @@ export default function StoresCard() {
     });
     setFilters(updatedFilters);
     setCurrentPage(1);
-  }, []);
+  }, [queryClient]);
 
   const handleSortChange = useCallback((field: string, direction: 'asc' | 'desc') => {
     setOrderBy(field);
@@ -296,3 +319,4 @@ export default function StoresCard() {
     </div>
   );
 }
+  

@@ -1,8 +1,9 @@
 import { useEffect, useState, useCallback, memo, useRef } from 'react';
 import Button from './Button';
-import { X, Search, Calendar, Filter } from 'lucide-react';
+import { X, Search, Filter, Sliders } from 'lucide-react';
 import { cn } from '../utils/cn';
 import Select from './Select';
+import DateRangePicker from './DateRangePicker';
 import { 
   Clock, FileCheck, CheckCircle, XCircle, 
   DollarSign, Loader, AlertCircle
@@ -25,17 +26,39 @@ interface FilterBarProps {
 
 function FilterBar({ filters, onFilterChange, className, isLoading = false }: FilterBarProps) {
   const [filterValues, setFilterValues] = useState<Record<string, any>>({});
-  const [dateRangeFrom, setDateRangeFrom] = useState<string>('');
-  const [dateRangeTo, setDateRangeTo] = useState<string>('');
+  const [dateRange, setDateRange] = useState<{ from: string; to: string }>({ from: '', to: '' });
   const [shouldUpdate, setShouldUpdate] = useState(false);
-  
-  // Referência para evitar o loop infinito
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Debounce states
+  const debounceTimers = useRef<Record<string, NodeJS.Timeout>>({});
+  const [debouncedTextValues, setDebouncedTextValues] = useState<Record<string, string>>({});
+
   const isInitialMount = useRef(true);
 
-  // Usar useCallback para evitar recriação da função a cada renderização
+  // Atualiza o valor do campo de texto imediatamente, mas só dispara o filtro após debounce
+  const handleTextChange = useCallback((key: string, value: string) => {
+    setDebouncedTextValues(prev => ({ ...prev, [key]: value }));
+
+    if (debounceTimers.current[key]) {
+      clearTimeout(debounceTimers.current[key]);
+    }
+    debounceTimers.current[key] = setTimeout(() => {
+      setFilterValues(prev => {
+        if (value === '') {
+          const newFilters = { ...prev };
+          delete newFilters[key];
+          return newFilters;
+        }
+        return { ...prev, [key]: value };
+      });
+      setShouldUpdate(true);
+    }, 1000);
+  }, []);
+
+  // Para select e daterange, dispara imediatamente
   const handleFilterChange = useCallback((key: string, value: any) => {
     setFilterValues(prev => {
-      // Se o valor for vazio, remova o filtro
       if (value === '') {
         const newFilters = { ...prev };
         delete newFilters[key];
@@ -46,53 +69,40 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
     setShouldUpdate(true);
   }, []);
 
-  const handleDateRangeChange = useCallback((type: 'from' | 'to', value: string) => {
-    if (type === 'from') {
-      setDateRangeFrom(value);
-    } else {
-      setDateRangeTo(value);
-    }
+  const handleDateRangeChange = useCallback((value: { from: string; to: string }) => {
+    setDateRange(value);
     setShouldUpdate(true);
   }, []);
 
   const handleClearFilters = useCallback(() => {
-    // Limpa todos os filtros internamente
     setFilterValues({});
-    setDateRangeFrom('');
-    setDateRangeTo('');
-    
-    // Envia um objeto vazio para o componente pai
-    // Isso sinaliza para limpar todos os filtros
+    setDateRange({ from: '', to: '' });
+    setDebouncedTextValues({});
     onFilterChange({});
-    
-    // Não definimos shouldUpdate aqui, pois queremos enviar a atualização diretamente
   }, [onFilterChange]);
 
-  // Atualizar o componente pai sempre que filtros mudam, inclusive quando todos são apagados
   useEffect(() => {
-    // Pular a execução na renderização inicial
     if (isInitialMount.current) {
       isInitialMount.current = false;
       return;
     }
 
-    // Sempre notifica o pai quando filtros mudam, mesmo se todos forem apagados
-    if (shouldUpdate || (!shouldUpdate && Object.keys(filterValues).length === 0 && !dateRangeFrom && !dateRangeTo)) {
+    if (shouldUpdate || (!shouldUpdate && Object.keys(filterValues).length === 0 && !dateRange.from && !dateRange.to)) {
       const dateFilters: Record<string, string> = {};
-      if (dateRangeFrom) {
-        dateFilters['dateRangeFrom'] = dateRangeFrom;
+      if (dateRange.from) {
+        dateFilters['dateRangeFrom'] = dateRange.from;
       }
-      if (dateRangeTo) {
-        dateFilters['dateRangeTo'] = dateRangeTo;
+      if (dateRange.to) {
+        dateFilters['dateRangeTo'] = dateRange.to;
       }
       onFilterChange({ ...filterValues, ...dateFilters });
       setShouldUpdate(false);
     }
-  }, [filterValues, dateRangeFrom, dateRangeTo, shouldUpdate, onFilterChange]);
+  }, [filterValues, dateRange, shouldUpdate, onFilterChange]);
 
-  const hasActiveFilters = Object.keys(filterValues).length > 0 || dateRangeFrom || dateRangeTo;
+  const hasActiveFilters = Object.keys(filterValues).length > 0 || dateRange.from || dateRange.to;
+  const activeFilterCount = Object.keys(filterValues).length + (dateRange.from || dateRange.to ? 1 : 0);
 
-  // Mapeamento de ícones e cores por status
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'pending':
@@ -121,124 +131,168 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
   };
 
   return (
-    <div className={cn("p-4 bg-card border border-border rounded-lg shadow-sm", className)}>
-      <h3 className="font-medium text-sm mb-3 flex items-center">
-        <Filter className="h-4 w-4 mr-1.5" /> Filtros
-      </h3>
-      
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-        {filters.map((filter) => {
-          if (filter.type === 'text') {
-            return (
-              <div key={filter.key} className="relative">
-                <label htmlFor={filter.key} className="text-xs text-muted-foreground mb-1 block">
-                  {filter.label}
-                </label>
-                <div className="relative">
-                  <input
-                    id={filter.key}
-                    type="text"
-                    placeholder={filter.placeholder}
-                    value={filterValues[filter.key] || ''}
-                    onChange={(e) => handleFilterChange(filter.key, e.target.value)}
-                    className="w-full px-3 py-1.5 pl-8 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                    disabled={isLoading}
-                  />
-                  <Search className="h-3.5 w-3.5 text-muted-foreground absolute left-2.5 top-1/2 -translate-y-1/2" />
-                </div>
+    <div className={cn(
+      "bg-card border border-border rounded-xl shadow-sm overflow-visible transition-all duration-300",
+      className
+    )}>
+      {/* Header do FilterBar */}
+      <div className="p-4 border-b border-border bg-muted/30">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 bg-primary/10 rounded-lg">
+                <Sliders className="h-4 w-4 text-primary" />
               </div>
-            );
-          }
-
-          if (filter.type === 'select') {
-            // Transformar as opções para incluir ícones
-            // Garante que não haja duplicidade de valores (ex: dois 'Todos')
-            const seen = new Set<string>();
-            const selectOptions = [
-              { value: '', label: 'Todos', icon: <Filter className="h-4 w-4 text-gray-500" /> },
-              ...filter.options!
-                .filter(option => {
-                  if (option.value === '') return false; // já adicionamos 'Todos' acima
-                  if (seen.has(option.value)) return false;
-                  seen.add(option.value);
-                  return true;
-                })
-                .map(option => ({
-                  value: option.value,
-                  label: option.label,
-                  icon: getStatusIcon(option.value)
-                }))
-            ];
+              <h3 className="font-semibold text-sm">Filtros</h3>
+            </div>
             
-            return (
-              <div key={filter.key} className="relative">
-                <Select
-                  label={filter.label}
-                  options={selectOptions}
-                  value={filterValues[filter.key] || ''}
-                  onChange={(value) => handleFilterChange(filter.key, value)}
-                  disabled={isLoading}
-                  className="w-full"
-                />
+            {activeFilterCount > 0 && (
+              <div className="flex items-center space-x-2">
+                <span className="px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                  {activeFilterCount} ativo{activeFilterCount > 1 ? 's' : ''}
+                </span>
               </div>
-            );
-          }
+            )}
+          </div>
 
-          if (filter.type === 'daterange') {
-            return (
-              <div key={filter.key} className="sm:col-span-2">
-                <label className="text-xs text-muted-foreground mb-1 block flex items-center">
-                  <Calendar className="h-3.5 w-3.5 mr-1" />
-                  {filter.label}
-                </label>
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={dateRangeFrom}
-                      onChange={(e) => handleDateRangeChange('from', e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                      disabled={isLoading}
-                      placeholder="De"
-                    />
-                  </div>
-                  <div className="relative">
-                    <input
-                      type="date"
-                      value={dateRangeTo}
-                      onChange={(e) => handleDateRangeChange('to', e.target.value)}
-                      className="w-full px-3 py-1.5 text-sm bg-background border border-input rounded-md focus:outline-none focus:ring-1 focus:ring-primary"
-                      disabled={isLoading}
-                      placeholder="Até"
-                    />
-                  </div>
-                </div>
+          <div className="flex items-center space-x-2">
+            {hasActiveFilters && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs text-muted-foreground hover:text-destructive"
+                onClick={handleClearFilters}
+                disabled={isLoading}
+              >
+                <X className="h-3.5 w-3.5 mr-1" />
+                Limpar
+              </Button>
+            )}
+            
+            {/* Área clicável maior para mobile */}
+            <div
+              className="lg:hidden cursor-pointer"
+              onClick={() => setIsExpanded(!isExpanded)}
+            >
+              <div className="flex items-center space-x-2 px-3 py-2 rounded-lg hover:bg-muted/50 transition-colors">
+                <Filter className="h-4 w-4" />
+                <span className="text-sm font-medium">
+                  {isExpanded ? 'Ocultar' : 'Mostrar'}
+                </span>
               </div>
-            );
-          }
-
-          return null;
-        })}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {hasActiveFilters && (
-        <div className="mt-3 flex justify-end">
-          <Button
-            variant="outline"
-            size="sm"
-            className="text-xs"
-            onClick={handleClearFilters}
-            leftIcon={<X className="h-3.5 w-3.5" />}
-            isLoading={isLoading}
-            disabled={isLoading}
-          >
-            Limpar Filtros
-          </Button>
+      {/* Conteúdo dos filtros */}
+      <div className={cn(
+        "transition-all duration-300 ease-in-out overflow-visible",
+        "lg:block", // Sempre visível em desktop
+        isExpanded ? "block" : "hidden" // Controlado por toggle em mobile
+      )}>
+        <div className="p-4 space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {filters.map((filter) => {
+              if (filter.type === 'text') {
+                return (
+                  <div key={filter.key} className="space-y-2">
+                    <label htmlFor={filter.key} className="text-xs font-medium text-muted-foreground">
+                      {filter.label}
+                    </label>
+                    <div className="relative group">
+                      <input
+                        id={filter.key}
+                        type="text"
+                        placeholder={filter.placeholder}
+                        value={debouncedTextValues[filter.key] ?? filterValues[filter.key] ?? ''}
+                        onChange={(e) => handleTextChange(filter.key, e.target.value)}
+                        className={cn(
+                          "w-full px-3 py-2.5 pl-10 text-sm bg-background border border-input rounded-lg",
+                          "placeholder:text-muted-foreground/60",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary",
+                          "transition-all duration-200",
+                          "group-hover:border-primary/50",
+                          isLoading && "opacity-50 cursor-not-allowed"
+                        )}
+                        disabled={isLoading}
+                      />
+                      <Search className="h-4 w-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2 transition-colors group-hover:text-primary/70" />
+                    </div>
+                  </div>
+                );
+              }
+
+              if (filter.type === 'select') {
+                const seen = new Set<string>();
+                const selectOptions = [
+                  { value: '', label: 'Todos', icon: <Filter className="h-4 w-4 text-gray-500" /> },
+                  ...filter.options!
+                    .filter(option => {
+                      if (option.value === '') return false;
+                      if (seen.has(option.value)) return false;
+                      seen.add(option.value);
+                      return true;
+                    })
+                    .map(option => ({
+                      value: option.value,
+                      label: option.label,
+                      icon: getStatusIcon(option.value)
+                    }))
+                ];
+                
+                return (
+                  <div key={filter.key} className="space-y-2">
+                    <Select
+                      label={filter.label}
+                      options={selectOptions}
+                      value={filterValues[filter.key] || ''}
+                      onChange={(value) => handleFilterChange(filter.key, value)}
+                      disabled={isLoading}
+                      className="w-full"
+                    />
+                  </div>
+                );
+              }
+
+              if (filter.type === 'daterange') {
+                return (
+                  <div key={filter.key} className="sm:col-span-2 lg:col-span-1 xl:col-span-2 space-y-2 relative z-10">
+                    <DateRangePicker
+                      label={filter.label}
+                      value={dateRange}
+                      onChange={handleDateRangeChange}
+                      disabled={isLoading}
+                      className="w-full"
+                    />
+                  </div>
+                );
+              }
+
+              return null;
+            })}
+          </div>
+
+          {/* Ações adicionais em mobile */}
+          {isExpanded && hasActiveFilters && (
+            <div className="lg:hidden pt-3 border-t border-border">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-sm"
+                onClick={handleClearFilters}
+                leftIcon={<X className="h-4 w-4" />}
+                isLoading={isLoading}
+                disabled={isLoading}
+              >
+                Limpar Todos os Filtros
+              </Button>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-// Usar memo para evitar re-renderizações desnecessárias
 export default memo(FilterBar);
