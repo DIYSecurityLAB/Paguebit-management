@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
 import { useQuery } from 'react-query';
-import { Users, CreditCard, BarChart3, DollarSign, AlertCircle, CheckCircle, Loader2, Store as StoreIcon } from 'lucide-react';
+import { Users, CreditCard, BarChart3, DollarSign, AlertCircle, CheckCircle, Loader2, Store as StoreIcon, LogOut } from 'lucide-react';
 import { UserRepository } from '../../data/repository/user-repository';
 import { PaymentRepository } from '../../data/repository/payment-repository';
 import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
 import { StoreRepository } from '../../data/repository/store-repository';
 import { formatCurrency } from '../../utils/format';
 import { Link } from 'react-router-dom';
+import { useUserContext } from '../../context/user.context';
 
 // Importar componentes de gráficos existentes
 import UsersGrowthChart from './charts/UsersGrowthChart';
@@ -128,10 +129,23 @@ export default function Dashboard() {
   const hasWithdrawalPendingTasks = stats.withdrawalsToProcessCount > 0;
   const hasPendingTasks = hasReceiptPendingTasks || hasWithdrawalPendingTasks;
 
+  const { logout } = useUserContext();
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-2">
-        <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-xl font-bold text-foreground">Dashboard</h1>
+          <button
+            type="button"
+            onClick={logout}
+            className="flex items-center gap-1 px-2 py-1 rounded bg-destructive/10 border border-destructive/30 text-destructive hover:bg-destructive/20 transition-colors text-xs font-medium"
+            title="Sair"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        </div>
         <p className="text-sm text-muted-foreground">
           {new Date().toLocaleDateString('pt-BR', {
             weekday: 'long',
