@@ -5,15 +5,17 @@ import { ptBR } from 'date-fns/locale';
 import { formatCurrency } from '../../utils/format';
 import Select from '../../components/Select';
 import { WithdrawalModel } from '../../data/model/withdrawal.model';
+import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
 
+// Aceite ambos os tipos
 interface WithdrawalSummaryProps {
-  withdrawals: WithdrawalModel[];
+  withdrawals: (WithdrawalModel | Withdrawal)[];
   isLoading: boolean;
   onDaysFilterChange: (days: number) => void;
   selectedDays: number;
   lastUpdated: Date;
-  selectedStatus: string; // NOVO
-  onStatusFilterChange: (status: string) => void; // NOVO
+  selectedStatus: string;
+  onStatusFilterChange: (status: string) => void;
 }
 
 export default function WithdrawalSummaryCards({ 
@@ -22,8 +24,8 @@ export default function WithdrawalSummaryCards({
   onDaysFilterChange, 
   selectedDays,
   lastUpdated,
-  selectedStatus, // NOVO
-  onStatusFilterChange // NOVO
+  selectedStatus,
+  onStatusFilterChange
 }: WithdrawalSummaryProps) {
   const [summaryData, setSummaryData] = useState({
     totalWithdrawn: 0,
@@ -51,20 +53,21 @@ export default function WithdrawalSummaryCards({
   ];
 
   useEffect(() => {
+    // Só calcula se withdrawals mudar
     if (withdrawals && withdrawals.length > 0) {
-      // Calcular totais
       let totalWithdrawn = 0;
       let totalWhitelabelNet = 0;
       let totalPlatform = 0;
       let totalWhitelabelCharged = 0;
       
       withdrawals.forEach(withdrawal => {
-        // Valor total do saque
-        totalWithdrawn += Number(withdrawal.amount || 0);
-        
-        // Obter os detalhes de taxas
-        if (withdrawal.feesDetail && withdrawal.feesDetail.length > 0) {
-          const fee = withdrawal.feesDetail[0];
+        // Suporte para WithdrawalModel ou Withdrawal
+        const amount = typeof withdrawal.amount === 'string' ? Number(withdrawal.amount) : withdrawal.amount;
+        totalWithdrawn += Number(amount || 0);
+
+        const feesDetail = (withdrawal as any).feesDetail;
+        if (feesDetail && feesDetail.length > 0) {
+          const fee = feesDetail[0];
           totalWhitelabelNet += Number(fee.whitelabelNet || 0);
           totalPlatform += Number(fee.platformTotal || 0);
           totalWhitelabelCharged += Number(fee.whitelabelTotal || 0);
@@ -78,7 +81,6 @@ export default function WithdrawalSummaryCards({
         totalWhitelabelCharged
       });
     } else {
-      // Reset para valores padrão
       setSummaryData({
         totalWithdrawn: 0,
         totalWhitelabelNet: 0,
@@ -86,7 +88,7 @@ export default function WithdrawalSummaryCards({
         totalWhitelabelCharged: 0
       });
     }
-  }, [withdrawals]);
+  }, [withdrawals]); // Adicione dependência correta
 
   // Formatar a data de atualização para exibir
   const formattedLastUpdated = format(

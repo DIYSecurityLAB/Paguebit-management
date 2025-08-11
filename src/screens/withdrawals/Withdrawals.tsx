@@ -8,7 +8,7 @@ import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
 import { WithdrawalModel } from '../../data/model/withdrawal.model';
 import { toast } from 'sonner';
 import { formatCurrency, formatDateTime } from '../../utils/format';
-import { Tabs, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '../../components/tabs';
 import WithdrawalAccountingView from './WithdrawalAccountingView';
 import { Calculator, ListFilter  } from 'lucide-react';
 

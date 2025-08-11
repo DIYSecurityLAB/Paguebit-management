@@ -6,7 +6,7 @@ import Button from '../../components/Button';
 import { Store } from '../../domain/entities/Store.entity';
 import { StoreRepository } from '../../data/repository/store-repository';
 import StoreDashboard from './components/dashboard/StoreDashboard';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/tabs';
 import StoreUsersTable from './components/tables/StoreUsersTable';
 import StoreWalletsTable from './components/tables/StoreWalletsTable';
 import StoreFeeRules from './components/fee-rules/StoreFeeRules';
@@ -145,4 +145,3 @@ export default function StoreDetail() {
     </div>
   );
 }
-    
