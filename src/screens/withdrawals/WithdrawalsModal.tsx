@@ -798,7 +798,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                           <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Total Plataforma</span>
                         </div>
                         <p className="text-lg font-bold text-purple-600 dark:text-purple-400">
-                          {formatCurrency(Number(fee.platformFeeAmount ?? 0))}
+                          {formatCurrency(Number(fee.platformTotal ?? 0))}
                         </p>
                       </div>
                     </div>
