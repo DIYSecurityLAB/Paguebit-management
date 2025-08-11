@@ -17,7 +17,7 @@ import { Withdrawal } from '../../domain/entities/Withdrawal.entity';
 
 export default function WithdrawalAccountingView() {
   const [selectedDays, setSelectedDays] = useState(7);
-  const [summaryStatus, setSummaryStatus] = useState(''); // NOVO
+  const [summaryStatus, setSummaryStatus] = useState('');
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(15);
@@ -238,8 +238,14 @@ export default function WithdrawalAccountingView() {
     setCurrentPage(1);
   };
 
+  // Função para garantir que selectedDays seja sempre número
   const handleDaysFilterChange = (days: number) => {
-    setSelectedDays(days);
+    if (selectedDays !== days) setSelectedDays(days);
+  };
+
+  // Função para garantir que summaryStatus só atualize se mudar
+  const handleStatusFilterChange = (status: string) => {
+    if (summaryStatus !== status) setSummaryStatus(status);
   };
 
   const handleViewWithdrawal = (withdrawal: Withdrawal) => {
@@ -265,8 +271,8 @@ export default function WithdrawalAccountingView() {
               onDaysFilterChange={handleDaysFilterChange}
               selectedDays={selectedDays}
               lastUpdated={lastUpdated}
-              selectedStatus={summaryStatus} // NOVO
-              onStatusFilterChange={setSummaryStatus} // NOVO
+              selectedStatus={summaryStatus}
+              onStatusFilterChange={handleStatusFilterChange}
             />
           </div>
         </div>
