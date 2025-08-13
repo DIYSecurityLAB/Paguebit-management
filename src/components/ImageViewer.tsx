@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, Download, RefreshCw } from 'lucide-react';
+ import { X, ZoomIn, ZoomOut, RotateCw, Download, RefreshCw } from 'lucide-react';
 import Button from './Button';
 
 interface ImageViewerProps {
@@ -19,9 +19,11 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
   const pointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
   const initialPinchRef = useRef<{ distance: number; zoom: number } | null>(null);
   const lastTapRef = useRef<number>(0);
+ 
 
   const imageRef = useRef<HTMLImageElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
 
   // Reset quando o modal abre
   useEffect(() => {
@@ -31,6 +33,7 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
       setPosition({ x: 0, y: 0 });
     }
   }, [isOpen]);
+
 
   // Garantir que o arrastar seja liberado mesmo se o mouse sair da tela
   useEffect(() => {
@@ -210,9 +213,11 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     return `data:image/jpeg;base64,${src}`;
   };
 
+
   // Função para realizar o download da imagem diretamente
   const handleDirectDownload = () => {
     if (!src) return;
+
 
     try {
       const imageUrl = getImageUrl();
@@ -233,6 +238,7 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     }
   };
 
+
   const handleDownloadClick = () => {
     if (onDownload) {
       onDownload();
@@ -241,15 +247,18 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     }
   };
 
+
   const handleRotate = () => {
     setRotation(prev => (prev + 90) % 360);
   };
+
 
   const handleResetView = () => {
     setZoomLevel(1);
     setRotation(0);
     setPosition({ x: 0, y: 0 });
   };
+
 
   const handleMouseDown = (e: React.MouseEvent) => {
     if (zoomLevel <= 1) return;
@@ -261,6 +270,7 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     });
   };
 
+
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!isDragging) return;
     e.preventDefault();
@@ -270,16 +280,20 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     });
   };
 
+
   const handleMouseUp = () => {
     setIsDragging(false);
   };
 
+
   if (!isOpen) return null;
+
 
   return (
     <div className="fixed inset-0 z-[1000] flex flex-col items-center justify-center">
       {/* Overlay sem eventos de clique */}
       <div className="absolute inset-0 bg-black/90 pointer-events-none" />
+
 
       {/* Conteúdo do visualizador */}
       <div className="relative z-10 flex flex-col w-full h-full">
@@ -317,6 +331,7 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
             </Button>
           </div>
         </div>
+
 
         {/* Container da imagem - Redução do tamanho máximo */}
         <div
@@ -357,6 +372,7 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
             />
           </div>
         </div>
+
 
         {/* Instruções na parte inferior - Mais legíveis */}
         <div className="py-3 sm:py-4 px-3 sm:px-6 text-white text-xs sm:text-sm bg-black/80 w-full text-center">
