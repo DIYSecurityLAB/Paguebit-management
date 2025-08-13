@@ -159,6 +159,27 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
     lastTapRef.current = now;
   };
 
+  // Adicione o event listener manualmente para wheel (passive: false)
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const handleWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const { clientX, clientY, deltaY, deltaMode } = e;
+      let delta = deltaY;
+      if (deltaMode === 1) delta *= 15;
+      else if (deltaMode === 2) delta *= 100;
+      const sensitivity = 300;
+      const factor = 1 - delta / sensitivity;
+      let targetZoom = zoomLevel * factor;
+      applyZoomAtPoint(targetZoom, clientX, clientY);
+    };
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => {
+      container.removeEventListener('wheel', handleWheel);
+    };
+  }, [zoomLevel, applyZoomAtPoint, isOpen]);
+
   // Atalhos de teclado
   useEffect(() => {
     if (!isOpen) return;
@@ -195,12 +216,18 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
 
     try {
       const imageUrl = getImageUrl();
-      const link = document.createElement('a');
-      link.href = imageUrl;
-      link.download = `comprovante_${new Date().toISOString().split('T')[0]}.jpg`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Use setTimeout para evitar manipulação do DOM durante render do React
+      setTimeout(() => {
+        const link = document.createElement('a');
+        link.href = imageUrl;
+        link.download = `comprovante_${new Date().toISOString().split('T')[0]}.jpg`;
+        document.body.appendChild(link);
+        link.click();
+        // Só remove se ainda estiver no DOM
+        if (link.parentNode) {
+          document.body.removeChild(link);
+        }
+      }, 0);
     } catch (error) {
       console.error('Falha ao baixar imagem:', error);
     }
@@ -295,8 +322,6 @@ export default function ImageViewer({ src, alt, isOpen, onClose, onDownload }: I
         <div
           ref={containerRef}
           className="flex-1 w-full flex items-center justify-center overflow-hidden select-none"
-          // Substitui handlers de mouse por pointer events + wheel
-          onWheel={handleWheel}
           onPointerDown={(e) => { onPointerDown(e); handleMouseDown(e as any); }}
           onPointerMove={onPointerMove}
           onPointerUp={(e) => { onPointerUp(e); handleMouseUp(); }}
