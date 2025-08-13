@@ -52,7 +52,7 @@ export default function OcrNameSuggestion({ receipt, onNameDetected, onfraguismo
     'mercado pago', 'mercadopago', 'comprovante de pagamento', 'o comprovante de pagamento',
     'o&', 'id da transação pix', 'código de autenticação', 'atendimento ao cliente', 'ouvidoria',
     'sua compra', 'total', 'para', 'psp', 'quinta-feira', 'segunda-feira', 'terça-feira', 'quarta-feira',
-    'sexta-feira', 'sábado', 'domingo', 'às', 'de',
+    'sexta-feira', 'sábado', 'domingo', 'às',
     // Cabeçalhos e informações de comprovantes
     'dados do pagador', 'dados do recebedor', 'identificação', 'identificacao', 'instívição', 'instituicao', 'dados do', 'dados da'
   ];
@@ -210,7 +210,7 @@ const COMMON_NAMES = [
           debugLogs.push("- Nenhum nome comum válido encontrado");
         }
 
-        // SEGUNDO MÉTODO: Buscar linha após qualquer palavra-chave de pagador
+        // SEGUNDO MÉTODO: Buscar linha após qualquer palavra-chave do pagador
         if (!foundName) {
           debugLogs.push("\nMÉTODO 2: Busca após palavras-chave de pagador");
           
