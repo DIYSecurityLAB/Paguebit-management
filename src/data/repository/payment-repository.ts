@@ -9,7 +9,7 @@ import type {
 
 export class PaymentRepository {
   async listPayments(params?: AdminListPaymentsReq): Promise<AdminListPaymentsRes> {
-    return await apiDataSource.get<AdminListPaymentsRes>(
+     return await apiDataSource.get<AdminListPaymentsRes>(
       '/admin/payments',
       { params }
     );
@@ -28,4 +28,3 @@ export class PaymentRepository {
     );
   }
 }
-  

@@ -43,6 +43,7 @@ export type PaymentModel = {
       email: string;
     };
   };
+  hasReceipt?: boolean; 
 };
 
 export type CreatePaymentDto = {
@@ -128,6 +129,7 @@ export type AdminListPaymentsRes = {
   total: number;
   page: number;
   limit: number;
+  // pages?: number; // se quiser refletir o backend
 };
 
 export type AdminUpdatePaymentStatusReq = {
