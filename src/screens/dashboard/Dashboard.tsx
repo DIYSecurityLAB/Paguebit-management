@@ -39,7 +39,8 @@ export default function Dashboard() {
   );
   const { data: paymentsData, isLoading: loadingPayments } = useQuery(
     'allPayments',
-    () => paymentRepository.listPayments({ page: '1', limit: '100000' })
+    // Adiciona hasReceipt: 'true' para evitar carregar comprovantes pesados
+    () => paymentRepository.listPayments({ page: '1', limit: '100000', hasReceipt: 'true' })
   );
   const { data: withdrawalsData, isLoading: loadingWithdrawals } = useQuery(
     'allWithdrawals',
@@ -57,8 +58,8 @@ export default function Dashboard() {
     const withdrawals = withdrawalsData?.data || [];
     const stores = storesData?.data || [];
 
-    // Contagem de pagamentos com comprovantes enviados
-    const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
+    // Contagem de pagamentos com comprovantes enviados usando hasReceipt
+    const receiptsCount = payments.filter(p => p.hasReceipt).length;
 
     // Contagem de saques em processamento ou pendentes
     const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;

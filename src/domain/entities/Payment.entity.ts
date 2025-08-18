@@ -92,11 +92,13 @@ export class Payment {
       email: string;
     };
   };
+  hasReceipt?: boolean; // Novo campo opcional
 
-  constructor(data: Partial<PaymentType>) {
+  constructor(data: Partial<PaymentType & { hasReceipt?: boolean }>) {
     // Não faz validação, apenas atribui os dados
     Object.assign(this, data);
-    
+    this.hasReceipt = data.hasReceipt;
+
     // Normaliza a propriedade store para manter compatibilidade
     if (data.Store && !data.store) {
       this.store = {
@@ -109,7 +111,8 @@ export class Payment {
   static fromModel(model: PaymentModel): Payment {
     // Não faz validação, apenas atribui os dados
     const payment = new Payment(model as Partial<PaymentType>);
-    
+    payment.hasReceipt = model.hasReceipt;
+
     // Normaliza a propriedade store para manter compatibilidade
     if (model.Store && !model.store) {
       payment.store = {
@@ -117,14 +120,15 @@ export class Payment {
         name: model.Store.name,
       };
     }
-    
+
     return payment;
   }
 
   static fromObject(obj: unknown): Payment {
     // Não faz validação, apenas atribui os dados
     const payment = new Payment(obj as Partial<PaymentType>);
-    
+    payment.hasReceipt = (obj as any).hasReceipt;
+
     // Normaliza a propriedade store para manter compatibilidade
     const objData = obj as any;
     if (objData?.Store && !objData.store) {
@@ -133,7 +137,7 @@ export class Payment {
         name: objData.Store.name,
       };
     }
-    
+
     return payment;
   }
 
@@ -161,6 +165,7 @@ export class Payment {
       depixAddress: this.depixAddress,
       store: this.store,
       Store: this.Store,
+      hasReceipt: this.hasReceipt,
     };
   }
 
