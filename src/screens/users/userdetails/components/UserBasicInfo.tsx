@@ -71,6 +71,7 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
       setIsSaving(true);
       const update: Partial<UpdateUser> = { active: pendingActiveValue ? 'true' : 'false' };
       const updatedUserModel = await userRepository.updateUser(user.id, update);
+ 
       const updatedUser = User.fromModel(updatedUserModel);
       onUserUpdate(updatedUser);
       setIsActiveValue(pendingActiveValue);
@@ -319,4 +320,4 @@ export default function UserBasicInfo({ user, onUserUpdate }: UserBasicInfoProps
     </div>
   );
 }
- 
+

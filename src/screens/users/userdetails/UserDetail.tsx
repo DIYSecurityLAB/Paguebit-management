@@ -25,7 +25,7 @@ export default function UserDetail() {
         const userData = await userRepository.getUserById(id);
         console.log('[UserDetail] userData response:', userData);
         // Corrigido: backend retorna o usuário puro, não { data: ... }
-        if (userData && userData.id) {
+        if (userData ) {
           setUser(User.fromModel(userData));
         } else {
           setUser(null);
