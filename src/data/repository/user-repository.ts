@@ -46,6 +46,11 @@ export class UserRepository {
       req,
       { headers }
     );
-    return res.data;
+
+    // Aceita resposta no formato { success, data, message } ou retorno puro do usuário.
+    const maybeWrapped = res as unknown as { data?: unknown } | UserModel;
+    const userModel = (maybeWrapped && (maybeWrapped as any).data) ? (maybeWrapped as any).data : (res as any);
+
+    return userModel as UserModel;
   }
 }

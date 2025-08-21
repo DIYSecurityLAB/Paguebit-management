@@ -74,7 +74,9 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
         persistUser(userEntity);
       }
     } catch (err) {
-       console.error("[UserProvider] Erro ao renovar sessão:", err);
+      // Log seguro, sem headers
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[UserProvider] Erro ao renovar sessão:", msg);
       toast.error("Erro ao renovar sessão. Faça login novamente.");
       logout();
     }

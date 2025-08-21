@@ -45,44 +45,53 @@ class ApiDataSource {
         return response;
       },
       (error) => {
-        // Nenhum log aqui
+        // Log seguro, sem headers
+        if (error.response) {
+          console.error("[API][ERRO]", error.message, "Status:", error.response.status);
+        } else {
+          console.error("[API][ERRO]", error.message);
+        }
+        // Remove headers do erro antes de propagar
+        if (error.config && error.config.headers) {
+          error.config.headers = undefined;
+        }
         return Promise.reject(error);
       }
     );
   }
 
   async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    console.log("[API][GET] Enviando para:", url, "Config:", config);
+    console.log("[API][GET] Enviando para:", url);
     const response: AxiosResponse<T> = await this.api.get(url, config);
-    console.log("[API][GET] Resposta de:", url, "Dados:", response.data);
+    console.log("[API][GET] Resposta de:", url);
     return response.data;
   }
 
   async post<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
-    console.log("[API][POST] Enviando para:", url, "Body:", data, "Config:", config);
+    console.log("[API][POST] Enviando para:", url);
     const response: AxiosResponse<T> = await this.api.post(url, data, config);
-    console.log("[API][POST] Resposta de:", url, "Dados:", response.data);
+    console.log("[API][POST] Resposta de:", url);
     return response.data;
   }
 
   async put<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
-    console.log("[API][PUT] Enviando para:", url, "Body:", data, "Config:", config);
+    console.log("[API][PUT] Enviando para:", url);
     const response: AxiosResponse<T> = await this.api.put(url, data, config);
-    console.log("[API][PUT] Resposta de:", url, "Dados:", response.data);
+    console.log("[API][PUT] Resposta de:", url);
     return response.data;
   }
 
   async delete<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
-    console.log("[API][DELETE] Enviando para:", url, "Config:", config);
+    console.log("[API][DELETE] Enviando para:", url);
     const response: AxiosResponse<T> = await this.api.delete(url, config);
-    console.log("[API][DELETE] Resposta de:", url, "Dados:", response.data);
+    console.log("[API][DELETE] Resposta de:", url);
     return response.data;
   }
 
   async patch<T, D = unknown>(url: string, data?: D, config?: AxiosRequestConfig): Promise<T> {
-    console.log("[API][PATCH] Enviando para:", url, "Body:", data, "Config:", config);
+    console.log("[API][PATCH] Enviando para:", url);
     const response: AxiosResponse<T> = await this.api.patch(url, data, config);
-    console.log("[API][PATCH] Resposta de:", url, "Dados:", response.data);
+    console.log("[API][PATCH] Resposta de:", url);
     return response.data;
   }
 }

@@ -37,6 +37,15 @@ export class User {
   ownedStores?: StoreUser[]; // opcional, para manter compatibilidade
 
   public static fromModel(model: any): User {
+    // Se veio no formato ApiResponse { success, data, message }, utiliza data
+    if (model && typeof model === "object" && "data" in model && (model as any).data) {
+      model = (model as any).data;
+    }
+
+    if (!model || typeof model !== "object" || !model.id) {
+      throw new Error("User.fromModel: model inválido ou inexistente");
+    }
+
     const entity = new User();
     entity.id = model.id;
     entity.whitelabelId = model.whitelabelId;
