@@ -59,7 +59,9 @@ export default function Dashboard() {
     const stores = storesData?.data || [];
 
     // Contagem de pagamentos com comprovantes enviados usando hasReceipt
+ 
   const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
+ 
 
     // Contagem de saques em processamento ou pendentes
     const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;
