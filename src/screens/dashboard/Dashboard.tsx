@@ -59,13 +59,13 @@ export default function Dashboard() {
     const stores = storesData?.data || [];
 
     // Contagem de pagamentos com comprovantes enviados usando hasReceipt
-    const receiptsCount = payments.filter(p => p.hasReceipt).length;
+ 
+  const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
+ 
 
     // Contagem de saques em processamento ou pendentes
     const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;
-    const withdrawalsProcessingCount = withdrawals.filter(w => w.status === 'processing').length;
-    const withdrawalsToProcessCount = withdrawalsPendingCount + withdrawalsProcessingCount;
-
+     const withdrawalsToProcessCount = withdrawalsPendingCount  
     // Usuários
     const totalUsers = users.length;
     const usersByMonth = processUsersByMonth(users);
@@ -112,8 +112,7 @@ export default function Dashboard() {
       withdrawalsByStatus,
       topStoresByAmount,
       receiptsCount,
-      withdrawalsProcessingCount,
-      withdrawalsPendingCount,
+       withdrawalsPendingCount,
       withdrawalsToProcessCount,
       totalWithdrawalsCompleted,
       withdrawalsCompletedCount,

@@ -17,6 +17,7 @@ export interface FilterOption {
   type: FilterType;
   placeholder?: string;
   options?: SelectOption[];
+  // Adicione outros campos se necessário
 }
 
 export interface FilterBarProps {
