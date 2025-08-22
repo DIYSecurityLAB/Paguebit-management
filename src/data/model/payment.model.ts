@@ -122,6 +122,7 @@ export type AdminListPaymentsReq = {
   receipt?: string;
   qrCodeUrl?: string;
   qrCopyPaste?: string;
+  hasReceipt?: string; // Adicione se necessário
 };
 
 export type AdminListPaymentsRes = {

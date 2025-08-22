@@ -257,7 +257,7 @@ function FilterBar({ filters, onFilterChange, className, isLoading = false }: Fi
 
               if (filter.type === 'daterange') {
                 return (
-                  <div key={filter.key} className="sm:col-span-2 lg:col-span-1 xl:col-span-2 space-y-2 relative z-10">
+                  <div key={filter.key} className="sm:col-span-2 lg:col-span-1 xl:col-span-2 space-y-2 relative z-1">
                     <DateRangePicker
                       label={filter.label}
                       value={dateRange}

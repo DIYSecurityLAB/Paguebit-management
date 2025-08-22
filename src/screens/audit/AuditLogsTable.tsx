@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import { format } from 'date-fns';
-import { Eye, User, Package, CreditCard, Bell, Clock, ChevronUp, ChevronDown } from 'lucide-react';
+import { Eye, User, Package, CreditCard, Bell, Clock } from 'lucide-react';
 import Table, { TableColumn } from '../../components/Table';
 import FilterBar from '../../components/FilterBar';
 import Pagination from '../../components/Pagination';
@@ -245,23 +245,8 @@ export default function AuditLogsTable() {
 
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="sm:hidden">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
-        >
-          <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
-          {filtersExpanded ? (
-            <ChevronUp className="h-4 w-4 ml-2" />
-          ) : (
-            <ChevronDown className="h-4 w-4 ml-2" />
-          )}
-        </button>
-      </div>
-      
       {/* Filtros (visíveis em desktop ou quando expandidos em mobile) */}
-      <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
+      <div className="w-full">
         <FilterBar
           filters={filterOptions}
           onFilterChange={handleFilterChange}

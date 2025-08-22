@@ -266,45 +266,33 @@ export default function PaymentsTable() {
 
   const handleFilterChange = useCallback((newFilters: Record<string, any>) => {
     setIsFiltering(true);
+    // Inicialize todos os filtros possíveis
+    const updatedFilters = {
+      status: '',
+      dateFrom: '',
+      dateTo: '',
+      id: '',
+      transactionType: '',
+      noreceipt: '',
+      storeId: '',
+      qrCodeId: '',
+      payerName: '',
+      observation: '',
+      notes: '',
+    };
+    Object.keys(updatedFilters).forEach(key => {
+      if (newFilters[key]) updatedFilters[key] = newFilters[key];
+    });
+    // Corrija o mapeamento do filtro de data
+    if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
+    if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
+    setFilters(updatedFilters);
+    setCurrentPage(1);
     if (Object.keys(newFilters).length === 0) {
-      setFilters({
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        id: '',
-        transactionType: '',
-        noreceipt: '',
-        storeId: '',
-        qrCodeId: '',
-        payerName: '',
-        observation: '',
-        notes: '',
-      });
       setTimeout(() => {
         queryClient.invalidateQueries(['payments']);
       }, 100);
-    } else {
-      const updatedFilters = {
-        status: '',
-        dateFrom: '',
-        dateTo: '',
-        id: '',
-        transactionType: '',
-        noreceipt: '',
-        storeId: '',
-        qrCodeId: '',
-        payerName: '',
-        observation: '',
-        notes: '',
-      };
-      Object.keys(updatedFilters).forEach(key => {
-        if (newFilters[key]) updatedFilters[key] = newFilters[key];
-      });
-      if (newFilters.dateRangeFrom) updatedFilters.dateFrom = newFilters.dateRangeFrom;
-      if (newFilters.dateRangeTo) updatedFilters.dateTo = newFilters.dateRangeTo;
-      setFilters(updatedFilters);
     }
-    setCurrentPage(1);
   }, [queryClient]);
 
   const handlePageChange = useCallback((page: number) => {
@@ -333,28 +321,13 @@ export default function PaymentsTable() {
 
   return (
     <div className="space-y-4">
-      {/* Botão para expandir/contrair filtros em dispositivos móveis */}
-      <div className="sm:hidden mb-4">
-        <button
-          onClick={() => setFiltersExpanded(!filtersExpanded)}
-          className="px-4 py-2 bg-card border border-border rounded-md text-sm text-foreground font-medium flex justify-between items-center w-full"
-        >
-          <span>{filtersExpanded ? "Ocultar filtros" : "Ver filtros"}</span>
-          {filtersExpanded ? (
-            <ChevronUp className="h-4 w-4 ml-2" />
-          ) : (
-            <ChevronDown className="h-4 w-4 ml-2" />
-          )}
-        </button>
-      </div>
-
       {/* Filtros visíveis em desktop ou quando expandidos em mobile */}
-      <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block`}>
+      <div className="w-full">
         <FilterBar
           filters={filterOptions}
           onFilterChange={handleFilterChange}
           className="mb-4"
-          isLoading={isFiltering && isLoading} // Só bloqueia quando ambos estão ativos
+          isLoading={isFiltering && isLoading}
         />
       </div>
       

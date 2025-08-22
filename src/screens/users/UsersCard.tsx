@@ -253,23 +253,7 @@ export default function UsersCard() {
     <div className="space-y-4">
       {/* Cabeçalho e filtros */}
       <div className="space-y-3">
-        {/* Botão de expansão de filtros (apenas mobile) */}
-        <div className="sm:hidden">
-          <button
-            onClick={() => setFiltersExpanded(!filtersExpanded)}
-            className="w-full px-4 py-2.5 bg-card border border-border rounded-md text-sm font-medium flex justify-between items-center"
-          >
-            <span>{filtersExpanded ? "Ocultar filtros" : "Exibir filtros"}</span>
-            {filtersExpanded ? (
-              <ChevronUp className="h-4 w-4 ml-2" />
-            ) : (
-              <ChevronDown className="h-4 w-4 ml-2" />
-            )}
-          </button>
-        </div>
-        
-        {/* Filtros (visíveis em desktop ou quando expandidos em mobile) */}
-        <div className={`${filtersExpanded ? 'block' : 'hidden'} sm:block w-full`}>
+        <div className="w-full">
           <FilterBar
             filters={filterOptions}
             onFilterChange={handleFilterChange}
