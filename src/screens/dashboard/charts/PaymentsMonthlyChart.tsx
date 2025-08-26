@@ -26,59 +26,56 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
   }
 
   const data = useMemo(() => {
-    const byPeriod: Record<string, number> = {};
-    filteredPayments.forEach(p => {
-      if (p.createdAt) {
-        const date = new Date(p.createdAt);
-        let key = '';
-        if (period === 'day') {
-          key = date.toLocaleDateString('pt-BR');
-        } else if (period === 'week') {
-          // Semana ISO: yyyy-Www
-          const year = date.getFullYear();
-          const firstDayOfYear = new Date(year, 0, 1);
-          const pastDaysOfYear = (date.valueOf() - firstDayOfYear.valueOf()) / 86400000;
-          // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-          const week = Math.ceil((pastDaysOfYear + firstDayOfYear.getDay() + 1) / 7);
-          key = `${year}-S${week.toString().padStart(2, '0')}`;
-        } else {
-          key = date.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
-        }
-        byPeriod[key] = (byPeriod[key] || 0) + (p.amount || 0);
-      }
-    });
+    const buckets: Record<string, { ts: number; amount: number; label: string }> = {};
 
-    // Ordenar por data
-    const parseKey = (key: string) => {
-      if (period === 'day') {
-        // dd/mm/yyyy
-        const [d, m, y] = key.split('/');
-        return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
-      }
-      if (period === 'week') {
-        // yyyy-Sww
-        const [year, weekStr] = key.split('-S');
-        const week = Number(weekStr);
-        // ISO week to date: https://stackoverflow.com/a/16591175
-        const simple = new Date(Number(year), 0, 1 + (week - 1) * 7);
-        const dow = simple.getDay();
-        const ISOweekStart = simple;
-        if (dow <= 4)
-          ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-        else
-          ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-        return ISOweekStart.getTime();
-      }
-      // mês
-      const [month, year] = key.split(' ');
-      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      const m = months.indexOf(month.toLowerCase());
-      return new Date(Number(year), m, 1).getTime();
+    const getISOWeekInfo = (date: Date) => {
+      // Normaliza para UTC para cálculo ISO consistente
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7; // 1..7 (seg=1)
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum); // quinta-feira da semana ISO
+      const isoYear = d.getUTCFullYear();
+      const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+      const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+      // início (segunda) da semana ISO em horário local (meia-noite)
+      const weekStartUTC = new Date(d);
+      weekStartUTC.setUTCDate(d.getUTCDate() - 3);
+      const weekStart = new Date(weekStartUTC.getUTCFullYear(), weekStartUTC.getUTCMonth(), weekStartUTC.getUTCDate());
+      return { isoYear, weekNum, weekStart };
     };
 
-    return Object.entries(byPeriod)
-      .map(([periodKey, amount]) => ({ periodKey, amount }))
-      .sort((a, b) => parseKey(a.periodKey) - parseKey(b.periodKey));
+    filteredPayments.forEach(p => {
+      if (!p.createdAt) return;
+      const date = new Date(p.createdAt);
+
+      let ts = 0;
+      let label = '';
+
+      if (period === 'day') {
+        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        ts = dayStart.getTime();
+        label = dayStart.toLocaleDateString('pt-BR');
+      } else if (period === 'week') {
+        const { isoYear, weekNum, weekStart } = getISOWeekInfo(date);
+        ts = weekStart.getTime();
+        label = `S${String(weekNum).padStart(2, '0')}/${isoYear}`;
+      } else {
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        ts = monthStart.getTime();
+        label = monthStart.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+      }
+
+      const key = String(ts);
+      if (!buckets[key]) buckets[key] = { ts, amount: 0, label };
+      buckets[key].amount += p.amount || 0;
+    });
+
+    return Object.values(buckets)
+      .sort((a, b) => a.ts - b.ts)
+      .map(({ ts, amount, label }) => ({
+        periodKey: String(ts),
+        label,
+        amount
+      }));
   }, [filteredPayments, period]);
 
   if (loading) return <div className="flex items-center justify-center h-32">Carregando...</div>;
@@ -177,7 +174,7 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
           <AreaChart data={data}>
             <CartesianGrid strokeDasharray="3 3" vertical={false} />
             <XAxis 
-              dataKey="periodKey" 
+              dataKey="label" 
               axisLine={false} 
               tickLine={false} 
               fontSize={11} 
@@ -211,3 +208,4 @@ export default function PaymentsMonthlyChart({ payments, loading, height = 250 }
     </div>
   );
 }
+  

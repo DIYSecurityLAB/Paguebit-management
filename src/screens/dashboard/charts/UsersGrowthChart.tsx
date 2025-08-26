@@ -16,76 +16,67 @@ export default function UsersGrowthChart({ users, loading, height = 250 }: Props
   const [period, setPeriod] = useState<PeriodType>('week');
   const [metric, setMetric] = useState<MetricType>('total');
 
-  // Agrupa usuários por período usando createdAt real
+  // Agrupa usuários por período com chave numérica (timestamp) e ordena ascendente
   const data = useMemo(() => {
     if (!users || users.length === 0) return [];
 
-    const byPeriod: Record<string, number> = {};
+    type Bucket = { ts: number; label: string; count: number };
+    const buckets: Record<string, Bucket> = {};
+
+    const getWeekInfo = (date: Date) => {
+      const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+      const dayNum = d.getUTCDay() || 7;
+      d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+      const isoYear = d.getUTCFullYear();
+      const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+      const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+      const weekStart = new Date(d);
+      weekStart.setUTCDate(d.getUTCDate() - 3); // segunda-feira (início ISO)
+      return { isoYear, weekNum, weekStart };
+    };
+
     users.forEach(u => {
       if (!u.createdAt) return;
       const date = new Date(u.createdAt);
-      let key = '';
+
+      let ts = 0;
+      let label = '';
+
       if (period === 'day') {
-        key = date.toLocaleDateString('pt-BR');
+        const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+        ts = dayStart.getTime();
+        label = dayStart.toLocaleDateString('pt-BR');
       } else if (period === 'week') {
-        const year = date.getFullYear();
-        const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
-        const dayNum = d.getUTCDay() || 7;
-        d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-        const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-        const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
-        key = `${year}-S${weekNum.toString().padStart(2, '0')}`;
+        const { isoYear, weekNum, weekStart } = getWeekInfo(date);
+        ts = weekStart.getTime();
+        label = `S${String(weekNum).padStart(2, '0')}/${isoYear}`;
       } else {
-        key = date.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+        const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+        ts = monthStart.getTime();
+        label = monthStart.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
       }
-      byPeriod[key] = (byPeriod[key] || 0) + 1;
+
+      const key = String(ts);
+      if (!buckets[key]) buckets[key] = { ts, label, count: 0 };
+      buckets[key].count += 1;
     });
 
-    // Ordenar por data
-    const parseKey = (key: string) => {
-      if (period === 'day') {
-        const [d, m, y] = key.split('/');
-        return new Date(Number(y), Number(m) - 1, Number(d)).getTime();
-      }
-      if (period === 'week') {
-        const [year, weekStr] = key.split('-S');
-        const week = Number(weekStr);
-        const simple = new Date(Number(year), 0, 1 + (week - 1) * 7);
-        const dow = simple.getDay();
-        const ISOweekStart = simple;
-        if (dow <= 4)
-          ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-        else
-          ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-        return ISOweekStart.getTime();
-      }
-      // mês
-      const [month, year] = key.split(' ');
-      const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-      const m = months.indexOf(month.toLowerCase());
-      return new Date(Number(year), m, 1).getTime();
-    };
-
-    const sorted = Object.entries(byPeriod)
-      .map(([periodKey, count]) => ({
-        periodKey,
-        label: period === 'week' && periodKey.includes('-S')
-          ? `S${periodKey.split('-S')[1]}/${periodKey.split('-S')[0]}`
-          : periodKey,
-        count
-      }))
-      .sort((a, b) => parseKey(a.periodKey) - parseKey(b.periodKey));
+    const sorted = Object.values(buckets).sort((a, b) => a.ts - b.ts);
 
     if (metric === 'total') {
       let acc = 0;
       return sorted.map(item => ({
-        ...item,
-        value: (acc += item.count)
+        periodKey: String(item.ts),
+        label: item.label,
+        count: item.count,
+        value: (acc += item.count),
       }));
     } else {
       return sorted.map(item => ({
-        ...item,
-        value: item.count
+        periodKey: String(item.ts),
+        label: item.label,
+        count: item.count,
+        value: item.count,
       }));
     }
   }, [users, period, metric]);
@@ -213,3 +204,4 @@ export default function UsersGrowthChart({ users, loading, height = 250 }: Props
     </div>
   );
 }
+     

@@ -5,8 +5,6 @@ import { ArrowUpRight } from 'lucide-react';
 
 import { Payment } from '../../../domain/entities/Payment.entity';
 import { User } from '../../../domain/entities/User.entity';
-
-// Importar Store
 import { Store } from '../../../domain/entities/Store.entity';
 
 // Ajustar Props para receber stores
@@ -19,48 +17,49 @@ interface Props {
 
 type PeriodType = 'day' | 'week' | 'month';
 
-function getPeriodKey(date: Date, period: PeriodType) {
+// Chave do período como timestamp do início do período
+function getPeriodKey(date: Date, period: PeriodType): number {
   if (period === 'day') {
-    return date.toLocaleDateString('pt-BR');
+    const dayStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    return dayStart.getTime();
   }
   if (period === 'week') {
-    const year = date.getFullYear();
+    // Início da semana ISO (segunda)
     const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(),0,1));
-    const weekNum = Math.ceil((((d.getTime() - yearStart.getTime()) / 86400000) + 1)/7);
-    return `${year}-S${weekNum.toString().padStart(2, '0')}`;
+    const weekStart = new Date(d);
+    weekStart.setUTCDate(d.getUTCDate() - 3);
+    // Normalize para meia-noite local
+    const w = new Date(weekStart.getUTCFullYear(), weekStart.getUTCMonth(), weekStart.getUTCDate());
+    return w.getTime();
   }
   // month
-  return date.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+  const monthStart = new Date(date.getFullYear(), date.getMonth(), 1);
+  return monthStart.getTime();
 }
 
-function parsePeriodKey(key: string, period: PeriodType): Date {
+// Parse simplificado: a key agora é um timestamp
+function parsePeriodKey(key: string): Date {
+  return new Date(Number(key));
+}
+
+// Formatar label a partir do timestamp e tipo de período
+function formatLabel(period: PeriodType, ts: number) {
+  const d = new Date(ts);
   if (period === 'day') {
-    // dd/mm/yyyy
-    const [d, m, y] = key.split('/');
-    return new Date(Number(y), Number(m) - 1, Number(d));
+    return d.toLocaleDateString('pt-BR');
   }
   if (period === 'week') {
-    // yyyy-Sww
-    const [year, weekStr] = key.split('-S');
-    const week = Number(weekStr);
-    // ISO week to date: https://stackoverflow.com/a/16591175
-    const simple = new Date(Number(year), 0, 1 + (week - 1) * 7);
-    const dow = simple.getDay();
-    const ISOweekStart = new Date(simple);
-    if (dow <= 4)
-      ISOweekStart.setDate(simple.getDate() - simple.getDay() + 1);
-    else
-      ISOweekStart.setDate(simple.getDate() + 8 - simple.getDay());
-    return ISOweekStart;
+    const ref = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    const dayNum = ref.getUTCDay() || 7;
+    ref.setUTCDate(ref.getUTCDate() + 4 - dayNum);
+    const isoYear = ref.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+    const weekNum = Math.ceil((((ref.getTime() - yearStart.getTime()) / 86400000) + 1) / 7);
+    return `S${String(weekNum).padStart(2, '0')}/${isoYear}`;
   }
-  // mês
-  const [month, year] = key.split(' ');
-  const months = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
-  const m = months.indexOf(month.toLowerCase());
-  return new Date(Number(year), m, 1);
+  return d.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
 }
 
 export default function ActiveUsersChart({ stores, payments, loading, height = 220 }: Props) {
@@ -76,13 +75,14 @@ export default function ActiveUsersChart({ stores, payments, loading, height = 2
     payments.filter(p => ['paid', 'approved', 'withdrawal_processing'].includes(p.status)), [payments]
   );
 
-  // Mapear pagamentos por loja e data
+  // Mapear pagamentos por loja e data usando timestamp do início do período
   const storeIdsByPeriod = useMemo(() => {
     const map: Record<string, Set<string>> = {};
     relevantPayments.forEach(p => {
       if (!p.storeId || !p.createdAt) return;
       const date = new Date(p.createdAt);
-      const key = getPeriodKey(date, period);
+      const ts = getPeriodKey(date, period);
+      const key = String(ts);
       if (!map[key]) map[key] = new Set();
       map[key].add(p.storeId);
     });
@@ -98,14 +98,10 @@ export default function ActiveUsersChart({ stores, payments, loading, height = 2
     return map;
   }, [storeIdsByPeriod, stores]);
 
-  // Gerar lista de períodos ordenados
+  // Gerar lista de períodos ordenados (asc)
   const periodKeysSorted = useMemo(() => {
-    return Object.keys(storeIdsByPeriod).sort((a, b) => {
-      const da = parsePeriodKey(a, period).getTime();
-      const db = parsePeriodKey(b, period).getTime();
-      return da - db;
-    });
-  }, [storeIdsByPeriod, period]);
+    return Object.keys(storeIdsByPeriod).sort((a, b) => Number(a) - Number(b));
+  }, [storeIdsByPeriod]);
 
   // Filtro fixo: últimos 30 dias, 12 semanas ou 12 meses
   const filteredPeriodKeys = useMemo(() => {
@@ -113,29 +109,28 @@ export default function ActiveUsersChart({ stores, payments, loading, height = 2
     if (period === 'day') {
       // Últimos 30 dias
       return periodKeysSorted.filter(key => {
-        const d = parsePeriodKey(key, 'day');
+        const d = parsePeriodKey(key);
         const diff = (now.getTime() - d.getTime()) / (1000 * 60 * 60 * 24);
         return diff >= 0 && diff < 30;
       });
     }
     if (period === 'week') {
-      // Últimas 12 semanas
       return periodKeysSorted.slice(-12);
     }
-    // Últimos 12 meses
     return periodKeysSorted.slice(-12);
   }, [period, periodKeysSorted]);
 
   // Montar dados para o gráfico
   const data = useMemo(() => {
     const keys = filteredPeriodKeys;
-    return keys.map(periodKey => ({
-      periodKey,
-      label: period === 'week' && periodKey.includes('-S')
-        ? `S${periodKey.split('-S')[1]}/${periodKey.split('-S')[0]}`
-        : periodKey,
-      activeStores: storeIdsByPeriod[periodKey]?.size || 0
-    }));
+    return keys.map(periodKey => {
+      const ts = Number(periodKey);
+      return {
+        periodKey,
+        label: formatLabel(period, ts),
+        activeStores: storeIdsByPeriod[periodKey]?.size || 0
+      };
+    });
   }, [storeIdsByPeriod, period, filteredPeriodKeys]);
 
   // Calcular lojas ativas no último período
@@ -389,3 +384,4 @@ export default function ActiveUsersChart({ stores, payments, loading, height = 2
     </div>
   );
 }
+   

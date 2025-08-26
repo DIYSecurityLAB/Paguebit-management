@@ -160,6 +160,7 @@ export type AdminListStoresReq = {
   name?: string;
   ownerId?: string;
   whitelabelId?: string;
+  couponCode?: string; // Adicionado filtro de cupom
   createdAtFrom?: string;
   createdAtTo?: string;
   updatedAtFrom?: string;

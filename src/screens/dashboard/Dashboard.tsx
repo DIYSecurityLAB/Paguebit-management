@@ -65,11 +65,11 @@ export default function Dashboard() {
     const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;
      const withdrawalsToProcessCount = withdrawalsPendingCount  
     // Usuários
-    const totalUsers = users.length;
+    const totalUsers = users.length; 
     const usersByMonth = processUsersByMonth(users);
 
     // Lojas
-    const totalStores = stores.length;
+    const totalStores = stores.length;  
 
     // Pagamentos por loja
     const totalPayments = payments.length;
