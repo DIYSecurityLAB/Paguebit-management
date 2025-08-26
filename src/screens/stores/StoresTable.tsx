@@ -23,6 +23,7 @@ export default function StoresTable() {
     ownerEmail: '',
     paymentId: '',
     withdrawalId: '',
+    couponCode: '', // Adicionado
     createdAtFrom: '',
     createdAtTo: '',
     updatedAtFrom: '',
@@ -104,6 +105,12 @@ export default function StoresTable() {
       label: 'ID do Saque',
       type: 'text' as const,
       placeholder: 'Buscar por ID do saque',
+    },
+    {
+      key: 'couponCode',
+      label: 'Cupom',
+      type: 'text' as const,
+      placeholder: 'Buscar por código de cupom',
     },
     {
       key: 'createdAt',
@@ -308,4 +315,4 @@ export default function StoresTable() {
     </div>
   );
 }
-    
+
