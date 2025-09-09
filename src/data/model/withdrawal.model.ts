@@ -16,6 +16,11 @@ export enum FeeType {
   FIXED = "FIXED",
 }
 
+export enum CryptoType {
+  BTC = "BTC",
+  USDT = "USDT",
+}
+
 export interface WithdrawalFeeDetail {
   id: string;
   withdrawalId: string;
@@ -46,6 +51,8 @@ export interface WithdrawalModel {
   storeId: string;
   whitelabelId: string;
   amount: number;
+  cryptoType?: CryptoType;
+  cryptoValue?: number;
   paymentIds: string[];
   status: WithdrawalStatus;
   createdAt: string;
@@ -91,6 +98,7 @@ export type AdminListWithdrawalsReq = {
   destinationWalletType?: string;
   txId?: string;
   failedReason?: string;
+  cryptoType?: string;
 };
 
 export type AdminListWithdrawalsRes = {

@@ -24,13 +24,13 @@ export default function WithdrawalsCard() {
     dateFrom: '',
     dateTo: '',
     paymentId: '',
+    cryptoType: '',
   });
   const [orderBy, setOrderBy] = useState<'status' | 'storeId' | 'createdAt' | 'completedAt' | 'amount' | 'destinationWallet' | 'destinationWalletType' | 'txId' | 'id' | 'whitelabelId'>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
   const queryClient = useQueryClient();
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Instanciar o repository
   const withdrawalRepository = new WithdrawalRepository();
@@ -80,6 +80,15 @@ export default function WithdrawalsCard() {
       ],
     },
     {
+      key: 'cryptoType',
+      label: 'Tipo de Crypto',
+      type: 'select' as const,
+      options: [
+        { value: 'BTC', label: 'Bitcoin (BTC)' },
+        { value: 'USDT', label: 'Tether (USDT)' },
+      ],
+    },
+    {
       key: 'dateRange',
       label: 'Período',
       type: 'daterange' as const,
@@ -107,6 +116,7 @@ export default function WithdrawalsCard() {
         dateFrom: '',
         dateTo: '',
         paymentId: '',
+        cryptoType: '',
       });
       setTimeout(() => {
         queryClient.invalidateQueries(['withdrawals']);
@@ -118,12 +128,14 @@ export default function WithdrawalsCard() {
         dateFrom: '',
         dateTo: '',
         paymentId: '',
+        cryptoType: '',
       };
       if (newFilters.status) updatedFilters.status = String(newFilters.status);
       if (newFilters.storeId) updatedFilters.storeId = String(newFilters.storeId);
       if (newFilters.dateRangeFrom) updatedFilters.dateFrom = String(newFilters.dateRangeFrom);
       if (newFilters.dateRangeTo) updatedFilters.dateTo = String(newFilters.dateRangeTo);
       if (newFilters.paymentId) updatedFilters.paymentId = String(newFilters.paymentId);
+      if (newFilters.cryptoType) updatedFilters.cryptoType = String(newFilters.cryptoType);
       setFilters(updatedFilters);
     }
     setCurrentPage(1);
@@ -234,6 +246,14 @@ export default function WithdrawalsCard() {
                   <span className="text-muted-foreground">Valor:</span>
                   <span className="font-medium">{formatCurrency(withdrawal.amount)}</span>
                 </div>
+                {withdrawal.cryptoType && (
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Crypto:</span>
+                    <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full font-mono">
+                      {withdrawal.cryptoType}
+                    </span>
+                  </div>
+                )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Tipo de Carteira:</span>
                   <span className="capitalize">{withdrawal.destinationWalletType}</span>

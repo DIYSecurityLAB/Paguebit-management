@@ -325,7 +325,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               variant={status === 'completed' ? 'success' : status === 'failed' ? 'danger' : 'outline'}
               size="sm"
               onClick={() => {
-                setSelectedStatus(status as any);
+                setSelectedStatus(status as 'pending' | 'processing' | 'completed' | 'failed');
                 setShowStatusForm(true);
                 setShowCompleteForm(false);
               }}
@@ -397,14 +397,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
       </div>
     );
   };
-
-  // Função utilitária para formatar decimais (string ou number)
-  function formatDecimal(val: string | number | undefined, digits = 2) {
-    if (val === undefined || val === null) return '-';
-    const num = typeof val === 'string' ? parseFloat(val) : val;
-    if (isNaN(num)) return '-';
-    return num.toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits });
-  }
+ 
 
   // Novo estado para o saque detalhado
   const [detailedWithdrawal, setDetailedWithdrawal] = useState<Withdrawal | null>(null);
@@ -663,6 +656,166 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
             </div>
           </div>
         </div>
+
+        {/* Seção de Informações de Criptomoeda */}
+        {w.cryptoType && w.cryptoValue && (
+          <div className="mb-4">
+            <h4 className="text-sm uppercase tracking-wider text-muted-foreground font-medium mb-3 flex items-center">
+              <Coins className="h-4 w-4 mr-2" />
+              Informações de Criptomoeda
+            </h4>
+            <div className="bg-card border border-border rounded-xl overflow-hidden shadow-sm">
+              {/* Valor Final para Envio (sempre visível) */}
+              <div className="p-6">
+                <div className="mt-2 p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 bg-amber-100 dark:bg-amber-900 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-400">!</span>
+                    </div>
+                    <div>
+                      <h6 className="font-medium text-amber-800 dark:text-amber-200 mb-1">
+                        Valor Final para Envio
+                      </h6>
+                      <p className="text-sm text-amber-700 dark:text-amber-300">
+                        {(() => {
+                          if (!w.feesDetail || w.feesDetail.length === 0 || !w.cryptoValue || !w.amount) return '-';
+                          const valorEnviarBRL = Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal);
+                          const rate = w.cryptoValue > 0 ? w.amount / w.cryptoValue : null;
+                          if (!rate) return '-';
+                          if (w.cryptoType === 'BTC') {
+                            const btc = valorEnviarBRL / rate;
+                            return `Envie exatamente ${Math.round(btc * 1e8).toLocaleString('pt-BR')} satoshis para a carteira de destino.`;
+                          } else if (w.cryptoType === 'USDT') {
+                            const usdt = valorEnviarBRL / rate;
+                            return `Envie exatamente ${usdt.toFixed(6)} USDT para a carteira de destino.`;
+                          }
+                          return '-';
+                        })()}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                {/* Botão para ver detalhes da cotação */}
+                <div className="flex justify-end mt-2">
+                  <button
+                    className="text-sm text-primary hover:text-primary/80 flex items-center transition-colors"
+                    onClick={() => setShowDetailedFees(!showDetailedFees)}
+                  >
+                    {showDetailedFees ? (
+                      <>
+                        <span>Ocultar Detalhes</span>
+                        <ChevronUp className="h-4 w-4 ml-1" />
+                      </>
+                    ) : (
+                      <>
+                        <span>Ver Detalhes</span>
+                        <ChevronDown className="h-4 w-4 ml-1" />
+                      </>
+                    )}
+                  </button>
+                </div>
+                {/* Detalhes da cotação (apenas se expandido) */}
+                {showDetailedFees && (
+                  <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Cotação no momento */}
+                    <div className="text-center p-4 bg-white/70 dark:bg-black/30 rounded-lg border border-orange-200 dark:border-orange-800">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-xs font-bold text-orange-600 dark:text-orange-400">₹</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Cotação no momento do saque</p>
+                      </div>
+                      <p className="text-lg font-bold text-orange-600 dark:text-orange-400">
+                        {(() => {
+                          if (!w.cryptoValue || !w.amount) return '-';
+                          const rate = w.amount / w.cryptoValue;
+                          if (!rate) return '-';
+                          if (w.cryptoType === 'BTC') {
+                            return `1 BTC = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          } else if (w.cryptoType === 'USDT') {
+                            return `1 USDT = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                          }
+                          return '-';
+                        })()}
+                      </p>
+                    </div>
+                    {/* Valor original em crypto */}
+                    <div className="text-center p-4 bg-white/70 dark:bg-black/30 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-xs font-bold text-blue-600 dark:text-blue-400">{w.cryptoType === 'BTC' ? '₿' : '$'}</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Valor original em {w.cryptoType}</p>
+                      </div>
+                      <p className="text-lg font-bold text-foreground">
+                        {w.cryptoType === 'BTC' ? 
+                          `${w.cryptoValue.toFixed(8)} BTC` : 
+                          `${w.cryptoValue.toFixed(6)} USDT`
+                        }
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Equivalente a {formatCurrency(w.amount)}
+                      </p>
+                    </div>
+                    {/* Valor final após taxas (em BRL e em crypto) */}
+                    <div className="text-center p-4 bg-green-50 dark:bg-green-950/50 rounded-lg border-2 border-green-200 dark:border-green-800">
+                      <div className="flex items-center justify-center mb-2">
+                        <div className="w-6 h-6 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mr-2">
+                          <span className="text-xs font-bold text-green-600 dark:text-green-400">✓</span>
+                        </div>
+                        <p className="text-sm text-muted-foreground">Valor final após taxas</p>
+                      </div>
+                      {/* Valor a enviar em BRL */}
+                      <p className="text-base font-semibold text-green-700 mb-1">
+                        {w.feesDetail && w.feesDetail.length > 0 ? formatCurrency(Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)) : '-'}
+                      </p>
+                      {/* Valor a enviar em crypto (BTC ou USDT) */}
+                      <p className="text-lg font-bold text-green-600 dark:text-green-400">
+                        {(() => {
+                          if (!w.feesDetail || w.feesDetail.length === 0) return '-';
+                          const valorEnviarBRL = Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal);
+                          const rate = w.cryptoValue > 0 ? w.amount / w.cryptoValue : null;
+                          if (!rate) return '-';
+                          if (w.cryptoType === 'BTC') {
+                            const btc = valorEnviarBRL / rate;
+                            return `${btc.toFixed(8)} BTC`;
+                          } else if (w.cryptoType === 'USDT') {
+                            const usdt = valorEnviarBRL / rate;
+                            return `${usdt.toFixed(6)} USDT`;
+                          }
+                          return '-';
+                        })()}
+                      </p>
+                    </div>
+                    {/* Satoshis para envio (apenas BTC) */}
+                    {w.cryptoType === 'BTC' && w.feesDetail && w.feesDetail.length > 0 && w.cryptoValue && w.amount && (
+                      <div className="text-center p-4 bg-purple-50 dark:bg-purple-950/50 rounded-lg border-2 border-purple-200 dark:border-purple-800">
+                        <div className="flex items-center justify-center mb-2">
+                          <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mr-2">
+                            <span className="text-xs font-bold text-purple-600 dark:text-purple-400">⚡</span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">Para envio (satoshis)</p>
+                        </div>
+                        <p className="text-xl font-bold text-purple-600 dark:text-purple-400 font-mono">
+                          {(() => {
+                            const valorEnviarBRL = Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal);
+                            const rate = w.cryptoValue > 0 ? w.amount / w.cryptoValue : null;
+                            if (!rate) return '-';
+                            const btc = valorEnviarBRL / rate;
+                            return Math.round(btc * 1e8).toLocaleString('pt-BR');
+                          })()}
+                        </p>
+                        <p className="text-xs text-purple-600 dark:text-purple-400 mt-1 font-medium">
+                          satoshis
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Seção de Taxas e Valores */}
         <div className="mb-4">

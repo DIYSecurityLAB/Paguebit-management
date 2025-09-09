@@ -23,12 +23,12 @@ export default function WithdrawalsTable() {
     dateFrom: '',
     dateTo: '',
     paymentId: '',
+    cryptoType: '',
   });
   const [orderBy, setOrderBy] = useState<'status' | 'storeId' | 'createdAt' | 'completedAt' | 'amount' | 'destinationWallet' | 'destinationWalletType' | 'txId' | 'id' | 'whitelabelId'>('createdAt');
   const [orderDirection, setOrderDirection] = useState<'asc' | 'desc'>('desc');
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<Withdrawal | null>(null);
   const [isFiltering, setIsFiltering] = useState(false);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const queryClient = useQueryClient();
 
   const withdrawalRepository = new WithdrawalRepository();
@@ -73,6 +73,15 @@ export default function WithdrawalsTable() {
         { value: 'pending', label: 'Pendente' },
         { value: 'completed', label: 'Concluído' },
         { value: 'failed', label: 'Falha' },
+      ],
+    },
+    {
+      key: 'cryptoType',
+      label: 'Tipo de Crypto',
+      type: 'select' as const,
+      options: [
+        { value: 'BTC', label: 'Bitcoin (BTC)' },
+        { value: 'USDT', label: 'Tether (USDT)' },
       ],
     },
     {
@@ -130,6 +139,18 @@ export default function WithdrawalsTable() {
       sortable: true,
     },
     {
+      header: 'Crypto',
+      accessor: (withdrawal: Withdrawal) => (
+        withdrawal.cryptoType ? (
+          <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full font-mono">
+            {withdrawal.cryptoType}
+          </span>
+        ) : (
+          <span className="text-muted-foreground text-xs">-</span>
+        )
+      ),
+    },
+    {
       header: 'Status',
       accessor: (withdrawal: Withdrawal) => (
         <StatusBadge status={withdrawal.status} />
@@ -183,6 +204,7 @@ export default function WithdrawalsTable() {
         dateFrom: '',
         dateTo: '',
         paymentId: '',
+        cryptoType: '',
       });
       setTimeout(() => {
         queryClient.invalidateQueries(['withdrawals']);
@@ -194,12 +216,14 @@ export default function WithdrawalsTable() {
         dateFrom: '',
         dateTo: '',
         paymentId: '',
+        cryptoType: '',
       };
       if (newFilters.status) updatedFilters.status = String(newFilters.status);
       if (newFilters.storeId) updatedFilters.storeId = String(newFilters.storeId);
       if (newFilters.dateRangeFrom) updatedFilters.dateFrom = String(newFilters.dateRangeFrom);
       if (newFilters.dateRangeTo) updatedFilters.dateTo = String(newFilters.dateRangeTo);
       if (newFilters.paymentId) updatedFilters.paymentId = String(newFilters.paymentId);
+      if (newFilters.cryptoType) updatedFilters.cryptoType = String(newFilters.cryptoType);
       setFilters(updatedFilters);
     }
     setCurrentPage(1);
