@@ -101,50 +101,56 @@ export default function WithdrawalAccountingView() {
   // Definição das colunas da tabela simplificada
   const columns = [
     {
-      header: <span className="text-left">Status</span>,
+      header: 'Status',
       accessor: (withdrawal: Withdrawal) => (
         <div className="pl-2 border-r border-border h-full flex items-center">
           <StatusBadge status={withdrawal.status} />
         </div>
       ),
       sortKey: 'status',
-      cellClass: "border-r border-border pl-2",
-      headerClass: "border-r border-border pl-2 text-left",
     },
     {
-      header: <span className="text-left">Data</span>,
+      header: 'Data',
       accessor: (withdrawal: Withdrawal) => (
         <div className="pl-2 border-r border-border h-full flex items-center">
           {formatDateTime(withdrawal.createdAt)}
         </div>
       ),
       sortKey: 'createdAt',
-      cellClass: "border-r border-border pl-2",
-      headerClass: "border-r border-border pl-2 text-left",
     },
     {
-      header: <span className="text-left">Loja</span>,
+      header: 'Loja',
       accessor: (withdrawal: Withdrawal) => (
         <div className="pl-2 border-r border-border h-full flex items-center max-w-[150px] truncate" title={withdrawal.store?.name || withdrawal.storeId}>
           {withdrawal.store?.name || withdrawal.storeId.substring(0, 8) + '...'}
         </div>
       ),
-      cellClass: "border-r border-border pl-2",
-      headerClass: "border-r border-border pl-2 text-left",
     },
     {
-      header: <span className="text-center">Valor do Saque</span>,
+      header: 'Crypto',
+      accessor: (withdrawal: Withdrawal) => (
+        <div className="border-r border-border h-full flex items-center justify-center text-center">
+          {withdrawal.cryptoType ? (
+            <span className="px-2 py-1 text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-full font-mono">
+              {withdrawal.cryptoType}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      header: 'Valor do Saque',
       accessor: (withdrawal: Withdrawal) => (
         <div className="border-r border-border h-full flex items-center justify-center text-center font-medium">
           {formatCurrency(Number(withdrawal.amount || 0))}
         </div>
       ),
       sortKey: 'amount',
-      cellClass: "border-r border-border text-center",
-      headerClass: "border-r border-border text-center",
     },
     {
-      header: <span className="text-center">Valor Cobrado WL</span>,
+      header: 'Valor Cobrado WL',
       accessor: (withdrawal: Withdrawal) => {
         const value = withdrawal.feesDetail && withdrawal.feesDetail.length > 0
           ? Number(withdrawal.feesDetail[0].whitelabelTotal || 0)
@@ -155,11 +161,9 @@ export default function WithdrawalAccountingView() {
           </div>
         );
       },
-      cellClass: "border-r border-border text-center",
-      headerClass: "border-r border-border text-center",
     },
     {
-      header: <span className="text-center">Repasse WL</span>,
+      header: 'Repasse WL',
       accessor: (withdrawal: Withdrawal) => {
         const value = withdrawal.feesDetail && withdrawal.feesDetail.length > 0
           ? Number(withdrawal.feesDetail[0].whitelabelNet || 0)
@@ -170,11 +174,9 @@ export default function WithdrawalAccountingView() {
           </div>
         );
       },
-      cellClass: "border-r border-border text-center",
-      headerClass: "border-r border-border text-center",
     },
     {
-      header: <span className="text-center">Repasse Plataforma</span>,
+      header: 'Repasse Plataforma',
       accessor: (withdrawal: Withdrawal) => {
         const value = withdrawal.feesDetail && withdrawal.feesDetail.length > 0
           ? Number(withdrawal.feesDetail[0].platformTotal || 0)
@@ -185,11 +187,9 @@ export default function WithdrawalAccountingView() {
           </div>
         );
       },
-      cellClass: "border-r border-border text-center",
-      headerClass: "border-r border-border text-center",
     },
     {
-      header: <span className="text-center">Ações</span>,
+      header: 'Ações',
       accessor: (withdrawal: Withdrawal) => (
         <div className="flex justify-center items-center h-full">
           <Button
@@ -202,8 +202,6 @@ export default function WithdrawalAccountingView() {
           </Button>
         </div>
       ),
-      cellClass: "text-center",
-      headerClass: "text-center",
     },
   ];
 
@@ -212,7 +210,7 @@ export default function WithdrawalAccountingView() {
     {
       key: 'status',
       label: 'Status',
-      type: 'select',
+      type: 'select' as const,
       options: [
         { value: '', label: 'Todos' },
         { value: 'pending', label: 'Pendente' },
@@ -223,7 +221,7 @@ export default function WithdrawalAccountingView() {
     {
       key: 'storeId',
       label: 'ID da Loja',
-      type: 'text',
+      type: 'text' as const,
       placeholder: 'Buscar por ID da loja',
     },
   ];
@@ -300,7 +298,6 @@ export default function WithdrawalAccountingView() {
           data={withdrawalsTable}
           columns={columns}
           isLoading={isTableLoading}
-          className="border-none"
         />
         
         {/* Paginação */}

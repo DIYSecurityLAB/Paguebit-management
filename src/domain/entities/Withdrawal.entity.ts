@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { WithdrawalModel, WithdrawalStatus, WalletType, WithdrawalFeeDetail } from "../../data/model/withdrawal.model";
+import { WithdrawalModel, WithdrawalStatus, WalletType, WithdrawalFeeDetail, CryptoType } from "../../data/model/withdrawal.model";
  import { PaymentModel } from "../../data/model/payment.model";
 import { StoreModel } from "../../data/model/store.model";
 
@@ -10,6 +10,8 @@ export const WithdrawalSchema = z.object({
   storeId: z.string().min(1, "ID da loja não pode ser vazio"),
   whitelabelId: z.string().min(1, "ID do whitelabel não pode ser vazio"),
   amount: z.number().positive("Valor deve ser positivo"),
+  cryptoType: z.nativeEnum(CryptoType).optional().nullable(),
+  cryptoValue: z.number().optional().nullable(),
   paymentIds: z.array(z.string().min(1, "ID do pagamento não pode ser vazio")).min(1, "Selecione pelo menos um pagamento"),
   status: WithdrawalStatusSchema,
   createdAt: z.string().min(1, "Data de criação não pode ser vazia"),
@@ -32,6 +34,8 @@ export class Withdrawal {
   storeId!: string;
   whitelabelId!: string;
   amount!: number;
+  cryptoType?: CryptoType;
+  cryptoValue?: number;
   paymentIds!: string[];
   status!: WithdrawalStatus;
   createdAt!: string;
@@ -68,12 +72,23 @@ export class Withdrawal {
     return new Withdrawal(withdrawalData as WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail">>);
   }
 
+  getStatusLabel(): string {
+    const statusTranslations: Record<WithdrawalStatus, string> = {
+      pending: "Pendente",
+      completed: "Concluído",
+      failed: "Falha"
+    };
+    return statusTranslations[this.status] ?? this.status;
+  }
+
   public toModel(): WithdrawalModel & { feesDetail?: WithdrawalFeeDetail[]; owner?: { email: string }; ownerEmail?: string | null } {
     return {
       id: this.id,
       storeId: this.storeId,
       whitelabelId: this.whitelabelId,
       amount: this.amount,
+      cryptoType: this.cryptoType,
+      cryptoValue: this.cryptoValue,
       paymentIds: this.paymentIds,
       status: this.status,
       createdAt: this.createdAt,
@@ -90,14 +105,4 @@ export class Withdrawal {
       ownerEmail: this.ownerEmail,
     };
   }
-
-  getStatusLabel(): string {
-    const statusTranslations: Record<WithdrawalStatus, string> = {
-      pending: "Pendente",
-      completed: "Concluído",
-      failed: "Falha"
-    };
-    return statusTranslations[this.status] ?? this.status;
-  }
 }
- 
