@@ -25,7 +25,7 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
   const [copied, setCopied] = useState(false);
   const [copiedQrId, setCopiedQrId] = useState(false);
   const [copiedStoreId, setCopiedStoreId] = useState(false);
-  const [hasfraguismo, setHasfraguismo] = useState<boolean | null>(null);
+  const [hasTargetName, setHasTargetName] = useState<boolean | null>(null); // renomeado
   const queryClient = useQueryClient();
    const [showStatusConfirm, setShowStatusConfirm] = useState<null | { status: PaymentStatus, label: string }>(null);
   const [statusLoading, setStatusLoading] = useState(false);
@@ -387,14 +387,14 @@ export default function PaymentsModal({ payment, isOpen, onClose }: PaymentsModa
                   </div>
                   <OcrNameSuggestion
                     receipt={payment.receipt}
-                    onfraguismoCheck={setHasfraguismo}
+                    onTargetNameCheck={setHasTargetName} // renomeado
                   />
-                  {/* AVISO extra caso não tenha "fraguismo" - mostrar só aqui */}
+                  {/* AVISO extra caso não tenha "TCR FINANCE" - mostrar só aqui */}
                 </div>
               </div>
-              {hasfraguismo === false && (
+              {hasTargetName === false && (
                 <div className="text-xs text-red-500 font-semibold mb-2">
-                  Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
+                  Atenção: o nome "TCR FINANCE" NÃO foi encontrado no comprovante!
                 </div>
               )}
               <div 
