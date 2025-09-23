@@ -20,7 +20,7 @@ export type ReviewedPayment = {
   payment: PaymentEntity;
   name: string;
   ignored: boolean;
-  hasfraguismo?: boolean | null; // Nova propriedade para rastrear se o comprovante tem "fraguismo"
+  hasTargetName?: boolean | null; // Nova propriedade para rastrear se o comprovante tem "TCR FINANCE"
 };
 
 // Etapas do processo (exportando para uso nos outros arquivos)

@@ -55,12 +55,12 @@ export default function SummaryStep({
     }
   };
 
-  // CORRIGIDO: verificar usando a propriedade hasfraguismo em vez da presença da string no nome
-  const anyMissingfraguismo = validPayments.some(item => item.hasfraguismo === false);
+  // CORRIGIDO: verificar usando a propriedade hasTargetName em vez da presença da string no nome
+  const anyMissingTargetName = validPayments.some(item => item.hasTargetName === false);
   
-  // CORRIGIDO: lista de ids dos comprovantes sem "fraguismo"
-  const missingfraguismoIds = validPayments
-    .filter(item => item.hasfraguismo === false)
+  // CORRIGIDO: lista de ids dos comprovantes sem "TCR FINANCE"
+  const missingTargetNameIds = validPayments
+    .filter(item => item.hasTargetName === false)
     .map(item => item.payment.id);
 
   // NOVO: Função para copiar lista para a área de transferência
@@ -166,10 +166,10 @@ export default function SummaryStep({
                 </span>
               )}
             </p>
-            {/* AVISO extra caso algum não tenha "fraguismo" */}
-            {anyMissingfraguismo && (
+            {/* AVISO extra caso algum não tenha "TCR FINANCE" */}
+            {anyMissingTargetName && (
               <div className="text-xs text-red-500 font-semibold mt-2">
-                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "fraguismo" identificado. Verifique se o comprovante corresponde ao destino correto!
+                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "TCR FINANCE" identificado. Verifique se o comprovante corresponde ao destino correto!
               </div>
             )}
           </div>
@@ -219,8 +219,8 @@ export default function SummaryStep({
                             className={
                               [
                                 item.ignored ? 'line-through' : '',
-                                // CORRIGIDO: vermelho apenas se hasfraguismo é explicitamente false
-                                !item.ignored && item.hasfraguismo === false ? 'text-red-500 font-semibold' : '',
+                                // CORRIGIDO: vermelho apenas se hasTargetName é explicitamente false
+                                !item.ignored && item.hasTargetName === false ? 'text-red-500 font-semibold' : '',
                                 'cursor-pointer hover:underline'
                               ].join(' ')
                             }

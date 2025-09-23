@@ -33,7 +33,7 @@ export default function ReviewStep({
   const [isEditing, setIsEditing] = useState(false);
   const [isIgnored, setIsIgnored] = useState(false);
   const [isImageViewerOpen, setIsImageViewerOpen] = useState(false);
-  const [hasfraguismo, setHasfraguismo] = useState<boolean | null>(null);
+  const [hasTargetName, setHasTargetName] = useState<boolean | null>(null); // renomeado
 
   const currentPayment = payments[currentIndex];
   const isLastPayment = currentIndex === payments.length - 1;
@@ -46,9 +46,11 @@ export default function ReviewStep({
       if (existingReview) {
         setCurrentName(existingReview.name);
         setIsIgnored(existingReview.ignored);
+        setHasTargetName(existingReview.hasTargetName ?? null); // manter consistência ao navegar
       } else {
         setCurrentName('');
         setIsIgnored(false);
+        setHasTargetName(null);
       }
     }
   }, [currentPayment, reviewedPayments]);
@@ -64,29 +66,24 @@ export default function ReviewStep({
   // Salvar o comprovante atual no estado
   const saveCurrentReview = () => {
     if (!currentPayment) return;
-    
-    // Verificar se já existe este pagamento na lista de revisados
     const existingIndex = reviewedPayments.findIndex(item => item.payment.id === currentPayment.id);
-    
     if (existingIndex >= 0) {
-      // Atualizar nome e status se já existir
       const updated = [...reviewedPayments];
       updated[existingIndex] = {
         ...updated[existingIndex],
         name: currentName || 'Nome não identificado',
         ignored: isIgnored,
-        hasfraguismo: hasfraguismo // Salvar o status de fraguismo
+        hasTargetName: hasTargetName // renomeado
       };
       setReviewedPayments(updated);
     } else {
-      // Adicionar novo se não existir
       setReviewedPayments([
         ...reviewedPayments,
         { 
           payment: currentPayment,
           name: currentName || 'Nome não identificado',
           ignored: isIgnored,
-          hasfraguismo: hasfraguismo // Salvar o status de fraguismo
+          hasTargetName: hasTargetName // renomeado
         }
       ]);
     }
@@ -222,7 +219,7 @@ export default function ReviewStep({
                           <OcrNameSuggestion 
                             receipt={currentPayment.receipt} 
                             onNameDetected={setCurrentName}
-                            onfraguismoCheck={setHasfraguismo}
+                            onTargetNameCheck={setHasTargetName} // renomeado
                           />
                         )}
                         {/* Se já editou manualmente, mostra apenas o nome */}
@@ -233,12 +230,12 @@ export default function ReviewStep({
                     </div>
                   )}
                 </div>
-                  {/* AVISO global para o comprovante atual */}
-            {hasfraguismo === false && (
-              <div className="text-xs text-red-500 font-semibold mt-2">
-                Atenção: o nome "fraguismo" NÃO foi encontrado no comprovante!
-              </div>
-            )}
+                {/* AVISO global para o comprovante atual */}
+                {hasTargetName === false && (
+                  <div className="text-xs text-red-500 font-semibold mt-2">
+                    Atenção: o nome "TCR FINANCE" NÃO foi encontrado no comprovante!
+                  </div>
+                )}
 
                 {/* Comprovante */}
                 <div>
@@ -323,3 +320,4 @@ export default function ReviewStep({
     </>
   );
 }
+ 
