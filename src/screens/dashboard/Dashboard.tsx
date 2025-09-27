@@ -1,10 +1,6 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { useQuery } from 'react-query';
 import { Users, CreditCard, BarChart3, DollarSign, AlertCircle, CheckCircle, Loader2, Store as StoreIcon, LogOut } from 'lucide-react';
-import { UserRepository } from '../../data/repository/user-repository';
-import { PaymentRepository } from '../../data/repository/payment-repository';
-import { WithdrawalRepository } from '../../data/repository/withdrawal-repository';
-import { StoreRepository } from '../../data/repository/store-repository';
 import { formatCurrency } from '../../utils/format';
 import { Link } from 'react-router-dom';
 import { useUserContext } from '../../context/user.context';
@@ -20,90 +16,144 @@ import PaymentTypeChart from './charts/PaymentTypeChart';
 import ReferralsChart from './charts/ReferralsChart';
 import ActiveUsersChart from './charts/ActiveUsersChart';
 
-// IMPORTAR TIPOS EXPLICITAMENTE
-import type { User } from '../../domain/entities/User.entity';
-import type { Payment } from '../../domain/entities/Payment.entity';
-import type { Withdrawal } from '../../domain/entities/Withdrawal.entity';
-import type { Store } from '../../domain/entities/Store.entity';
+// NOVO: renomear tipos brutos para evitar conflito com entidades de domínio
+import { DashboardRawDataRepository } from '../../data/repository/dashboard-raw-data-repository';
+import type { 
+  DashboardPayment as RawPayment, 
+  DashboardUser as RawUser, 
+  DashboardWithdrawal as RawWithdrawal, 
+  DashboardStore as RawStore 
+} from '../../domain/entities/DashboardRawData.entity';
+
+// NOVO: importar entidades de domínio originais
+import type { User as DomainUser, DocumentTypeModel } from '../../domain/entities/User.entity';
+import type { Payment as DomainPayment } from '../../domain/entities/Payment.entity';
+import type { Withdrawal as DomainWithdrawal } from '../../domain/entities/Withdrawal.entity';
+import type { Store as DomainStore } from '../../domain/entities/Store.entity';
 
 // Buscar todos os dados necessários (agora incluindo stores)
 export default function Dashboard() {
-  const userRepository = new UserRepository();
-  const paymentRepository = new PaymentRepository();
-  const withdrawalRepository = new WithdrawalRepository();
-  const storeRepository = new StoreRepository();
+  const dashboardRepository = new DashboardRawDataRepository();
 
-  const { data: usersData, isLoading: loadingUsers } = useQuery(
-    'allUsers',
-    () => userRepository.listAllUsers({ page: '1', limit: '10000' })
-  );
-  const { data: paymentsData, isLoading: loadingPayments } = useQuery(
-    'allPayments',
-    // Adiciona hasReceipt: 'true' para evitar carregar comprovantes pesados
-    () => paymentRepository.listPayments({ page: '1', limit: '100000', hasReceipt: 'true' })
-  );
-  const { data: withdrawalsData, isLoading: loadingWithdrawals } = useQuery(
-    'allWithdrawals',
-    () => withdrawalRepository.listWithdrawals({ page: '1', limit: '10000' })
-  );
-  const { data: storesData, isLoading: loadingStores } = useQuery(
-    'allStores',
-    () => storeRepository.listStores({ page: '1', limit: '10000' })
-  );
+  // NOVO: estados para progresso
+  const [progress, setProgress] = useState(0);
+  const [progressText, setProgressText] = useState<string>('Iniciando...');
+  const [loadingAll, setLoadingAll] = useState(true);
+  const [dashboardData, setDashboardData] = useState<{
+    users: RawUser[];
+    payments: RawPayment[];
+    withdrawals: RawWithdrawal[];
+    stores: RawStore[];
+    meta?: any;
+  } | null>(null);
 
-  // Dados agregados (agora por loja)
+  // Carregamento progressivo em batches
+  useEffect(() => {
+    let cancelled = false;
+    async function loadAll() {
+      setLoadingAll(true);
+      setProgress(0);
+      setProgressText('Buscando metadados...');
+      try {
+        const meta = await dashboardRepository['getMeta']();
+        if (cancelled) return;
+        const entities: Array<{ key: keyof typeof meta, label: string }> = [
+          { key: 'users', label: 'Usuários' },
+          { key: 'payments', label: 'Pagamentos' },
+          { key: 'withdrawals', label: 'Saques' },
+          { key: 'stores', label: 'Lojas' },
+        ];
+        const total = entities.reduce((sum, e) => sum + (meta[e.key] || 0), 0);
+        let loaded = 0;
+        const result: any = { meta };
+        for (const { key, label } of entities) {
+          const entityTotal = meta[key] || 0;
+          const batchSize = meta.batchSize || 1000;
+          const batches = Math.ceil(entityTotal / batchSize);
+          let all: any[] = [];
+          for (let b = 0; b < batches; b++) {
+            setProgressText(`Carregando ${label} (${Math.min((b+1)*batchSize, entityTotal)}/${entityTotal})`);
+            const batch = await dashboardRepository['getEntityBatch'](key as any, b);
+            all = all.concat(batch);
+            loaded += batch.length;
+            setProgress(Math.round((loaded / total) * 100));
+            if (cancelled) return;
+          }
+          result[key] = all;
+        }
+        setDashboardData(result);
+        setProgress(100);
+        setProgressText('Concluído!');
+      } finally {
+        setLoadingAll(false);
+      }
+    }
+    loadAll();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Mapeia flags antigos para manter UI (carregamento único)
+  const loadingUsers = loadingAll;
+  const loadingPayments = loadingAll;
+  const loadingWithdrawals = loadingAll;
+  const loadingStores = loadingAll;
+
+  // Arrays brutos
+  const usersArr: RawUser[] = dashboardData?.users || [];
+  const paymentsArr: RawPayment[] = dashboardData?.payments || [];
+  const withdrawalsArr: RawWithdrawal[] = dashboardData?.withdrawals || [];
+  const storesArr: RawStore[] = dashboardData?.stores || [];
+
+  // NOVO: arrays adaptados para os componentes (tipos de domínio)
+  const domainUsers = React.useMemo<DomainUser[]>(() => usersArr.map(adaptUser), [usersArr]);
+  const domainPayments = React.useMemo<DomainPayment[]>(() => paymentsArr.map(adaptPayment), [paymentsArr]);
+  const domainWithdrawals = React.useMemo<DomainWithdrawal[]>(() => withdrawalsArr.map(adaptWithdrawal), [withdrawalsArr]);
+  const domainStores = React.useMemo<DomainStore[]>(() => storesArr.map(adaptStore), [storesArr]);
+
   const stats = useMemo(() => {
-    const users = usersData?.data || [];
-    const payments = paymentsData?.data || [];
-    const withdrawals = withdrawalsData?.data || [];
-    const stores = storesData?.data || [];
+    const users = usersArr;
+    const payments = paymentsArr;
+    const withdrawals = withdrawalsArr;
+    const stores = storesArr;
 
-    // Contagem de pagamentos com comprovantes enviados usando hasReceipt
- 
-  const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
- 
+    // Contagem de comprovantes enviados
+    const receiptsCount = payments.filter(p => p.status === 'receipt_sent').length;
 
-    // Contagem de saques em processamento ou pendentes
-    const withdrawalsPendingCount = withdrawals.filter(w => w.status === 'pending').length;
-     const withdrawalsToProcessCount = withdrawalsPendingCount  
-    // Usuários
-    const totalUsers = users.length; 
+    // Saques pendentes
+    const withdrawalsPending = withdrawals.filter(w => w.status === 'pending');
+    const withdrawalsPendingCount = withdrawalsPending.length;
+    const withdrawalsToProcessCount = withdrawalsPendingCount; // (caso futuro: incluir processing)
+
+    const totalUsers = users.length;
     const usersByMonth = processUsersByMonth(users);
 
-    // Lojas
-    const totalStores = stores.length;  
+    const totalStores = stores.length;
 
-    // Pagamentos por loja
-    const totalPayments = payments.length;
     const paymentsPaid = payments.filter(p => p.status === 'paid');
-    const totalPaid = paymentsPaid.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalPaid = paymentsPaid.reduce((s, p) => s + (p.amount || 0), 0);
     const paidCount = paymentsPaid.length;
+
     const paymentsRetidos = payments.filter(p => ['approved', 'withdrawal_processing'].includes(p.status));
-    const totalRetido = paymentsRetidos.reduce((sum, p) => sum + (p.amount || 0), 0);
+    const totalRetido = paymentsRetidos.reduce((s, p) => s + (p.amount || 0), 0);
     const retidoCount = paymentsRetidos.length;
-    // Total transacionado por loja (pagamentos + saques)
-    const totalTransacted = payments.reduce((sum, p) => sum + (p.amount || 0), 0) +
-      withdrawals.reduce((sum, w) => sum + (w.amount || 0), 0);
+
+    const totalTransacted = payments.reduce((s, p) => s + (p.amount || 0), 0) +
+      withdrawals.reduce((s, w) => s + ((w as any).amount || 0), 0);
+
     const totalPaymentsAndWithdrawalsCount = payments.length + withdrawals.length;
 
-    // Valor total de saques concluídos por loja
     const withdrawalsCompleted = withdrawals.filter(w => w.status === 'completed');
-    const totalWithdrawalsCompleted = withdrawalsCompleted.reduce((sum, w) => sum + (w.amount || 0), 0);
+    const totalWithdrawalsCompleted = withdrawalsCompleted.reduce((s, w) => s + ((w as any).amount || 0), 0);
     const withdrawalsCompletedCount = withdrawalsCompleted.length;
 
-    // Pagamentos por status
     const paymentsByStatus = processPaymentsByStatus(payments);
-
-    // Saques por status
     const withdrawalsByStatus = processWithdrawalsByStatus(withdrawals);
-
-    // Top lojas por volume de pagamentos
     const topStoresByAmount = processTopStoresByAmount(payments, stores);
 
     return {
       totalUsers,
       usersByMonth,
-      totalPayments,
+      totalPayments: payments.length,
       totalPaid,
       paidCount,
       totalRetido,
@@ -112,7 +162,7 @@ export default function Dashboard() {
       withdrawalsByStatus,
       topStoresByAmount,
       receiptsCount,
-       withdrawalsPendingCount,
+      withdrawalsPendingCount,
       withdrawalsToProcessCount,
       totalWithdrawalsCompleted,
       withdrawalsCompletedCount,
@@ -122,7 +172,7 @@ export default function Dashboard() {
       retidoCount,
       totalStores
     };
-  }, [usersData, paymentsData, withdrawalsData, storesData]);
+  }, [usersArr, paymentsArr, withdrawalsArr, storesArr]);
 
   // Verificar se há alguma tarefa pendente
   const hasReceiptPendingTasks = stats.receiptsCount > 0;
@@ -130,6 +180,27 @@ export default function Dashboard() {
   const hasPendingTasks = hasReceiptPendingTasks || hasWithdrawalPendingTasks;
 
   const { logout } = useUserContext();
+
+  // Mostra barra de progresso no topo enquanto carrega
+  if (loadingAll || !dashboardData) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center min-h-[40vh]">
+        <div className="w-full max-w-lg mt-12">
+          <div className="mb-2 flex items-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            <span className="font-medium text-primary">{progressText}</span>
+          </div>
+          <div className="w-full bg-muted rounded-full h-3">
+            <div
+              className="bg-primary h-3 rounded-full transition-all"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+          <div className="text-xs text-muted-foreground mt-1 text-right">{progress}%</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -163,9 +234,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 text-amber-500 animate-spin" />
               <div>
-                <h3 className="font-medium text-amber-500">Verificando comprovantes...</h3>
+                <h3 className="font-medium text-amber-500">Carregando pagamentos...</h3>
                 <p className="text-sm text-muted-foreground">
-                  Carregando informações de pagamentos
+                  Aguarde, processando lotes
                 </p>
               </div>
             </div>
@@ -178,9 +249,9 @@ export default function Dashboard() {
             <div className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 text-blue-500 animate-spin" />
               <div>
-                <h3 className="font-medium text-blue-500">Verificando saques...</h3>
+                <h3 className="font-medium text-blue-500">Carregando saques...</h3>
                 <p className="text-sm text-muted-foreground">
-                  Carregando informações de saques pendentes
+                  Aguarde, processando lotes
                 </p>
               </div>
             </div>
@@ -197,7 +268,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-medium text-amber-500">Comprovantes para verificar</h3>
                     <p className="text-sm text-muted-foreground">
-                      <strong>{stats.receiptsCount}</strong> pagamento(s) com comprovante enviado aguardando verificação
+                      <strong>{stats.receiptsCount}</strong> pagamento(s) aguardando verificação
                     </p>
                   </div>
                 </div>
@@ -209,7 +280,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-medium text-green-500">Sem comprovantes pendentes</h3>
                     <p className="text-sm text-muted-foreground">
-                      Não há comprovantes para verificar no momento.
+                      Tudo certo no momento.
                     </p>
                   </div>
                 </div>
@@ -228,10 +299,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-medium text-blue-500">Saques para processar</h3>
                     <p className="text-sm text-muted-foreground">
-                      <strong>{stats.withdrawalsToProcessCount}</strong> saque(s) aguardando processamento
-                      {stats.withdrawalsPendingCount > 0 && stats.withdrawalsProcessingCount > 0 && (
-                        <span> ({stats.withdrawalsPendingCount} pendentes e {stats.withdrawalsProcessingCount} em processamento)</span>
-                      )}
+                      <strong>{stats.withdrawalsToProcessCount}</strong> saque(s) pendente(s)
                     </p>
                   </div>
                 </div>
@@ -243,7 +311,7 @@ export default function Dashboard() {
                   <div>
                     <h3 className="font-medium text-green-500">Sem saques pendentes</h3>
                     <p className="text-sm text-muted-foreground">
-                      Não há saques para processar no momento.
+                      Nenhum saque aguardando ação.
                     </p>
                   </div>
                 </div>
@@ -317,11 +385,11 @@ export default function Dashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
         <ChartCard 
           title="Tipos de Pagamento" 
-          content={<PaymentTypeChart payments={paymentsData?.data || []} loading={loadingPayments} height={420} />} 
+          content={<PaymentTypeChart payments={domainPayments} loading={loadingPayments} height={420} />} 
         />
         <ChartCard 
           title="Principais Fontes de Indicação" 
-          content={<ReferralsChart users={usersData?.data || []} loading={loadingUsers} height={420} limit={10} />} 
+          content={<ReferralsChart users={domainUsers} loading={loadingUsers} height={420} limit={10} />} 
         />
       </div>
 
@@ -349,7 +417,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ChartCard 
             title="Distribuição por Valor" 
-            content={<PaymentsDistributionChart payments={paymentsData?.data || []} loading={loadingPayments} height={220} />} 
+            content={<PaymentsDistributionChart payments={domainPayments} loading={loadingPayments} height={220} />} 
           />
           <ChartCard 
             title="Saques por Status" 
@@ -358,15 +426,14 @@ export default function Dashboard() {
         </div>
         <ChartCard 
           title="Crescimento de Usuários" 
-          content={<UsersGrowthChart users={usersData?.data || []} loading={loadingUsers} height={220} />} 
+          content={<UsersGrowthChart users={domainUsers} loading={loadingUsers} height={220} />} 
         />
-        {/* Lojas Ativas pode ser mantido, mas agora não depende de pagamentos/saques diretamente */}
         <ChartCard 
           title="Lojas Ativas (pagamento retido ou pago)" 
           content={
             <ActiveUsersChart 
-              stores={storesData?.data || []} 
-              payments={paymentsData?.data || []} 
+              stores={domainStores} 
+              payments={domainPayments} 
               loading={loadingStores || loadingPayments} 
               height={220}
             />
@@ -376,7 +443,7 @@ export default function Dashboard() {
       {/* Pagamentos mensais */}
       <ChartCard 
         title="Pagamentos Mensais" 
-        content={<PaymentsMonthlyChart payments={paymentsData?.data || []} loading={loadingPayments} height={200} />} 
+        content={<PaymentsMonthlyChart payments={domainPayments} loading={loadingPayments} height={200} />} 
       />
     </div>
   );
@@ -438,19 +505,75 @@ function ChartCard({
   );
 }
 
+// NOVO: funções de mapeamento raw -> domínio
+function mapDocumentType(dt: string): DocumentTypeModel {
+  const upper = (dt || '').toUpperCase();
+  switch (upper) {
+    case 'CPF':
+    case 'CNPJ':
+    case 'PASSPORT':
+      return upper as DocumentTypeModel;
+    default:
+      return 'CPF' as DocumentTypeModel; // fallback seguro
+  }
+}
+
+function adaptUser(raw: RawUser): DomainUser {
+  return {
+    ...raw,
+    documentType: mapDocumentType(raw.documentType),
+    // Campos possivelmente esperados por componentes mas ausentes
+    fullName: `${raw.firstName || ''} ${raw.lastName || ''}`.trim(),
+    toModel: () => ({ ...raw }),
+  } as unknown as DomainUser;
+}
+
+const paymentStatusLabels: Record<string, string> = {
+  pending: 'Pendente',
+  paid: 'Pago',
+  approved: 'Aprovado',
+  withdrawal_processing: 'Processando Saque',
+  receipt_sent: 'Comprovante Enviado',
+  rejected: 'Rejeitado'
+};
+
+function adaptPayment(raw: RawPayment): DomainPayment {
+  return {
+    ...raw,
+    getStatusLabel: () => paymentStatusLabels[raw.status] || raw.status,
+    toModel: () => ({ ...raw }),
+  } as unknown as DomainPayment;
+}
+
+function adaptStore(raw: RawStore): DomainStore {
+  return {
+    ...raw,
+    ownerId: (raw as any).ownerId || '', // se existir no backend será mantido
+    toModel: () => ({ ...raw }),
+  } as unknown as DomainStore;
+}
+
+function adaptWithdrawal(raw: RawWithdrawal): DomainWithdrawal {
+  return {
+    ...raw,
+    toModel: () => ({ ...raw }),
+  } as unknown as DomainWithdrawal;
+}
+
 // Funções auxiliares para processamento de dados
-function processUsersByMonth(users: User[]): Record<string, number> {
+function processUsersByMonth<T extends { createdAt?: string | Date }>(users: T[]): Record<string, number> {
   const usersByMonth: Record<string, number> = {};
   users.forEach((u) => {
     if (u.createdAt) {
-      const month = new Date(u.createdAt).toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
+      const date = typeof u.createdAt === 'string' ? new Date(u.createdAt) : u.createdAt;
+      const month = date.toLocaleString('pt-BR', { month: 'short', year: 'numeric' });
       usersByMonth[month] = (usersByMonth[month] || 0) + 1;
     }
   });
   return usersByMonth;
 }
 
-function processPaymentsByStatus(payments: Payment[]): Record<string, { count: number; amount: number }> {
+function processPaymentsByStatus<T extends { status?: string; amount?: number }>(payments: T[]): Record<string, { count: number; amount: number }> {
   const paymentsByStatus: Record<string, { count: number; amount: number }> = {};
   payments.forEach((p) => {
     const status = p.status || 'unknown';
@@ -461,7 +584,7 @@ function processPaymentsByStatus(payments: Payment[]): Record<string, { count: n
   return paymentsByStatus;
 }
 
-function processWithdrawalsByStatus(withdrawals: Withdrawal[]): Record<string, number> {
+function processWithdrawalsByStatus<T extends { status?: string }>(withdrawals: T[]): Record<string, number> {
   const withdrawalsByStatus: Record<string, number> = {};
   withdrawals.forEach((w) => {
     const status = w.status || 'unknown';
@@ -470,15 +593,17 @@ function processWithdrawalsByStatus(withdrawals: Withdrawal[]): Record<string, n
   return withdrawalsByStatus;
 }
 
-// Novo: Top lojas por volume de pagamentos
-function processTopStoresByAmount(payments: Payment[], stores: Store[]) {
+function processTopStoresByAmount<
+  P extends { status: string; storeId: string; amount?: number },
+  S extends { id: string; name: string }
+>(payments: P[], stores: S[]) {
   const validStatuses = ['paid', 'approved', 'withdrawal_processing'];
-  const storeAmounts: Record<string, { storeId: string; amount: number; count: number }> = {};
+  const storeAmounts: Record<string, { storeId: string; userId: string; amount: number; count: number; name?: string }> = {};
 
   payments.forEach((p) => {
     if (!validStatuses.includes(p.status)) return;
     if (!storeAmounts[p.storeId]) {
-      storeAmounts[p.storeId] = { storeId: p.storeId, amount: 0, count: 0 };
+      storeAmounts[p.storeId] = { storeId: p.storeId, userId: p.storeId, amount: 0, count: 0 };
     }
     storeAmounts[p.storeId].amount += p.amount || 0;
     storeAmounts[p.storeId].count += 1;
