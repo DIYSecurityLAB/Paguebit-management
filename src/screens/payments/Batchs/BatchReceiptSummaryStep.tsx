@@ -5,6 +5,7 @@ import { ArrowLeft, Download, Edit, Eye, XCircle, CheckCircle, Copy, FileDown } 
 import { formatCurrency } from '../../../utils/format';
 import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
+import { getBatchReceiptLocalStorage } from './BatchReceiptReviewStep';
 import { toast } from 'sonner';
 
 interface SummaryStepProps {
@@ -148,12 +149,18 @@ export default function SummaryStep({
     }
   };
 
+  // Limpar localStorage ao cancelar ou finalizar
+  const handleCloseAndClear = () => {
+    getBatchReceiptLocalStorage().clear();
+    onClose();
+  };
+
   return (
     <>
       <Modal
         title="Resumo de Comprovantes"
         isOpen={isOpen}
-        onClose={onClose}
+        onClose={handleCloseAndClear}
         size="lg"
       >
         <div className="space-y-4">
@@ -315,7 +322,7 @@ export default function SummaryStep({
             </Button>
             
             <div className="flex gap-2">
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={handleCloseAndClear}>
                 Cancelar
               </Button>
               <Button

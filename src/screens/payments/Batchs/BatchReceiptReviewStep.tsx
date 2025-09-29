@@ -19,6 +19,41 @@ interface ReviewStepProps {
   setCurrentStep: (step: Step) => void;
 }
 
+// Helpers para localStorage (MOVA para o topo do arquivo, fora do componente!)
+const LOCAL_STORAGE_KEY = 'batch_receipt_reviewed_payments_v1';
+
+function saveToLocalStorage(data: ReviewedPayment[]) {
+  try {
+    localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+  } catch {}
+}
+
+function loadFromLocalStorage(): ReviewedPayment[] {
+  try {
+    const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+function clearLocalStorage() {
+  try {
+    localStorage.removeItem(LOCAL_STORAGE_KEY);
+  } catch {}
+}
+
+// Exporte a função utilitária no topo do arquivo
+export function getBatchReceiptLocalStorage() {
+  return {
+    save: saveToLocalStorage,
+    load: loadFromLocalStorage,
+    clear: clearLocalStorage,
+    key: LOCAL_STORAGE_KEY
+  };
+}
+
 export default function ReviewStep({ 
   isOpen, 
   onClose, 
@@ -39,18 +74,23 @@ export default function ReviewStep({
   const isLastPayment = currentIndex === payments.length - 1;
   const isFirstPayment = currentIndex === 0;
 
-  // Atualizar nome e status de ignorado quando mudar o comprovante atual
+  // NOVO: flag para saber se o nome foi restaurado do progresso salvo
+  const [wasRestored, setWasRestored] = useState(false);
+
+  // Atualizar nome, status de ignorado e flag de restauração ao trocar de comprovante
   useEffect(() => {
     if (currentPayment) {
       const existingReview = reviewedPayments.find(item => item.payment.id === currentPayment.id);
       if (existingReview) {
         setCurrentName(existingReview.name);
         setIsIgnored(existingReview.ignored);
-        setHasTargetName(existingReview.hasTargetName ?? null); // manter consistência ao navegar
+        setHasTargetName(existingReview.hasTargetName ?? null);
+        setWasRestored(true); // Se veio do progresso, considera restaurado
       } else {
         setCurrentName('');
         setIsIgnored(false);
         setHasTargetName(null);
+        setWasRestored(false);
       }
     }
   }, [currentPayment, reviewedPayments]);
@@ -63,30 +103,32 @@ export default function ReviewStep({
     setNameManuallyEdited(false);
   }, [currentPayment]);
 
-  // Salvar o comprovante atual no estado
+  // Salvar o comprovante atual no estado e localStorage
   const saveCurrentReview = () => {
     if (!currentPayment) return;
     const existingIndex = reviewedPayments.findIndex(item => item.payment.id === currentPayment.id);
+    let updated: ReviewedPayment[];
     if (existingIndex >= 0) {
-      const updated = [...reviewedPayments];
+      updated = [...reviewedPayments];
       updated[existingIndex] = {
         ...updated[existingIndex],
         name: currentName || 'Nome não identificado',
         ignored: isIgnored,
-        hasTargetName: hasTargetName // renomeado
+        hasTargetName: hasTargetName
       };
-      setReviewedPayments(updated);
     } else {
-      setReviewedPayments([
+      updated = [
         ...reviewedPayments,
         { 
           payment: currentPayment,
           name: currentName || 'Nome não identificado',
           ignored: isIgnored,
-          hasTargetName: hasTargetName // renomeado
+          hasTargetName: hasTargetName
         }
-      ]);
+      ];
     }
+    setReviewedPayments(updated);
+    saveToLocalStorage(updated); // Salva progresso a cada passo
   };
 
   // Avançar para o próximo comprovante ou para a tela de resumo
@@ -135,7 +177,12 @@ export default function ReviewStep({
               Revise os comprovantes e os nomes identificados pelo OCR. 
               Você pode editar os nomes se necessário. Ao final, será gerado um PDF com a lista de doações e as imagens dos comprovantes.
             </p>
-          
+            {/* NOVO: Tarja amarela se recuperado do progresso salvo */}
+            {wasRestored && (
+              <div className="mt-2 px-3 py-2 rounded bg-amber-200 text-amber-900 text-xs font-semibold border border-amber-300">
+                Nome recuperado do progresso salvo.
+              </div>
+            )}
           </div>
 
           {/* Progresso */}
@@ -214,16 +261,16 @@ export default function ReviewStep({
                   ) : (
                     <div className="flex items-center mt-1">
                       <div className="w-full">
-                        {/* Só roda o OCR se o nome não foi editado manualmente */}
-                        {!nameManuallyEdited && (
+                        {/* Só roda o OCR se o nome não foi editado manualmente e não foi restaurado */}
+                        {!nameManuallyEdited && !wasRestored && (
                           <OcrNameSuggestion 
                             receipt={currentPayment.receipt} 
                             onNameDetected={setCurrentName}
-                            onTargetNameCheck={setHasTargetName} // renomeado
+                            onTargetNameCheck={setHasTargetName}
                           />
                         )}
-                        {/* Se já editou manualmente, mostra apenas o nome */}
-                        {nameManuallyEdited && (
+                        {/* Se já editou manualmente ou foi restaurado, mostra apenas o nome */}
+                        {(nameManuallyEdited || wasRestored) && (
                           <span className="font-medium">{currentName}</span>
                         )}
                       </div>
@@ -320,4 +367,3 @@ export default function ReviewStep({
     </>
   );
 }
- 
