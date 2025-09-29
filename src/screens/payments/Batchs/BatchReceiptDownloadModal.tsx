@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from 'react-query';
 import Modal from '../../../components/Modal';
 import Button from '../../../components/Button';
@@ -6,7 +6,7 @@ import { Payment as PaymentEntity } from '../../../domain/entities/Payment.entit
 import { PaymentStatus } from '../../../data/model/payment.model';
 import { toast } from 'sonner';
 import { jsPDF } from 'jspdf';
-import ReviewStep from './BatchReceiptReviewStep';
+import ReviewStep, { getBatchReceiptLocalStorage } from './BatchReceiptReviewStep';
 import SummaryStep from './BatchReceiptSummaryStep';
 import { PaymentRepository } from '../../../data/repository/payment-repository';
 
@@ -143,6 +143,36 @@ export default function BatchReceiptDownloadModal({ isOpen, onClose }: BatchRece
     }
   };
 
+  // NOVO: flag para saber se há progresso salvo
+  const [hasSavedProgress, setHasSavedProgress] = useState(false);
+
+  // Checar se há progresso salvo ao abrir o modal
+  useEffect(() => {
+    if (isOpen) {
+      const saved = getBatchReceiptLocalStorage().load();
+      setHasSavedProgress(Array.isArray(saved) && saved.length > 0);
+    }
+  }, [isOpen]);
+
+  // NOVO: restaurar progresso salvo
+  const handleRestoreSaved = () => {
+    const saved = getBatchReceiptLocalStorage().load();
+    if (Array.isArray(saved) && saved.length > 0) {
+      setReviewedPayments(saved);
+      setCurrentIndex(0);
+      setCurrentStep(Step.REVIEW);
+    }
+  };
+
+  // NOVO: limpar progresso salvo ao fechar modal ou finalizar
+  const handleClose = () => {
+    getBatchReceiptLocalStorage().clear();
+    setReviewedPayments([]);
+    setCurrentIndex(0);
+    setCurrentStep(Step.REVIEW);
+    onClose();
+  };
+
   // Renderizar estados de carregamento ou sem comprovantes
   if (isLoading) {
     return (
@@ -175,6 +205,35 @@ export default function BatchReceiptDownloadModal({ isOpen, onClose }: BatchRece
     );
   }
 
+  // NOVO: botão "Retornar Salvo" se houver progresso salvo e não estiver revisando
+  if (hasSavedProgress && reviewedPayments.length === 0 && currentStep === Step.REVIEW) {
+    return (
+      <Modal
+        title="Download em Lote de Comprovantes"
+        isOpen={isOpen}
+        onClose={handleClose}
+      >
+        <div className="flex flex-col items-center justify-center h-64 gap-4">
+          <p className="text-muted-foreground text-center">
+            Há um progresso salvo de uma revisão anterior.<br />
+            Deseja continuar de onde parou?
+          </p>
+          <div className="flex gap-2">
+            <Button variant="primary" onClick={handleRestoreSaved}>
+              Retornar Salvo
+            </Button>
+            <Button variant="outline" onClick={() => {
+              getBatchReceiptLocalStorage().clear();
+              setHasSavedProgress(false);
+            }}>
+              Descartar Progresso
+            </Button>
+          </div>
+        </div>
+      </Modal>
+    );
+  }
+
   // Renderização condicional baseada na etapa atual
   return currentStep === Step.REVIEW ? (
     <ReviewStep 
@@ -190,7 +249,7 @@ export default function BatchReceiptDownloadModal({ isOpen, onClose }: BatchRece
   ) : (
     <SummaryStep 
       isOpen={isOpen} 
-      onClose={onClose}
+      onClose={handleClose}
       reviewedPayments={reviewedPayments}
       setReviewedPayments={setReviewedPayments}
       setCurrentStep={setCurrentStep}
