@@ -7,6 +7,8 @@ import { formatCurrency } from '../../../utils/format';
 import OcrNameSuggestion from '../../../components/OcrNameSuggestion';
 import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
+import notificationRepository from '../../../data/repository/notification-repository';
+import { toast } from 'sonner';
 
 interface ReviewStepProps {
   isOpen: boolean;
@@ -163,6 +165,54 @@ export default function ReviewStep({
     setIsIgnored(!isIgnored);
   };
 
+  // Estados de loading para os botões de notificação
+  const [isSendingIncomplete, setIsSendingIncomplete] = useState(false);
+  const [isSendingFraguismo, setIsSendingFraguismo] = useState(false);
+
+  // Função para enviar notificação de informações incompletas
+  const handleSendIncompleteInfoNotification = async () => {
+    if (!currentPayment) return;
+    setIsSendingIncomplete(true);
+    try {
+      await notificationRepository.createNotification(
+        currentPayment.storeId || '',
+        {
+          title: 'Comprovante sem informações completas',
+          content: `O comprovante do pagamento de ID ${currentPayment.id} está sem informações completas. O comprovante deve estar claro quanto às informações do destinatário, pagador e data do pagamento.`,
+          type: 'info',
+          referenceId: currentPayment.id,
+        }
+      );
+      toast.success('Notificação de informações incompletas enviada!');
+    } catch (err) {
+      toast.error('Falha ao enviar notificação.');
+    } finally {
+      setIsSendingIncomplete(false);
+    }
+  };
+
+  // Função para enviar notificação de QR antigo (Fraguismo)
+  const handleSendFraguismoNotification = async () => {
+    if (!currentPayment) return;
+    setIsSendingFraguismo(true);
+    try {
+      await notificationRepository.createNotification(
+        currentPayment.storeId || '',
+        {
+          title: 'Comprovante com QR antigo (Fraguismo)',
+          content: `O comprovante do pagamento de ID ${currentPayment.id} foi feito usando um QR antigo com destinatário Fraguismo. Por favor, troque o comprovante estático para o destinatário TCR FINANCE.`,
+          type: 'warning',
+          referenceId: currentPayment.id,
+        }
+      );
+      toast.success('Notificação de QR antigo enviada!');
+    } catch (err) {
+      toast.error('Falha ao enviar notificação.');
+    } finally {
+      setIsSendingFraguismo(false);
+    }
+  };
+
   return (
     <>
       <Modal
@@ -281,6 +331,27 @@ export default function ReviewStep({
                 {hasTargetName === false && (
                   <div className="text-xs text-red-500 font-semibold mt-2">
                     Atenção: o nome "TCR FINANCE" NÃO foi encontrado no comprovante!
+                    {/* Botões para enviar notificações diretamente na etapa do comprovante */}
+                    <div className="mt-2 flex gap-2">
+                      <Button
+                        variant="danger"
+                        size="sm"
+                        onClick={handleSendIncompleteInfoNotification}
+                        isLoading={isSendingIncomplete}
+                        disabled={isSendingIncomplete}
+                      >
+                        Enviar Notificação: Informações Incompletas
+                      </Button>
+                      <Button
+                        variant="warning"
+                        size="sm"
+                        onClick={handleSendFraguismoNotification}
+                        isLoading={isSendingFraguismo}
+                        disabled={isSendingFraguismo}
+                      >
+                        Enviar Notificação: Fraguismo
+                      </Button>
+                    </div>
                   </div>
                 )}
 

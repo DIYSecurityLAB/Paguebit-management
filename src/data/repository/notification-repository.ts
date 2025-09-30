@@ -15,5 +15,6 @@ class NotificationRepository {
     return apiDataSource.post<CreateNotificationRes>(`/admin/stores/${storeId}/notifications`, data);
   }
 }
+ 
 
 export default new NotificationRepository();
