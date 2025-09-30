@@ -7,6 +7,7 @@ import ImageViewer from '../../../components/ImageViewer';
 import { ReviewedPayment, Step } from './BatchReceiptDownloadModal';
 import { getBatchReceiptLocalStorage } from './BatchReceiptReviewStep';
 import { toast } from 'sonner';
+import notificationRepository from '../../../data/repository/notification-repository';
 
 interface SummaryStepProps {
   isOpen: boolean;
@@ -35,6 +36,10 @@ export default function SummaryStep({
   const [isDownloadingImages, setIsDownloadingImages] = useState(false);
   const [isCopyingList, setIsCopyingList] = useState(false);
   
+  // Estados de loading para os botões de notificação
+  const [isSendingIncomplete, setIsSendingIncomplete] = useState(false);
+  const [isSendingFraguismo, setIsSendingFraguismo] = useState(false);
+
   const validPayments = reviewedPayments.filter(item => !item.ignored);
   
   // Função para iniciar a edição de um item
@@ -149,6 +154,58 @@ export default function SummaryStep({
     }
   };
 
+  // Função para enviar notificação de informações incompletas
+  const handleSendIncompleteInfoNotification = async () => {
+    if (missingTargetNameIds.length === 0) return;
+    setIsSendingIncomplete(true);
+    try {
+      for (const id of missingTargetNameIds) {
+        const item = validPayments.find(p => p.payment.id === id);
+        if (!item) continue;
+        await notificationRepository.createNotification(
+          item.payment.storeId || '', // pode ajustar conforme necessário
+          {
+            title: 'Comprovante sem informações completas',
+            content: `O comprovante do pagamento de ID ${id} está sem informações completas. O comprovante deve estar claro quanto às informações do destinatário, pagador e data do pagamento.`,
+            type: 'info',
+            referenceId: id,
+          }
+        );
+      }
+      toast.success('Notificação de informações incompletas enviada!');
+    } catch (err) {
+      toast.error('Falha ao enviar notificação.');
+    } finally {
+      setIsSendingIncomplete(false);
+    }
+  };
+
+  // Função para enviar notificação de QR antigo (Fraguismo)
+  const handleSendFraguismoNotification = async () => {
+    if (missingTargetNameIds.length === 0) return;
+    setIsSendingFraguismo(true);
+    try {
+      for (const id of missingTargetNameIds) {
+        const item = validPayments.find(p => p.payment.id === id);
+        if (!item) continue;
+        await notificationRepository.createNotification(
+          item.payment.storeId || '',
+          {
+            title: 'Comprovante com QR antigo (Fraguismo)',
+            content: `O comprovante do pagamento de ID ${id} foi feito usando um QR antigo com destinatário Fraguismo. Por favor, troque o comprovante estático para o destinatário TCR FINANCE.`,
+            type: 'warning',
+            referenceId: id,
+          }
+        );
+      }
+      toast.success('Notificação de QR antigo enviada!');
+    } catch (err) {
+      toast.error('Falha ao enviar notificação.');
+    } finally {
+      setIsSendingFraguismo(false);
+    }
+  };
+
   // Limpar localStorage ao cancelar ou finalizar
   const handleCloseAndClear = () => {
     getBatchReceiptLocalStorage().clear();
@@ -177,6 +234,27 @@ export default function SummaryStep({
             {anyMissingTargetName && (
               <div className="text-xs text-red-500 font-semibold mt-2">
                 Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "TCR FINANCE" identificado. Verifique se o comprovante corresponde ao destino correto!
+                {/* Painel de botões para enviar notificações */}
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleSendIncompleteInfoNotification}
+                    isLoading={isSendingIncomplete}
+                    disabled={isSendingIncomplete}
+                  >
+                    Enviar Notificação: Informações Incompletas
+                  </Button>
+                  <Button
+                    variant="warning"
+                    size="sm"
+                    onClick={handleSendFraguismoNotification}
+                    isLoading={isSendingFraguismo}
+                    disabled={isSendingFraguismo}
+                  >
+                    Enviar Notificação: Fraguismo
+                  </Button>
+                </div>
               </div>
             )}
           </div>

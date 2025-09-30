@@ -169,6 +169,7 @@ export type AdminListStoresReq = {
   limit?: string;
   orderBy?: 'id' | 'name' | 'ownerId' | 'whitelabelId' | 'createdAt' | 'updatedAt';
   order?: 'asc' | 'desc';
+  ownerEmail?: string; // Novo campo para busca por email do dono
 };
 
 export type AdminListStoresRes = {

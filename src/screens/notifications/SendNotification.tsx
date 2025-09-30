@@ -29,6 +29,7 @@ export default function SendNotification() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [searchField, setSearchField] = useState<'name' | 'id' | 'ownerId' | 'ownerEmail'>('name');
 
   // Busca de lojas - com debounce
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -45,11 +46,14 @@ export default function SendNotification() {
 
   // Consulta para buscar lojas usando o novo StoreRepository
   const { data: storesData, isLoading: searchLoading } = useQuery(
-    ['stores', debouncedSearchQuery],
-    () => new StoreRepository().listStores({
-      name: debouncedSearchQuery,
-      limit: String(5)
-    }),
+    ['stores', debouncedSearchQuery, searchField],
+    () => {
+      const query = debouncedSearchQuery.trim();
+      // Monta o objeto de busca apenas com o campo selecionado
+      const params: any = { limit: String(5) };
+      if (query) params[searchField] = query;
+      return new StoreRepository().listStores(params);
+    },
     {
       enabled: debouncedSearchQuery.length >= 2,
       staleTime: 30000,
@@ -179,15 +183,35 @@ export default function SendNotification() {
                     </div>
                   ) : (
                     <>
-                      <div className="relative">
-                        <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
-                        <input
-                          type="text"
-                          placeholder="Buscar loja por nome..."
-                          value={searchQuery}
-                          onChange={handleSearchChange}
-                          className="w-full pl-12 pr-4 py-3 border-2 border-border rounded-lg focus:ring-primary focus:border-primary bg-background dark:bg-card text-foreground dark:text-card-foreground"
-                        />
+                      <div className="relative flex gap-2">
+                        <div className="relative flex-1">
+                          <Search className="absolute left-3 top-3 w-5 h-5 text-muted-foreground dark:text-muted-foreground" />
+                          <input
+                            type="text"
+                            placeholder={
+                              searchField === 'name'
+                                ? "Buscar por nome da loja..."
+                                : searchField === 'id'
+                                ? "Buscar por ID da loja..."
+                                : searchField === 'ownerId'
+                                ? "Buscar por ID do dono..."
+                                : "Buscar por email do dono..."
+                            }
+                            value={searchQuery}
+                            onChange={handleSearchChange}
+                            className="w-full pl-12 pr-4 py-3 border-2 border-border rounded-lg focus:ring-primary focus:border-primary bg-background dark:bg-card text-foreground dark:text-card-foreground"
+                          />
+                        </div>
+                        <select
+                          value={searchField}
+                          onChange={e => setSearchField(e.target.value as any)}
+                          className="py-3 px-2 border-2 border-border rounded-lg bg-background dark:bg-card text-foreground dark:text-card-foreground min-w-[120px]"
+                        >
+                          <option value="name">Nome da Loja</option>
+                          <option value="id">ID da Loja</option>
+                          <option value="ownerId">ID do Dono</option>
+                          <option value="ownerEmail">Email do Dono</option>
+                        </select>
                       </div>
                       
                       {/* Resultado da busca com novo estilo */}
@@ -395,4 +419,3 @@ export default function SendNotification() {
     </div>
   );
 }
- 
