@@ -191,28 +191,6 @@ export default function ReviewStep({
     }
   };
 
-  // Função para enviar notificação de QR antigo (Fraguismo)
-  const handleSendFraguismoNotification = async () => {
-    if (!currentPayment) return;
-    setIsSendingFraguismo(true);
-    try {
-      await notificationRepository.createNotification(
-        currentPayment.storeId || '',
-        {
-          title: 'Comprovante com QR antigo (Fraguismo)',
-          content: `O comprovante do pagamento de ID ${currentPayment.id} foi feito usando um QR antigo com destinatário Fraguismo. Por favor, troque o comprovante estático para o destinatário TCR FINANCE.`,
-          type: 'warning',
-          referenceId: currentPayment.id,
-        }
-      );
-      toast.success('Notificação de QR antigo enviada!');
-    } catch (err) {
-      toast.error('Falha ao enviar notificação.');
-    } finally {
-      setIsSendingFraguismo(false);
-    }
-  };
-
   return (
     <>
       <Modal
@@ -330,30 +308,22 @@ export default function ReviewStep({
                 {/* AVISO global para o comprovante atual */}
                 {hasTargetName === false && (
                   <div className="text-xs text-red-500 font-semibold mt-2">
-                    Atenção: o nome "TCR FINANCE" NÃO foi encontrado no comprovante!
-                    {/* Botões para enviar notificações diretamente na etapa do comprovante */}
-                    <div className="mt-2 flex gap-2">
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={handleSendIncompleteInfoNotification}
-                        isLoading={isSendingIncomplete}
-                        disabled={isSendingIncomplete}
-                      >
-                        Enviar Notificação: Informações Incompletas
-                      </Button>
-                      <Button
-                        variant="warning"
-                        size="sm"
-                        onClick={handleSendFraguismoNotification}
-                        isLoading={isSendingFraguismo}
-                        disabled={isSendingFraguismo}
-                      >
-                        Enviar Notificação: Fraguismo
-                      </Button>
-                    </div>
+                    Atenção: Nenhum dos termos "TCR", "TTF", "TER" ou "FRAGUISMO" foi encontrado no comprovante!
                   </div>
                 )}
+                {/* Botão de notificação sempre visível */}
+                <div className="mt-2 flex gap-2">
+                  <Button
+                    variant="danger"
+                    size="sm"
+                    onClick={handleSendIncompleteInfoNotification}
+                    isLoading={isSendingIncomplete}
+                    disabled={isSendingIncomplete}
+                  >
+                    Enviar Notificação: Informações Incompletas
+                  </Button>
+                  {/* Botão de Fraguismo removido */}
+                </div>
 
                 {/* Comprovante */}
                 <div>

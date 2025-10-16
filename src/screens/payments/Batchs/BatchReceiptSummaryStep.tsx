@@ -61,15 +61,33 @@ export default function SummaryStep({
     }
   };
 
-  // CORRIGIDO: verificar usando a propriedade hasTargetName em vez da presença da string no nome
-  const anyMissingTargetName = validPayments.some(item => item.hasTargetName === false);
-  
-  // CORRIGIDO: lista de ids dos comprovantes sem "TCR FINANCE"
+  // NOVO: lógica para considerar "faltando" se NÃO houver nenhum dos termos alvo
+  const TARGET_TERMS = ['tcr', 'ttf', 'ter', 'fraguismo'];
+  // Considera como "faltando" se hasTargetName for false OU se não houver nenhum termo alvo no nome (case-insensitive)
+  const anyMissingTargetName = validPayments.some(item => {
+    if (typeof item.hasTargetName === 'boolean') {
+      // Se já foi avaliado pelo OCR, usa o valor
+      return !item.hasTargetName;
+    }
+    // Fallback: verifica no nome
+    const name = item.name?.toLowerCase() || '';
+    return !TARGET_TERMS.some(term => name.includes(term));
+  });
+
+  // Lista de ids dos comprovantes "faltando"
   const missingTargetNameIds = validPayments
-    .filter(item => item.hasTargetName === false)
+    .filter(item => {
+      if (typeof item.hasTargetName === 'boolean') {
+        return !item.hasTargetName;
+      }
+      const name = item.name?.toLowerCase() || '';
+      return !TARGET_TERMS.some(term => name.includes(term));
+    })
     .map(item => item.payment.id);
 
   // NOVO: Função para copiar lista para a área de transferência
+  const [isCopyingInternalList, setIsCopyingInternalList] = useState(false);
+
   const handleCopyList = async () => {
     if (validPayments.length === 0) {
       toast.error('Nenhum comprovante selecionado para copiar');
@@ -180,36 +198,41 @@ export default function SummaryStep({
     }
   };
 
-  // Função para enviar notificação de QR antigo (Fraguismo)
-  const handleSendFraguismoNotification = async () => {
-    if (missingTargetNameIds.length === 0) return;
-    setIsSendingFraguismo(true);
-    try {
-      for (const id of missingTargetNameIds) {
-        const item = validPayments.find(p => p.payment.id === id);
-        if (!item) continue;
-        await notificationRepository.createNotification(
-          item.payment.storeId || '',
-          {
-            title: 'Comprovante com QR antigo (Fraguismo)',
-            content: `O comprovante do pagamento de ID ${id} foi feito usando um QR antigo com destinatário Fraguismo. Por favor, troque o comprovante estático para o destinatário TCR FINANCE.`,
-            type: 'warning',
-            referenceId: id,
-          }
-        );
-      }
-      toast.success('Notificação de QR antigo enviada!');
-    } catch (err) {
-      toast.error('Falha ao enviar notificação.');
-    } finally {
-      setIsSendingFraguismo(false);
-    }
-  };
-
   // Limpar localStorage ao cancelar ou finalizar
   const handleCloseAndClear = () => {
     getBatchReceiptLocalStorage().clear();
     onClose();
+  };
+
+  // NOVO: Função para copiar lista interna para a área de transferência
+  const handleCopyInternalList = async () => {
+    if (validPayments.length === 0) {
+      toast.error('Nenhum comprovante selecionado para copiar');
+      return;
+    }
+
+    try {
+      setIsCopyingInternalList(true);
+
+      // Ordenar pagamentos do maior para o menor valor
+      const sortedPayments = [...validPayments].sort((a, b) =>
+        (b.payment.amount || 0) - (a.payment.amount || 0)
+      );
+
+      // Criar texto detalhado com valor, nome e ID
+      let listText = "Lista Interna de Comprovantes\n\n";
+      sortedPayments.forEach(({ payment, name }) => {
+        listText += `R$ ${payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - ${name} (ID: ${payment.id})\n`;
+      });
+
+      await navigator.clipboard.writeText(listText);
+      toast.success('Lista interna copiada para a área de transferência!');
+    } catch (error) {
+      console.error('Erro ao copiar lista interna:', error);
+      toast.error('Falha ao copiar lista interna');
+    } finally {
+      setIsCopyingInternalList(false);
+    }
   };
 
   return (
@@ -230,33 +253,25 @@ export default function SummaryStep({
                 </span>
               )}
             </p>
-            {/* AVISO extra caso algum não tenha "TCR FINANCE" */}
+            {/* AVISO extra caso algum não tenha nenhum termo alvo */}
             {anyMissingTargetName && (
               <div className="text-xs text-red-500 font-semibold mt-2">
-                Atenção: Um ou mais comprovantes selecionados NÃO possuem o nome "TCR FINANCE" identificado. Verifique se o comprovante corresponde ao destino correto!
-                {/* Painel de botões para enviar notificações */}
-                <div className="mt-2 flex gap-2">
-                  <Button
-                    variant="danger"
-                    size="sm"
-                    onClick={handleSendIncompleteInfoNotification}
-                    isLoading={isSendingIncomplete}
-                    disabled={isSendingIncomplete}
-                  >
-                    Enviar Notificação: Informações Incompletas
-                  </Button>
-                  <Button
-                    variant="warning"
-                    size="sm"
-                    onClick={handleSendFraguismoNotification}
-                    isLoading={isSendingFraguismo}
-                    disabled={isSendingFraguismo}
-                  >
-                    Enviar Notificação: Fraguismo
-                  </Button>
-                </div>
+                Atenção: Um ou mais comprovantes selecionados NÃO possuem nenhum dos termos "TCR", "TTF", "TER" ou "FRAGUISMO" identificado. Verifique se o comprovante corresponde ao destino correto!
               </div>
             )}
+            {/* Botão de notificação sempre visível */}
+            <div className="mt-2 flex gap-2">
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={handleSendIncompleteInfoNotification}
+                isLoading={isSendingIncomplete}
+                disabled={isSendingIncomplete || missingTargetNameIds.length === 0}
+              >
+                Enviar Notificação: Informações Incompletas
+              </Button>
+              {/* Removido o botão de Fraguismo */}
+            </div>
           </div>
 
           <div className="text-sm text-muted-foreground flex justify-between">
@@ -373,6 +388,16 @@ export default function SummaryStep({
                 size="sm"
               >
                 Copiar Lista
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleCopyInternalList}
+                isLoading={isCopyingInternalList}
+                disabled={validPayments.length === 0}
+                leftIcon={<Copy className="h-4 w-4" />}
+                size="sm"
+              >
+                Copiar Lista Interna
               </Button>
               <Button
                 variant="outline"
