@@ -204,6 +204,37 @@ export default function SummaryStep({
     onClose();
   };
 
+  // NOVO: Função para copiar lista interna para a área de transferência
+  const handleCopyInternalList = async () => {
+    if (validPayments.length === 0) {
+      toast.error('Nenhum comprovante selecionado para copiar');
+      return;
+    }
+
+    try {
+      setIsCopyingInternalList(true);
+
+      // Ordenar pagamentos do maior para o menor valor
+      const sortedPayments = [...validPayments].sort((a, b) =>
+        (b.payment.amount || 0) - (a.payment.amount || 0)
+      );
+
+      // Criar texto detalhado com valor, nome e ID
+      let listText = "Lista Interna de Comprovantes\n\n";
+      sortedPayments.forEach(({ payment, name }) => {
+        listText += `R$ ${payment.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} - ${name} (ID: ${payment.id})\n`;
+      });
+
+      await navigator.clipboard.writeText(listText);
+      toast.success('Lista interna copiada para a área de transferência!');
+    } catch (error) {
+      console.error('Erro ao copiar lista interna:', error);
+      toast.error('Falha ao copiar lista interna');
+    } finally {
+      setIsCopyingInternalList(false);
+    }
+  };
+
   return (
     <>
       <Modal
