@@ -58,33 +58,71 @@ export default function OcrNameSuggestion({ receipt, onNameDetected, onTargetNam
   ];
   
 const COMMON_NAMES = [
-   'julia', 'lucas', 'oliveira', 'souza', 'sousa', 'silva', 'fernandes', 'almeida', 'marques',
-  'pereira', 'rodrigues', 'lima', 'gomes', 'ribeiro', 'dias', 'ferreira', 'machado', 'moura',
-  'carvalho', 'santos', 'araujo', 'rosa', 'dantas', 'barbosa', 'costa', 'brito', 'martins',
-  'castro', 'gonzalez', 'moreira', 'goulart', 'teixeira', 'pinto', 'cavalcante', 'silveira',
-  'andrade', 'alves', 'viana', 'rocha', 'pimentel', 'freitas', 'vargas', 'fonseca',
-  'de souza', 'carneiro', 'ramos', 'lopes', 'santana', 'bastos', 'siqueira', 'pacheco',
-  'cunha', 'britto', 'neves', 'fagundes', 'melo', 'franco', 'valente', 'montenegro',
-  'capixaba', 'xavier', 'diniz', 'roberto', 'figueira', 'junqueira', 'bitencourt', 'mota',
-  'parreira', 'scott', 'vilela', 'barros', 'baeta', 'cabral', 'coelho', 'guimarães',
-  'boaventura', 'azevedo', 'ramalho', 'amaral', 'oliva', 'farias', 'macedo', 'cardoso',
-  'mendes', 'oliviero', 'henrique', 'pontes', 'junior', 'sampaio', 'de almeida', 'serra',
-  'cruz', 'rodrigo', 'moreno', 'guedes', 'batista', 'luiz', 'barcelos', 'soares', 'campos',
-  'meira', 'vilar', 'gonçalves', 'cezar', 'motta', 'gama', 'lemos', 'hoed', 'caputo',
-  'castilho', 'monteiro', 'do amaral', 'roza', 'cavalcanti', 'bittencourt', 'vieira',
-  'sergio', 'campelo', 'olimpio', 'aurelio', 'jardim', 'queiroz', 'faustino', 'paiva',
-  'amador', 'nascimento', 'valadares', 'ponte', 'viegas', 'nunes', 'filho', 'fontes',
-  'gondim', 'lopez', 'guerra', 'da silva', 'leal', 'luciano', 'gonzaga', 'albuquerque',
-  'braga', 'nogueira', 'damasceno', 'meireles', 'amigo', 'dos santos', 'peixoto',
-  'romero', 'prado', 'parente', 'barroso', 'maria', 'marcos', 'maciel',
-  'ana', 'beatriz', 'rafael', 'renan', 'gabriel', 'caio', 'heitor', 'enzo',
-  'bernardo', 'miguel', 'joao', 'pedro', 'matheus', 'thiago', 'eduardo', 'daniel',
-  'gustavo', 'felipe', 'arthur', 'henry', 'lara', 'mariana', 'camila', 'isabela',
-  'leticia', 'carla', 'fernanda', 'patricia', 'aline', 'bruna', 'amanda', 'larissa',
-  'juliana', 'clarice', 'simone', 'tatiane', 'dayane', 'nathalia', 'tatiana', 'elaine',
-  'carol', 'bianca', 'paula', 'valeria', 'caroline', 'natalia', 'tais', 'priscila',
-  'yara', 'elis', 'aline', 'eliane'
+  // NOMES MASCULINOS
+  'lucas', 'joão', 'gabriel', 'miguel', 'pedro', 'matheus', 'rafael', 'gustavo', 'henrique',
+  'eduardo', 'arthur', 'bernardo', 'vinicius', 'felipe', 'caio', 'thiago', 'henry', 'enrico',
+  'enzo', 'daniel', 'marcos', 'marcelo', 'rodrigo', 'renan', 'andre', 'bruno', 'igor',
+  'diego', 'leonardo', 'nicolas', 'ricardo', 'william', 'alexandre', 'carlos', 'antonio',
+  'luiz', 'vitor', 'paulo', 'jorge', 'emerson', 'aline', 'claudio', 'edson', 'samuel',
+  'davi', 'henri', 'jean', 'caue', 'roberto', 'allan', 'ronaldo', 'gilberto', 'julio',
+  'cesar', 'rodrigues', 'renato', 'wilson', 'edgar', 'fabricio', 'valter', 'diogo', 'tiago',
+  'ismael', 'alex', 'ronan', 'fabio', 'edilson', 'anderson', 'rodrigo', 'gerson', 'edu',
+  'luan', 'alberto', 'sergio', 'emanuel', 'mateus', 'otavio', 'pablo', 'vicente', 'gustavo',
+  'hugo', 'leandro', 'josé', 'rafael', 'felix', 'robson', 'evandro', 'isaac', 'joaquim',
+
+  // NOMES FEMININOS
+  'maria', 'ana', 'julia', 'mariana', 'isabela', 'camila', 'leticia', 'larissa', 'beatriz',
+  'aline', 'bruna', 'carla', 'fernanda', 'patricia', 'juliana', 'caroline', 'bianca',
+  'valeria', 'nathalia', 'natalia', 'priscila', 'yara', 'lara', 'tatiane', 'tatiana',
+  'dayane', 'elaine', 'eliane', 'simone', 'carol', 'luana', 'amanda', 'andressa',
+  'cristina', 'raquel', 'adriana', 'gabriela', 'aline', 'tania', 'marcela', 'manuela',
+  'lais', 'rayssa', 'deborah', 'renata', 'monique', 'isabel', 'heloisa', 'sofia',
+  'laura', 'clara', 'ester', 'elisa', 'sabrina', 'alice', 'valentina', 'letícia',
+  'flavia', 'viviane', 'rosana', 'patrícia', 'aline', 'edna', 'angela', 'tais',
+
+  // SOBRENOMES MAIS COMUNS
+  'silva', 'santos', 'oliveira', 'souza', 'sousa', 'pereira', 'lima', 'costa',
+  'rodrigues', 'almeida', 'nascimento', 'araujo', 'fernandes', 'carvalho', 'gomes',
+  'martins', 'ribeiro', 'barbosa', 'barros', 'freitas', 'batista', 'dias', 'teixeira',
+  'moura', 'mendes', 'melo', 'castro', 'alves', 'cardoso', 'marques', 'vieira',
+  'ferreira', 'machado', 'rocha', 'reis', 'dantas', 'viana', 'farias', 'ramos',
+  'cavalcante', 'pinto', 'soares', 'morais', 'moreira', 'monteiro', 'macedo',
+  'souza e silva', 'sousa e silva', 'de souza', 'de oliveira', 'da silva', 'dos santos',
+  'de almeida', 'do nascimento', 'de araujo', 'de lima', 'de barros', 'da costa',
+  'da rocha', 'da cruz', 'de castro', 'de andrade', 'de moraes', 'da conceição',
+
+  // SOBRENOMES REGIONAIS / MENOS COMUNS
+  'cunha', 'azevedo', 'fonseca', 'vargas', 'fagundes', 'ramalho', 'azevedo',
+  'diniz', 'neves', 'valente', 'guimarães', 'maciel', 'damasceno', 'nogueira',
+  'vilela', 'xavier', 'meireles', 'macedo', 'viegas', 'cavalcanti', 'coelho',
+  'figueira', 'motta', 'parente', 'pimentel', 'castilho', 'caputo', 'goulart',
+  'bittencourt', 'brito', 'franco', 'serra', 'capixaba', 'mota', 'lopez', 'guerra',
+  'ramalho', 'amaral', 'romero', 'braga', 'barreto', 'ponte', 'falcão', 'assunção',
+  'passos', 'salazar', 'valadares', 'menezes', 'peixoto', 'prado', 'coimbra',
+  'campos', 'parreira', 'junior', 'filho', 'neto', 'sobrinho', 'junqueira',
+  'figueiredo', 'meneses', 'cunha', 'queiroz', 'faustino', 'tavares', 'porto',
+  'meira', 'gama', 'hoed', 'serafim', 'roza', 'rosa', 'oliveira lima', 'costa filho',
+  'pontes', 'gama', 'barcelos', 'caputo', 'maria', 'moreno', 'gomes da silva',
+  'henrique', 'nunes', 'santana', 'barroso', 'vilar', 'gondim', 'campos', 'damasceno',
+
+  // COMPOSTOS E PREFIXADOS
+  'da mata', 'do vale', 'das neves', 'do carmo', 'de jesus', 'do nascimento',
+  'dos anjos', 'da gloria', 'de lima', 'de azevedo', 'da luz', 'da costa',
+  'do rosario', 'de faria', 'de brito', 'de castilho', 'da fonseca', 'de freitas',
+  'da rocha', 'do couto', 'de souza filho', 'de oliveira filho',
+
+  // NOMES INTERNACIONALIZADOS (comuns no BR)
+  'allan', 'andrew', 'brandon', 'brian', 'cristian', 'jonathan', 'kevin',
+  'willian', 'patrick', 'robin', 'wesley', 'danilo', 'emily', 'stephanie',
+  'nicole', 'vanessa', 'jessica', 'caroline', 'karen', 'tamiris', 'aline',
+  'rebeca', 'taylor', 'victor', 'valter', 'thiago', 'alexandre', 'heitor',
+
+  // RAROS MAS RECORRENTES EM KYC / DOCS
+  'dos reis', 'da luz', 'de hollanda', 'de azevedo', 'de queiroz', 'de moura',
+  'do amaral', 'de castilho', 'de lima', 'de araújo', 'de bastos', 'de bastos',
+  'de oliveira', 'de freitas', 'de lima', 'de andrade', 'da conceição', 'dos santos'
 ];
+
 
   // Função para calcular a distância de Levenshtein entre duas strings
   function levenshtein(a: string, b: string): number {
@@ -148,7 +186,7 @@ const COMMON_NAMES = [
         lines.forEach((l, i) => debugLogs.push(`${i+1}: "${l}"`));
 
         // NOVO: verificar se "TCR FINANCE" aparece em alguma linha (case-insensitive)
-        const hasTargetNameLocal = normalizedLines.some(line => line.includes('tcr finance'));
+        const hasTargetNameLocal = normalizedLines.some(line => line.includes('tcr finance') || line.includes('fraguismo') || line.includes('ttf finance') || line.includes('ter finance')); 
         setHasTargetName(hasTargetNameLocal);
         if (onTargetNameCheck) onTargetNameCheck(hasTargetNameLocal);
         // log para debug
