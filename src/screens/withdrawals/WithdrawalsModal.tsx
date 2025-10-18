@@ -195,7 +195,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
     "Tron": { name: "Tron (TRC20)", icon: "🔷" },
     "PolygonAddress": { name: "Polygon", icon: "⬡" },
     "Polygon": { name: "Polygon", icon: "⬡" },
-    "Pix": { name: "PIX", icon: "🇧🇷" },
+    "Pix": { name: "PIX (BRL)", icon: "🇧🇷" },
+    "Bank_EUR": { name: "Transferência Bancária (EUR)", icon: "🇪🇺" },
+    "Bank_USD": { name: "Transferência Bancária (USD)", icon: "🇺🇸" },
   };
 
   const getWalletInfo = (type?: string) => {
@@ -694,6 +696,12 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                           } else if (w.cryptoType === 'USDT') {
                             const usdt = valorEnviarBRL / rate;
                             return `Envie exatamente ${usdt.toFixed(6)} USDT para a carteira de destino.`;
+                          } else if (w.cryptoType === 'EUR') {
+                            return `Transfira exatamente € ${valorEnviarBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} via transferência bancária.`;
+                          } else if (w.cryptoType === 'USD') {
+                            return `Transfira exatamente $ ${valorEnviarBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} via transferência bancária.`;
+                          } else if (w.cryptoType === 'BRL') {
+                            return `Transfira exatamente R$ ${valorEnviarBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} via PIX.`;
                           }
                           return '-';
                         })()}
@@ -740,6 +748,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                             return `1 BTC = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                           } else if (w.cryptoType === 'USDT') {
                             return `1 USDT = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+                          } else if (w.cryptoType === 'EUR') {
+                            return `1 EUR = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          } else if (w.cryptoType === 'USD') {
+                            return `1 USD = R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                           }
                           return '-';
                         })()}
@@ -756,7 +768,13 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       <p className="text-lg font-bold text-foreground">
                         {w.cryptoType === 'BTC' ? 
                           `${w.cryptoValue.toFixed(8)} BTC` : 
-                          `${w.cryptoValue.toFixed(6)} USDT`
+                          w.cryptoType === 'USDT' ?
+                          `${w.cryptoValue.toFixed(6)} USDT` :
+                          w.cryptoType === 'EUR' ?
+                          `€ ${w.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+                          w.cryptoType === 'USD' ?
+                          `$ ${w.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+                          `R$ ${w.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                         }
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
@@ -794,6 +812,10 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                           } else if (w.cryptoType === 'USDT') {
                             const usdt = valorEnviarBRL / rate;
                             return `${usdt.toFixed(6)} USDT`;
+                          } else if (w.cryptoType === 'EUR') {
+                            return `€ ${valorEnviarBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          } else if (w.cryptoType === 'USD') {
+                            return `$ ${valorEnviarBRL.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
                           }
                           return '-';
                         })()}

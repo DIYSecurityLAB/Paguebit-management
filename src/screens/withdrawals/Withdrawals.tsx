@@ -52,6 +52,8 @@ export default function Withdrawals() {
           (withdrawal.cryptoType === 'BTC' ? `${withdrawal.cryptoValue.toFixed(8)} BTC` : 
            withdrawal.cryptoType === 'USDT' ? `${withdrawal.cryptoValue.toFixed(6)} USDT` : 
            withdrawal.cryptoType === 'BRL' ? formatCurrency(withdrawal.cryptoValue) : 
+           withdrawal.cryptoType === 'EUR' ? `€ ${withdrawal.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
+           withdrawal.cryptoType === 'USD' ? `$ ${withdrawal.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` :
            withdrawal.cryptoValue.toString()) 
           : 'N/A',
         'Cotação': withdrawal.getFormattedExchangeRate(),

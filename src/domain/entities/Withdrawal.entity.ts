@@ -82,9 +82,9 @@ export class Withdrawal {
   }
 
   getFormattedExchangeRate(): string {
-    // BRL não tem cotação (já está em reais)
-    if (this.cryptoType === 'BRL') {
-      return 'N/A (BRL)';
+    // Moedas fiat não tem cotação (já estão na moeda base)
+    if (this.cryptoType === 'BRL' || this.cryptoType === 'EUR' || this.cryptoType === 'USD') {
+      return `N/A (${this.cryptoType})`;
     }
     
     if (!this.cryptoValue || this.cryptoValue === 0 || !this.amount) {
@@ -113,6 +113,10 @@ export class Withdrawal {
       return `${this.cryptoValue.toFixed(6)} USDT`;
     } else if (this.cryptoType === 'BRL') {
       return `R$ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (this.cryptoType === 'EUR') {
+      return `€ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (this.cryptoType === 'USD') {
+      return `$ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     }
     
     return this.cryptoValue.toString();

@@ -21,6 +21,8 @@ export enum CryptoType {
   BTC = "BTC",
   USDT = "USDT",
   BRL = "BRL",
+  EUR = "EUR",
+  USD = "USD",
 }
 
 export interface WithdrawalFeeDetail {
