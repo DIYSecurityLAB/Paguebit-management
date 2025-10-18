@@ -102,6 +102,22 @@ export class Withdrawal {
     return 'N/A';
   }
 
+  getFormattedCryptoValueForSending(): string {
+    if (!this.cryptoValue) {
+      return 'N/A';
+    }
+
+    if (this.cryptoType === 'BTC') {
+      return `${this.cryptoValue.toFixed(8)} BTC`;
+    } else if (this.cryptoType === 'USDT') {
+      return `${this.cryptoValue.toFixed(6)} USDT`;
+    } else if (this.cryptoType === 'BRL') {
+      return `R$ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    return this.cryptoValue.toString();
+  }
+
   public toModel(): WithdrawalModel & { feesDetail?: WithdrawalFeeDetail[]; owner?: { email: string }; ownerEmail?: string | null } {
     return {
       id: this.id,
