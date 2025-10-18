@@ -81,6 +81,27 @@ export class Withdrawal {
     return statusTranslations[this.status] ?? this.status;
   }
 
+  getFormattedExchangeRate(): string {
+    // BRL não tem cotação (já está em reais)
+    if (this.cryptoType === 'BRL') {
+      return 'N/A (BRL)';
+    }
+    
+    if (!this.cryptoValue || this.cryptoValue === 0 || !this.amount) {
+      return 'N/A';
+    }
+    
+    const rate = this.amount / this.cryptoValue;
+    
+    if (this.cryptoType === 'BTC') {
+      return `R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / BTC`;
+    } else if (this.cryptoType === 'USDT') {
+      return `R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / USDT`;
+    }
+    
+    return 'N/A';
+  }
+
   public toModel(): WithdrawalModel & { feesDetail?: WithdrawalFeeDetail[]; owner?: { email: string }; ownerEmail?: string | null } {
     return {
       id: this.id,

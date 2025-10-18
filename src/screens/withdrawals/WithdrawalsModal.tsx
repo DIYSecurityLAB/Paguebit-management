@@ -186,10 +186,16 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
 
   const walletTypeMap: Record<string, { name: string; icon: string }> = {
     "OnChainAddress": { name: "Bitcoin OnChain", icon: "₿" },
+    "OnChain": { name: "Bitcoin OnChain", icon: "₿" },
     "LightningAddress": { name: "Bitcoin Lightning", icon: "⚡" },
+    "Lightning": { name: "Bitcoin Lightning", icon: "⚡" },
     "LiquidAddress": { name: "Liquid", icon: "💧" },
-    "TronAddress": { name: "Tron", icon: "🔷" },
+    "Liquid": { name: "Liquid", icon: "💧" },
+    "TronAddress": { name: "Tron (TRC20)", icon: "🔷" },
+    "Tron": { name: "Tron (TRC20)", icon: "🔷" },
     "PolygonAddress": { name: "Polygon", icon: "⬡" },
+    "Polygon": { name: "Polygon", icon: "⬡" },
+    "Pix": { name: "PIX", icon: "🇧🇷" },
   };
 
   const getWalletInfo = (type?: string) => {
@@ -769,11 +775,17 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                       <p className="text-base font-semibold text-green-700 mb-1">
                         {w.feesDetail && w.feesDetail.length > 0 ? formatCurrency(Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal)) : '-'}
                       </p>
-                      {/* Valor a enviar em crypto (BTC ou USDT) */}
+                      {/* Valor a enviar em crypto (BTC, USDT ou BRL) */}
                       <p className="text-lg font-bold text-green-600 dark:text-green-400">
                         {(() => {
                           if (!w.feesDetail || w.feesDetail.length === 0) return '-';
                           const valorEnviarBRL = Number(getSafeValue(w.amount, '0')) - Number(w.feesDetail[0].whitelabelTotal);
+                          
+                          // BRL não precisa de conversão
+                          if (w.cryptoType === 'BRL') {
+                            return formatCurrency(valorEnviarBRL);
+                          }
+                          
                           const rate = w.cryptoValue > 0 ? w.amount / w.cryptoValue : null;
                           if (!rate) return '-';
                           if (w.cryptoType === 'BTC') {
