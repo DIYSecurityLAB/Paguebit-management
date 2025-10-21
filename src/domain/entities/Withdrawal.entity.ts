@@ -81,6 +81,47 @@ export class Withdrawal {
     return statusTranslations[this.status] ?? this.status;
   }
 
+  getFormattedExchangeRate(): string {
+    // Moedas fiat não tem cotação (já estão na moeda base)
+    if (this.cryptoType === 'BRL' || this.cryptoType === 'EUR' || this.cryptoType === 'USD') {
+      return `N/A (${this.cryptoType})`;
+    }
+    
+    if (!this.cryptoValue || this.cryptoValue === 0 || !this.amount) {
+      return 'N/A';
+    }
+    
+    const rate = this.amount / this.cryptoValue;
+    
+    if (this.cryptoType === 'BTC') {
+      return `R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / BTC`;
+    } else if (this.cryptoType === 'USDT') {
+      return `R$ ${rate.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} / USDT`;
+    }
+    
+    return 'N/A';
+  }
+
+  getFormattedCryptoValueForSending(): string {
+    if (!this.cryptoValue) {
+      return 'N/A';
+    }
+
+    if (this.cryptoType === 'BTC') {
+      return `${this.cryptoValue.toFixed(8)} BTC`;
+    } else if (this.cryptoType === 'USDT') {
+      return `${this.cryptoValue.toFixed(6)} USDT`;
+    } else if (this.cryptoType === 'BRL') {
+      return `R$ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (this.cryptoType === 'EUR') {
+      return `€ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    } else if (this.cryptoType === 'USD') {
+      return `$ ${this.cryptoValue.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    return this.cryptoValue.toString();
+  }
+
   public toModel(): WithdrawalModel & { feesDetail?: WithdrawalFeeDetail[]; owner?: { email: string }; ownerEmail?: string | null } {
     return {
       id: this.id,

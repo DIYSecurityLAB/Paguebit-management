@@ -9,6 +9,7 @@ export enum WalletType {
   Lightning = "Lightning",
   Tron = "Tron",
   Polygon = "Polygon",
+  Pix = "Pix",
 }
 
 export enum FeeType {
@@ -19,6 +20,9 @@ export enum FeeType {
 export enum CryptoType {
   BTC = "BTC",
   USDT = "USDT",
+  BRL = "BRL",
+  EUR = "EUR",
+  USD = "USD",
 }
 
 export interface WithdrawalFeeDetail {
