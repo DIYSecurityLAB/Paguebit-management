@@ -25,6 +25,8 @@ export const WithdrawalSchema = z.object({
   store: z.any().optional(),
   feesDetail: z.array(z.any()).optional(),
   ownerEmail: z.string().nullable().optional(),
+  lightningInvoice: z.string().nullable().optional(),
+  lightningExpiresAt: z.string().nullable().optional(),
 });
 
 export type WithdrawalType = z.infer<typeof WithdrawalSchema>;
@@ -50,8 +52,10 @@ export class Withdrawal {
   feesDetail?: WithdrawalFeeDetail[];
   owner?: { email: string };
   ownerEmail?: string | null;
+  lightningInvoice?: string | null;
+  lightningExpiresAt?: string | null;
 
-  constructor(data: WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail">>) {
+  constructor(data: WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail" | "lightningInvoice" | "lightningExpiresAt">>) {
     const parsed = WithdrawalSchema.safeParse(data);
     if (!parsed.success) {
       throw new Error(parsed.error.issues.map(e => e.message).join(", "));
@@ -60,6 +64,8 @@ export class Withdrawal {
     if ("feesDetail" in data) this.feesDetail = data.feesDetail;
     if ("owner" in data) this.owner = data.owner;
     if ("ownerEmail" in data) this.ownerEmail = data.ownerEmail;
+    if ("lightningInvoice" in data) this.lightningInvoice = data.lightningInvoice;
+    if ("lightningExpiresAt" in data) this.lightningExpiresAt = data.lightningExpiresAt;
   }
 
   static fromModel(model: WithdrawalModel & { Store?: { owner?: { email: string } } }): Withdrawal {
@@ -68,8 +74,10 @@ export class Withdrawal {
       feesDetail: model.feesDetail,
       owner: model.Store?.owner,
       ownerEmail: model.Store?.owner?.email || null,
+      lightningInvoice: model.lightningInvoice || null,
+      lightningExpiresAt: model.lightningExpiresAt || null,
     };
-    return new Withdrawal(withdrawalData as WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail">>);
+    return new Withdrawal(withdrawalData as WithdrawalType & Partial<Pick<Withdrawal, "feesDetail" | "owner" | "ownerEmail" | "lightningInvoice" | "lightningExpiresAt">>);
   }
 
   getStatusLabel(): string {
@@ -144,6 +152,8 @@ export class Withdrawal {
       feesDetail: this.feesDetail,
       owner: this.owner,
       ownerEmail: this.ownerEmail,
+      lightningInvoice: this.lightningInvoice ?? undefined,
+      lightningExpiresAt: this.lightningExpiresAt ?? undefined,
     };
   }
 }

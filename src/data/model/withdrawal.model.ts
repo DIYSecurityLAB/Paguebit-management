@@ -69,6 +69,8 @@ export interface WithdrawalModel {
   payments?: PaymentModel[];
   store?: StoreModel;
   feesDetail?: WithdrawalFeeDetail[];
+  lightningInvoice?: string;
+  lightningExpiresAt?: string;
 }
 
 export interface WithdrawalCreateRequest {

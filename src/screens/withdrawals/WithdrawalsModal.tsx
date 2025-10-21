@@ -352,11 +352,19 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const renderQrCodeOverlay = () => {
     if (!showQrCode) return null;
 
+    // Para saques BRL/PIX com Lightning invoice, exibe o invoice
+    const hasLightningInvoice = w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice;
+    const qrValue = hasLightningInvoice ? w.lightningInvoice : withdrawal.destinationWallet;
+    const qrTitle = hasLightningInvoice ? 'QR Code Lightning Invoice' : 'QR Code da Carteira';
+    const qrDescription = hasLightningInvoice 
+      ? 'Escaneie este código com sua carteira Lightning para efetuar o depósito BRL/PIX' 
+      : 'Escaneie este código para acessar a carteira';
+
     return (
       <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
         <div className="bg-card max-w-md w-full p-6 rounded-xl shadow-xl">
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-bold">QR Code da Carteira</h3>
+            <h3 className="text-lg font-bold">{qrTitle}</h3>
             <button 
               onClick={() => setShowQrCode(false)}
               className="p-1 hover:bg-muted rounded-full"
@@ -367,9 +375,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
           
           <div className="flex flex-col items-center">
             <div className="bg-white p-4 rounded-lg mb-4">
-              {withdrawal.destinationWallet && (
+              {qrValue && (
                 <QRCodeSVG 
-                  value={withdrawal.destinationWallet}
+                  value={qrValue}
                   size={220}
                   bgColor={"#ffffff"}
                   fgColor={"#000000"}
@@ -378,14 +386,23 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 />
               )}
             </div>
+            
+            {hasLightningInvoice && w.lightningExpiresAt && (
+              <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md w-full">
+                <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
+                  ⏰ Expira em: {format(new Date(w.lightningExpiresAt), 'dd/MM/yyyy HH:mm:ss')}
+                </p>
+              </div>
+            )}
+            
             <p className="text-sm text-center text-muted-foreground mb-2">
-              Escaneie este código para acessar a carteira
+              {qrDescription}
             </p>
             <div className="text-xs bg-muted px-3 py-2 rounded-md max-w-full overflow-hidden text-center">
-              <span className="font-mono break-all">{withdrawal.destinationWallet}</span>
+              <span className="font-mono break-all">{qrValue}</span>
             </div>
             <button
-              onClick={() => withdrawal.destinationWallet && handleCopyWallet(withdrawal.destinationWallet)}
+              onClick={() => qrValue && handleCopyWallet(qrValue)}
               className="mt-3 px-3 py-1.5 flex items-center text-sm border border-border rounded-md hover:bg-muted transition-colors"
             >
               {copySuccess ? (
@@ -396,7 +413,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               ) : (
                 <>
                   <Copy className="h-4 w-4 mr-1.5" />
-                  <span>Copiar endereço</span>
+                  <span>{hasLightningInvoice ? 'Copiar Invoice' : 'Copiar endereço'}</span>
                 </>
               )}
             </button>
@@ -649,6 +666,30 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                 </button>
               </div>
               
+              {/* Alerta de Lightning Invoice disponível */}
+              {w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice && (
+                <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
+                  <div className="flex items-start gap-2">
+                    <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-xs font-bold text-blue-600 dark:text-blue-400">⚡</span>
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">
+                        Lightning Invoice Disponível
+                      </p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
+                        Para este saque BRL/PIX, um invoice Lightning foi gerado. Use o botão abaixo para visualizar e pagar via Lightning Network.
+                      </p>
+                      {w.lightningExpiresAt && (
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                          ⏰ Expira em: {format(new Date(w.lightningExpiresAt), 'dd/MM/yyyy HH:mm:ss')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
               {/* Botão para exibir QR Code */}
               <div className="mt-3">
                 <Button
@@ -658,7 +699,9 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                   onClick={() => setShowQrCode(true)}
                   leftIcon={<QrCode className="h-4 w-4" />}
                 >
-                  Exibir QR Code
+                  {w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice 
+                    ? 'Exibir QR Code Lightning' 
+                    : 'Exibir QR Code'}
                 </Button>
               </div>
             </div>
