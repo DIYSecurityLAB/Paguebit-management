@@ -1,6 +1,7 @@
 import React from 'react';
 import paguebitConfigJson from './whiteLabels/paguebit.config.json';
 import paguepayConfigJson from './whiteLabels/paguepay.config.json';
+import criptopixConfigJson from './whiteLabels/criptopix.config.json';
 import { updateDynamicMeta } from '../utils/dynamicMeta';
 
 export function generateContactLink(contact: string): string {
@@ -63,13 +64,15 @@ export interface WhiteLabelConfig {
 
 const paguebitConfig: WhiteLabelConfig = paguebitConfigJson as unknown as WhiteLabelConfig;
 const paguepayConfig: WhiteLabelConfig = paguepayConfigJson as unknown as WhiteLabelConfig;
+const criptopixConfig: WhiteLabelConfig = criptopixConfigJson as unknown as WhiteLabelConfig;
 
 export const domainConfigs: Record<string, WhiteLabelConfig> = {
   'management.paguebit.com': paguebitConfig,
   'paguebit-management.vercel.app': paguebitConfig,
   'paguepay-management.vercel.app': paguepayConfig,
   'management.paguepay.app': paguepayConfig,
-  'localhost': paguebitConfig,
+  'management.criptopix.io': criptopixConfig,
+  'localhost': criptopixConfig,
   '127.0.0.1': paguepayConfig,
 };
 
