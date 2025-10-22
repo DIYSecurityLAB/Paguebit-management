@@ -326,11 +326,17 @@ export default function WithdrawalDetail() {
                   <p className="text-base font-semibold text-green-700 mb-1">
                     {withdrawal.feesDetail && withdrawal.feesDetail.length > 0 ? formatCurrency(Number(withdrawal.amount) - Number(withdrawal.feesDetail[0].whitelabelTotal)) : '-'}
                   </p>
-                  {/* Valor a enviar em crypto (BTC ou USDT) */}
+                  {/* Valor a enviar em crypto (BTC, USDT ou BRL) */}
                   <p className="text-lg font-bold text-green-600 dark:text-green-400">
                     {(() => {
                       if (!withdrawal.feesDetail || withdrawal.feesDetail.length === 0) return '-';
                       const valorEnviarBRL = Number(withdrawal.amount) - Number(withdrawal.feesDetail[0].whitelabelTotal);
+                      
+                      // BRL não precisa de conversão
+                      if (withdrawal.cryptoType === 'BRL') {
+                        return formatCurrency(valorEnviarBRL);
+                      }
+                      
                       const rate = withdrawal.cryptoValue > 0 ? withdrawal.amount / withdrawal.cryptoValue : null;
                       if (!rate) return '-';
                       if (withdrawal.cryptoType === 'BTC') {
