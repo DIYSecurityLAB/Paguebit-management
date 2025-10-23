@@ -1,0 +1,47 @@
+{
+  "id": "criptopix",
+  "name": "CriptoPix",
+  "supportWhatsapp": "",
+  "colors": {
+    "primary": "#9333EA",
+    "secondary": "#1E293B",
+    "accent": "#A855F7",
+    "background": "#ffffff",
+    "backgroundSecondary": "#faf5ff",
+    "text": "#0F172A",
+    "primaryHover": "#7E22CE",
+    "secondaryHover": "#0F172A",
+    "success": "#22c55e",
+    "error": "#ef4444",
+    "warning": "#f59e0b",
+    "dark": {
+      "primary": "#A855F7",
+      "secondary": "#334155",
+      "accent": "#C084FC",
+      "background": "#0F172A",
+      "backgroundSecondary": "#1E1B4B",
+      "text": "#F8FAFC",
+      "primaryHover": "#9333EA",
+      "secondaryHover": "#475569",
+      "success": "#22c55e",
+      "error": "#ef4444",
+      "warning": "#f59e0b"
+    }
+  },
+  "fonts": {
+    "main": "Lexend Deca, sans-serif",
+    "headings": "Lexend Deca, sans-serif"
+  },
+  "logo": {
+    "simple": "/criptopix/logo.svg",
+    "large": "/criptopix/logo.svg",
+    "simpleDark": "/criptopix/logo.svg",
+    "largeDark": "/criptopix/logo.svg"
+  },
+  "urls": {
+    "website": "https://criptopix.io",
+    "tutorials": "https://criptopix.io/tutoriais",
+    "management": "https://management.criptopix.io",
+    "support": "https://t.me/criptopix"
+  }
+}
