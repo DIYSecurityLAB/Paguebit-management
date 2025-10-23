@@ -352,12 +352,12 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
   const renderQrCodeOverlay = () => {
     if (!showQrCode) return null;
 
-    // Para saques BRL/PIX com Lightning invoice, exibe o invoice
-    const hasLightningInvoice = w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice;
+    // Para saques PIX com Lightning invoice disponível, exibe o invoice no lugar do PIX
+    const hasLightningInvoice = w.destinationWalletType === 'Pix' && w.lightningInvoice;
     const qrValue = hasLightningInvoice ? w.lightningInvoice : withdrawal.destinationWallet;
     const qrTitle = hasLightningInvoice ? 'QR Code Lightning Invoice' : 'QR Code da Carteira';
     const qrDescription = hasLightningInvoice 
-      ? 'Escaneie este código com sua carteira Lightning para efetuar o depósito BRL/PIX' 
+      ? 'Escaneie este código com sua carteira Lightning para efetuar o pagamento' 
       : 'Escaneie este código para acessar a carteira';
 
     return (
@@ -387,20 +387,21 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               )}
             </div>
             
-            {hasLightningInvoice && w.lightningExpiresAt && (
-              <div className="mb-3 p-2 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md w-full">
-                <p className="text-xs text-amber-700 dark:text-amber-300 text-center">
-                  ⏰ Expira em: {format(new Date(w.lightningExpiresAt), 'dd/MM/yyyy HH:mm:ss')}
-                </p>
-              </div>
-            )}
-            
             <p className="text-sm text-center text-muted-foreground mb-2">
               {qrDescription}
             </p>
             <div className="text-xs bg-muted px-3 py-2 rounded-md max-w-full overflow-hidden text-center">
               <span className="font-mono break-all">{qrValue}</span>
             </div>
+            
+            {hasLightningInvoice && w.lightningExpiresAt && (
+              <div className="mt-2 w-full">
+                <p className="text-[10px] text-muted-foreground/60 text-center">
+                  Expira em: {format(new Date(w.lightningExpiresAt), 'dd/MM/yyyy HH:mm')}
+                </p>
+              </div>
+            )}
+            
             <button
               onClick={() => qrValue && handleCopyWallet(qrValue)}
               className="mt-3 px-3 py-1.5 flex items-center text-sm border border-border rounded-md hover:bg-muted transition-colors"
@@ -667,7 +668,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
               </div>
               
               {/* Alerta de Lightning Invoice disponível */}
-              {w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice && (
+              {w.destinationWalletType === 'Pix' && w.lightningInvoice && (
                 <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 rounded-md">
                   <div className="flex items-start gap-2">
                     <div className="w-5 h-5 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
@@ -678,7 +679,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                         Lightning Invoice Disponível
                       </p>
                       <p className="text-xs text-blue-700 dark:text-blue-300">
-                        Para este saque BRL/PIX, um invoice Lightning foi gerado. Use o botão abaixo para visualizar e pagar via Lightning Network.
+                        Para este saque PIX, um invoice Lightning foi gerado. Use o botão abaixo para visualizar e pagar via Lightning Network.
                       </p>
                       {w.lightningExpiresAt && (
                         <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
@@ -699,7 +700,7 @@ export default function WithdrawalsModal({ withdrawal, isOpen, onClose }: Withdr
                   onClick={() => setShowQrCode(true)}
                   leftIcon={<QrCode className="h-4 w-4" />}
                 >
-                  {w.cryptoType === 'BRL' && w.destinationWalletType === 'Pix' && w.lightningInvoice 
+                  {w.destinationWalletType === 'Pix' && w.lightningInvoice 
                     ? 'Exibir QR Code Lightning' 
                     : 'Exibir QR Code'}
                 </Button>
